@@ -162,15 +162,15 @@
   .chk .m{width:18px;height:18px;flex:0 0 auto;color:var(--muted)}
   /* living background — padrão VIZIO (adaptado à paleta Costureira) */
   .living{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-  .living .orb{position:absolute;border-radius:50%;filter:blur(72px);opacity:.5}
-  .living .orb.a{width:520px;height:520px;left:-140px;top:-100px;background:radial-gradient(circle,rgba(142,44,176,.5),transparent 70%)}
-  .living .orb.b{width:440px;height:440px;right:-120px;top:24%;background:radial-gradient(circle,rgba(200,169,106,.5),transparent 70%)}
-  .living .orb.c{width:600px;height:600px;left:24%;bottom:-240px;background:radial-gradient(circle,rgba(94,58,86,.5),transparent 70%)}
+  .living .orb{position:absolute;border-radius:50%;filter:blur(70px)}
+  .living .orb.a{width:540px;height:540px;left:-150px;top:-110px;background:radial-gradient(circle,rgba(142,44,176,.58),transparent 68%)}
+  .living .orb.b{width:470px;height:470px;right:-130px;top:22%;background:radial-gradient(circle,rgba(142,44,176,.44),transparent 70%)}
+  .living .orb.c{width:620px;height:620px;left:22%;bottom:-250px;background:radial-gradient(circle,rgba(142,44,176,.52),transparent 70%)}
   @media (prefers-reduced-motion:no-preference){
-    .living .orb.a{animation:orbB 9s ease-in-out infinite}
-    .living .orb.b{animation:orbB 9s ease-in-out infinite -3s}
-    .living .orb.c{animation:orbB 9s ease-in-out infinite -5s}
-    @keyframes orbB{0%,100%{transform:scale(1) translateY(0);opacity:.4}50%{transform:scale(1.13) translateY(-12px);opacity:.62}}
+    .living .orb.a{animation:orbB 8s ease-in-out infinite}
+    .living .orb.b{animation:orbB 8s ease-in-out infinite -2.5s}
+    .living .orb.c{animation:orbB 8s ease-in-out infinite -5s}
+    @keyframes orbB{0%,100%{transform:scale(1) translate(0,0);opacity:.46}50%{transform:scale(1.17) translate(14px,-20px);opacity:.68}}
   }
   .center,.app{position:relative;z-index:1}
   .app{background:transparent}
@@ -388,18 +388,25 @@ const go = p => { location.hash = p; };
 
 /* ---------- login ---------- */
 function Login(){
-  const [email,setEmail]=useState(''),[senha,setSenha]=useState(''),[show,setShow]=useState(false),[err,setErr]=useState(''),[busy,setBusy]=useState(false);
+  const [usuario,setUsuario]=useState(''),[senha,setSenha]=useState(''),[show,setShow]=useState(false),[err,setErr]=useState(''),[busy,setBusy]=useState(false);
   async function submit(e){ e.preventDefault(); setErr(''); setBusy(true);
-    const { error } = await db.auth.signInWithPassword({ email:email.trim(), password:senha });
-    setBusy(false); if(error) setErr('E-mail ou senha incorretos.'); }
+    try{
+      const u=usuario.trim();
+      if(!u){ setErr('Informe o usuário.'); setBusy(false); return; }
+      const { data:mail, error:re } = await db.rpc('login_email',{ p_user:u });
+      if(re || !mail){ setBusy(false); setErr('Usuário ou senha incorretos.'); return; }
+      const { error } = await db.auth.signInWithPassword({ email:mail, password:senha });
+      setBusy(false); if(error) setErr('Usuário ou senha incorretos.');
+    }catch(_){ setBusy(false); setErr('Não foi possível entrar. Tente novamente.'); }
+  }
   return html`<${Fragment}><${LivingBg}/><div class="center"><div class="glass card">
-    <div style=${{display:'grid',placeItems:'center',marginBottom:'8px'}}><${BrandLogo} size=${96}/></div>
+    <div style=${{display:'grid',placeItems:'center',marginBottom:'10px'}}><${BrandLogo} size=${120}/></div>
     <h1 class="title">Bem-vinda de volta</h1>
     <div class="sub">Acesse o painel do seu ateliê.</div>
     <form onSubmit=${submit}>
       ${err&&html`<div class="err">${err}</div>`}
-      <label>E-mail</label>
-      <input type="email" autocomplete="email" placeholder="voce@atelie.com.br" value=${email} onInput=${e=>setEmail(e.target.value)} required/>
+      <label>Usuário</label>
+      <input type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="seu usuário" value=${usuario} onInput=${e=>setUsuario(e.target.value)} required/>
       <label>Senha</label>
       <div class="field">
         <input type=${show?'text':'password'} autocomplete="current-password" placeholder="••••••••" value=${senha} onInput=${e=>setSenha(e.target.value)} required/>
@@ -459,10 +466,10 @@ function Shell({title,children}){
   const can = it => !it.roles || it.roles.includes(role);
   useEffect(()=>{ setOpen(false); },[hash]);
   return html`<div class="app">
-    ${base==='/'&&html`<${LivingBg}/>`}
+    <${LivingBg}/>
     ${open&&html`<div class="backdrop" onClick=${()=>setOpen(false)}/>`}
     <aside class=${'side'+(open?' open':'')}>
-      <div class="brand"><${BrandLogo} size=${40}/><div><div class="nm">${tenant?.nome||'Ateliê'}</div><div class="tg">Ateliê Manager</div></div></div>
+      <div class="brand"><${BrandLogo} size=${54}/><div><div class="nm">${tenant?.nome||'Ateliê'}</div><div class="tg">Ateliê Manager</div></div></div>
       <nav class="nav">
         ${NAV.filter(can).map((it,k)=> it.g
           ? html`<div class="sep" key=${'g'+k}>${it.g}</div>`
@@ -1172,7 +1179,7 @@ function Fiscal(){
 /* ========== CONFIG ========== */
 function ContaPanel({profile,role}){
   const [nome,setNome]=useState(profile?.nome||'');
-  const [s1,setS1]=useState(''),[s2,setS2]=useState(''),[busy,setBusy]=useState(false),[busyP,setBusyP]=useState(false);
+  const [s1,setS1]=useState(''),[s2,setS2]=useState(''),[busy,setBusy]=useState(false),[busyP,setBusyP]=useState(false),[showP,setShowP]=useState(false);
   async function saveNome(){ if(!nome.trim()){toast('Informe o nome.','err');return;} setBusy(true);
     const {error}=await db.from('profiles').update({nome:nome.trim()}).eq('id',profile.id); setBusy(false);
     if(error)toast('Erro: '+error.message,'err'); else toast('Perfil atualizado.','ok'); }
@@ -1184,8 +1191,10 @@ function ContaPanel({profile,role}){
     <label>Nome</label><input value=${nome} onInput=${e=>setNome(e.target.value)}/>
     <div style=${{marginTop:'8px'}}><button class="btn sm pri" disabled=${busy} onClick=${saveNome}>${busy?'…':'Salvar nome'}</button></div>
     <div class="it" style=${{marginTop:'12px',paddingTop:'12px',borderTop:'1px solid var(--border)'}}><span class="muted">Papel</span><span class="v">${role}</span></div>
-    <label style=${{marginTop:'10px'}}>Nova senha</label><input type="password" value=${s1} onInput=${e=>setS1(e.target.value)} placeholder="mín. 6 caracteres"/>
-    <label>Confirmar nova senha</label><input type="password" value=${s2} onInput=${e=>setS2(e.target.value)}/>
+    <label style=${{marginTop:'10px'}}>Nova senha</label>
+    <div class="field"><input type=${showP?'text':'password'} value=${s1} onInput=${e=>setS1(e.target.value)} placeholder="mín. 6 caracteres"/>
+      <button type="button" class="toggle" onClick=${()=>setShowP(v=>!v)}>${showP?'ocultar':'mostrar'}</button></div>
+    <label>Confirmar nova senha</label><input type=${showP?'text':'password'} value=${s2} onInput=${e=>setS2(e.target.value)}/>
     <div style=${{marginTop:'10px',display:'flex',gap:'8px'}}>
       <button class="btn sm" disabled=${busyP} onClick=${savePwd}>${busyP?'…':'Alterar senha'}</button>
       <button class="btn sm ghost" onClick=${()=>db.auth.signOut()}>Sair da conta</button></div>
