@@ -3,65 +3,212 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ateliê Manager</title>
+<title>Ateliê Manager — Costureira Salvador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f4efe8; --card:#fbf8f3; --fg:#2b2730; --muted:#8a7e86;
-    --primary:#5e4b6b; --accent:#7a6488; --border:#e5dcd0; --danger:#b3452f;
-    --radius:1rem;
+    --bg:#f4efe8; --card:#fbf8f3; --ink:#2e2b31; --fg:#2e2b31; --muted:#8a7e86;
+    --plum:#5e3a56; --plum-2:#4c2e46; --violet:#8e2cb0; --charcoal:#2e2b31;
+    --gold:#c8a96a; --border:#e7ddd0; --danger:#b3452f; --ok:#3f7d52; --warn:#b98325;
+    --radius:1rem; --shadow:0 8px 32px rgba(70,40,80,.10);
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
   body{
     font-family:Inter,system-ui,sans-serif;color:var(--fg);background:var(--bg);
     background-image:
-      radial-gradient(60rem 60rem at 110% -10%, rgba(190,170,210,.20), transparent 60%),
-      radial-gradient(50rem 50rem at -10% 10%, rgba(220,200,170,.22), transparent 55%);
+      radial-gradient(60rem 60rem at 110% -10%, rgba(142,44,176,.10), transparent 60%),
+      radial-gradient(50rem 50rem at -10% 10%, rgba(200,169,106,.16), transparent 55%);
     background-attachment:fixed;-webkit-font-smoothing:antialiased;
   }
   .serif{font-family:"Cormorant Garamond",Georgia,serif}
+  a{color:inherit}
   .center{min-height:100dvh;display:grid;place-items:center;padding:24px}
   .glass{background:rgba(251,248,243,.72);backdrop-filter:blur(18px);
-    border:1px solid rgba(255,255,255,.5);box-shadow:0 8px 32px rgba(70,40,80,.10);border-radius:1.25rem}
+    border:1px solid rgba(255,255,255,.5);box-shadow:var(--shadow);border-radius:1.25rem}
+  /* logo */
+  .mark{width:44px;height:28px;color:var(--charcoal)}
+  @media (prefers-reduced-motion:no-preference){.breathe{animation:br 4.5s ease-in-out infinite;transform-origin:center}}
+  @keyframes br{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.045);opacity:.92}}
+  .logo-badge{width:96px;height:96px;border-radius:999px;background:
+    radial-gradient(120% 120% at 30% 20%, #3a363f, #2b282e 70%);
+    display:grid;place-items:center;box-shadow:0 10px 30px rgba(46,43,49,.35);margin:0 auto}
+  .logo-badge .mark{width:60px;height:38px;color:#fff}
+  /* login */
   .card{width:100%;max-width:420px;padding:32px}
-  .brand{display:flex;gap:12px;align-items:center;justify-content:center;margin-bottom:22px}
-  .mark{width:38px;height:38px;color:var(--primary)}
-  @media (prefers-reduced-motion:no-preference){.breathe{animation:br 4.5s ease-in-out infinite}}
-  @keyframes br{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
-  h1.title{font-family:"Cormorant Garamond",serif;font-size:2rem;margin:.2rem 0 .1rem;text-align:center}
+  h1.title{font-family:"Cormorant Garamond",serif;font-size:2rem;margin:.4rem 0 .1rem;text-align:center}
   .sub{color:var(--muted);text-align:center;font-size:.9rem;margin-bottom:20px}
-  label{display:block;font-size:.85rem;font-weight:500;margin:14px 0 6px}
+  label{display:block;font-size:.82rem;font-weight:600;margin:14px 0 6px;color:#5a525c}
   .field{position:relative}
-  input{width:100%;height:44px;border:1px solid var(--border);background:rgba(255,255,255,.7);
-    border-radius:.6rem;padding:0 14px;font-size:.95rem;color:var(--fg);outline:none}
-  input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(94,75,107,.15)}
-  .toggle{position:absolute;right:6px;top:6px;height:32px;width:36px;border:0;background:transparent;
-    color:var(--muted);cursor:pointer;font-size:.8rem}
-  button.primary{width:100%;height:46px;margin-top:22px;border:0;border-radius:.6rem;
-    background:var(--primary);color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;transition:.15s}
-  button.primary:hover{background:#523f61}
+  input,select,textarea{width:100%;height:44px;border:1px solid var(--border);background:rgba(255,255,255,.75);
+    border-radius:.6rem;padding:0 14px;font-size:.95rem;color:var(--fg);outline:none;font-family:inherit}
+  textarea{height:auto;padding:10px 14px;resize:vertical;min-height:72px}
+  input:focus,select:focus,textarea:focus{border-color:var(--plum);box-shadow:0 0 0 3px rgba(94,58,86,.15)}
+  .toggle{position:absolute;right:6px;top:6px;height:32px;width:auto;padding:0 10px;border:0;background:transparent;
+    color:var(--muted);cursor:pointer;font-size:.78rem}
+  button.primary{width:100%;height:46px;margin-top:8px;border:0;border-radius:.6rem;
+    background:var(--plum);color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;transition:.15s}
+  button.primary:hover{background:var(--plum-2)}
   button.primary:disabled{opacity:.6;cursor:default}
   .err{background:rgba(179,69,47,.1);border:1px solid rgba(179,69,47,.3);color:var(--danger);
     border-radius:.5rem;padding:10px 12px;font-size:.85rem;margin-bottom:8px}
-  .foot{color:var(--muted);text-align:center;font-size:.72rem;margin-top:18px}
-  /* app */
-  .shell{min-height:100dvh}
-  .topbar{position:sticky;top:0;display:flex;align-items:center;gap:14px;height:64px;padding:0 20px;
-    background:rgba(244,239,232,.75);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);z-index:5}
-  .topbar .name{font-weight:600;font-size:.95rem}
-  .badge{font-size:.7rem;padding:3px 9px;border-radius:999px;background:rgba(94,75,107,.1);color:var(--primary)}
-  .out{margin-left:auto;border:1px solid var(--border);background:rgba(255,255,255,.6);border-radius:.6rem;
-    height:38px;padding:0 14px;cursor:pointer;color:var(--fg)}
-  main{max-width:1000px;margin:0 auto;padding:28px 20px}
-  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:8px}
-  @media(min-width:800px){.grid{grid-template-columns:repeat(4,1fr)}}
-  .kpi{padding:20px;border-radius:1.25rem}
-  .kpi .n{font-family:"Cormorant Garamond",serif;font-size:2.1rem;line-height:1}
-  .kpi .l{color:var(--muted);font-size:.85rem;margin-top:6px}
+  .foot{color:var(--muted);text-align:center;font-size:.72rem;margin-top:18px;letter-spacing:.02em}
+  /* app shell */
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:100dvh}
+  .side{position:sticky;top:0;height:100dvh;padding:20px 14px;border-right:1px solid var(--border);
+    background:rgba(248,244,238,.75);backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:4px}
+  .side .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
+  .side .brand .nm{font-family:"Cormorant Garamond",serif;font-size:1.15rem;line-height:1;font-weight:600}
+  .side .brand .tg{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .nav{display:flex;flex-direction:column;gap:2px;overflow:auto}
+  .nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:.6rem;
+    font-size:.9rem;font-weight:500;color:#5a525c;text-decoration:none;cursor:pointer;transition:.12s}
+  .nav a:hover{background:rgba(142,44,176,.07);color:var(--plum)}
+  .nav a.on{background:var(--plum);color:#fff}
+  .nav a.on svg{color:#fff}
+  .nav a svg{width:18px;height:18px;color:var(--muted);flex:0 0 auto}
+  .nav a:hover svg{color:var(--plum)}
+  .nav .sep{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:#b6a9b1;padding:14px 12px 4px}
+  .side .who{margin-top:auto;padding-top:12px;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)}
+  .side .who b{color:var(--fg);display:block;font-size:.85rem}
+  .side .who button{margin-top:8px;width:100%;height:34px;border:1px solid var(--border);background:rgba(255,255,255,.6);
+    border-radius:.5rem;cursor:pointer;color:var(--fg);font-size:.82rem}
+  .side .who button:hover{border-color:var(--plum);color:var(--plum)}
+  /* content */
+  .main{min-width:0}
+  .topbar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:12px;height:62px;padding:0 24px;
+    background:rgba(244,239,232,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+  .topbar h2{font-family:"Cormorant Garamond",serif;font-size:1.5rem;margin:0;font-weight:600}
+  .topbar .plan{margin-left:6px;font-size:.68rem;padding:3px 9px;border-radius:999px;background:rgba(142,44,176,.1);color:var(--violet);font-weight:600}
+  .topbar .spacer{margin-left:auto}
+  .wrap{max-width:1120px;margin:0 auto;padding:26px 24px 60px}
   .hi{font-family:"Cormorant Garamond",serif;font-size:2rem;margin:0}
-  .hint{color:var(--muted);font-size:.9rem;margin:2px 0 18px}
+  .hint{color:var(--muted);font-size:.92rem;margin:2px 0 20px}
+  /* kpis */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(min-width:820px){.grid{grid-template-columns:repeat(4,1fr)}}
+  .kpi{padding:18px 20px;border-radius:1.1rem;text-align:left;cursor:pointer;border:0;background:rgba(251,248,243,.72);
+    backdrop-filter:blur(18px);box-shadow:var(--shadow);transition:.15s;font-family:inherit}
+  .kpi:hover{transform:translateY(-2px);box-shadow:0 14px 38px rgba(70,40,80,.14)}
+  .kpi .n{font-family:"Cormorant Garamond",serif;font-size:2.1rem;line-height:1;color:var(--plum)}
+  .kpi .l{color:var(--muted);font-size:.82rem;margin-top:6px}
+  .kpi.warn .n{color:var(--warn)} .kpi.ok .n{color:var(--ok)}
+  /* cards / sections */
+  .row{display:grid;gap:16px;margin-top:18px}
+  @media(min-width:820px){.row.two{grid-template-columns:1fr 1fr}.row.side{grid-template-columns:1.6fr 1fr}}
+  .panel{padding:20px;border-radius:1.1rem}
+  .panel h3{margin:0 0 2px;font-size:1rem;font-weight:600}
+  .panel .desc{color:var(--muted);font-size:.82rem;margin:0 0 14px}
+  /* toolbar */
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  .bar .search{flex:1;min-width:200px}
+  .bar input,.bar select{height:42px}
+  .btn{height:42px;padding:0 16px;border-radius:.6rem;border:1px solid var(--border);background:rgba(255,255,255,.65);
+    color:var(--fg);font-weight:600;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:inherit;white-space:nowrap}
+  .btn:hover{border-color:var(--plum);color:var(--plum)}
+  .btn.pri{background:var(--plum);border-color:var(--plum);color:#fff}
+  .btn.pri:hover{background:var(--plum-2)}
+  .btn.sm{height:34px;padding:0 12px;font-size:.82rem}
+  .btn.ghost{background:transparent;border-color:transparent}
+  .btn svg{width:16px;height:16px}
+  .link{background:none;border:0;color:var(--plum);cursor:pointer;font-weight:600;font-size:.85rem;padding:0;font-family:inherit;text-decoration:underline;text-underline-offset:2px}
+  /* table */
+  .tbl{width:100%;border-collapse:collapse;font-size:.88rem}
+  .tbl th{text-align:left;font-weight:600;color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;
+    padding:0 12px 10px;border-bottom:1px solid var(--border)}
+  .tbl td{padding:12px;border-bottom:1px solid rgba(231,221,208,.6);vertical-align:middle}
+  .tbl tr:last-child td{border-bottom:0}
+  .tbl tr.click{cursor:pointer}
+  .tbl tr.click:hover td{background:rgba(142,44,176,.05)}
+  .tbl .r{text-align:right}
+  .tbl .low td{background:rgba(185,131,37,.07)}
+  .tblwrap{overflow-x:auto}
+  /* badge */
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:.74rem;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:999px;background:currentColor;opacity:.9}
+  /* modal */
+  .ov{position:fixed;inset:0;background:rgba(46,43,49,.42);backdrop-filter:blur(3px);display:grid;place-items:center;padding:20px;z-index:20}
+  .modal{width:100%;max-width:560px;max-height:90dvh;overflow:auto;background:var(--card);border-radius:1.1rem;
+    box-shadow:0 24px 70px rgba(46,43,49,.3);border:1px solid rgba(255,255,255,.6)}
+  .modal .mh{position:sticky;top:0;background:var(--card);display:flex;align-items:center;justify-content:space-between;
+    padding:20px 22px 12px;border-bottom:1px solid var(--border)}
+  .modal .mh h3{margin:0;font-family:"Cormorant Garamond",serif;font-size:1.35rem;font-weight:600}
+  .modal .mb{padding:18px 22px}
+  .modal .mf{position:sticky;bottom:0;background:var(--card);display:flex;gap:10px;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--border)}
+  .x{border:0;background:transparent;font-size:1.3rem;color:var(--muted);cursor:pointer;line-height:1}
+  .f2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  .f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px}
+  @media(max-width:560px){.f2,.f3{grid-template-columns:1fr}}
+  .ferr{color:var(--danger);font-size:.78rem;margin-top:4px}
+  /* empty */
+  .empty{text-align:center;padding:44px 20px;color:var(--muted)}
+  .empty .em{width:44px;height:44px;margin:0 auto 10px;color:#c9bcc3}
+  .empty h4{margin:0 0 4px;color:var(--fg);font-weight:600}
+  /* toast */
+  .toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:40}
+  .toast{background:var(--ink);color:#fff;padding:12px 16px;border-radius:.6rem;font-size:.86rem;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:320px}
+  .toast.ok{background:var(--ok)} .toast.err{background:var(--danger)}
+  /* misc */
+  .stat-list{display:flex;flex-direction:column;gap:2px}
+  .stat-list .it{display:flex;align-items:center;justify-content:space-between;padding:9px 4px;border-bottom:1px solid rgba(231,221,208,.6);font-size:.88rem}
+  .stat-list .it:last-child{border-bottom:0}
+  .stat-list .it .v{font-weight:600;color:var(--plum)}
+  .muted{color:var(--muted)} .b{font-weight:600}
+  .tag{display:inline-block;font-size:.72rem;padding:3px 8px;border-radius:.4rem;background:rgba(94,58,86,.08);color:var(--plum);font-weight:600}
+  .notice{background:rgba(142,44,176,.06);border:1px solid rgba(142,44,176,.18);border-radius:.7rem;padding:14px 16px;font-size:.85rem;color:#5a525c}
+  .notice b{color:var(--plum)}
+  .chk{display:flex;gap:9px;align-items:flex-start;padding:7px 0;font-size:.88rem}
+  .chk .m{width:18px;height:18px;flex:0 0 auto;color:var(--muted)}
+  /* living background — padrão VIZIO (adaptado à paleta Costureira) */
+  .living{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .living .orb{position:absolute;border-radius:50%;filter:blur(72px);opacity:.5}
+  .living .orb.a{width:520px;height:520px;left:-140px;top:-100px;background:radial-gradient(circle,rgba(142,44,176,.5),transparent 70%)}
+  .living .orb.b{width:440px;height:440px;right:-120px;top:24%;background:radial-gradient(circle,rgba(200,169,106,.5),transparent 70%)}
+  .living .orb.c{width:600px;height:600px;left:24%;bottom:-240px;background:radial-gradient(circle,rgba(94,58,86,.5),transparent 70%)}
+  @media (prefers-reduced-motion:no-preference){
+    .living .orb.a{animation:orbB 9s ease-in-out infinite}
+    .living .orb.b{animation:orbB 9s ease-in-out infinite -3s}
+    .living .orb.c{animation:orbB 9s ease-in-out infinite -5s}
+    @keyframes orbB{0%,100%{transform:scale(1) translateY(0);opacity:.4}50%{transform:scale(1.13) translateY(-12px);opacity:.62}}
+  }
+  .center,.app{position:relative;z-index:1}
+  .app{background:transparent}
+  /* brand logos */
+  .brandmark{border-radius:50%;object-fit:cover;box-shadow:0 8px 22px rgba(46,43,49,.26);display:block}
+  @media (prefers-reduced-motion:no-preference){.breathe-img{animation:imgBr 4.6s ease-in-out infinite;transform-origin:center}}
+  @keyframes imgBr{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
+  .byvizio{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.72rem}
+  .byvizio img{height:15px;width:auto}
+  .byvizio b{font-weight:600}
+  @media (prefers-reduced-motion:no-preference){.vzfloat{animation:vzF 5s ease-in-out infinite}}
+  @keyframes vzF{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+  /* chart */
+  .chartbox{height:158px;position:relative}
+  /* measures + segments */
+  .measure-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px}
+  @media(max-width:560px){.measure-grid{grid-template-columns:1fr 1fr}}
+  .seg{display:inline-flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--border);background:rgba(255,255,255,.6);border-radius:999px;padding:7px 13px;font-size:.82rem;cursor:pointer;font-family:inherit;color:var(--fg);font-weight:500}
+  .chip.on{background:var(--plum);border-color:var(--plum);color:#fff}
+  /* alerts balloon */
+  .bell-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:.62rem;font-weight:700;min-width:16px;height:16px;border-radius:999px;display:grid;place-items:center;padding:0 3px}
+  .pop{position:absolute;right:0;top:46px;width:310px;max-height:66vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:.8rem;box-shadow:0 18px 50px rgba(46,43,49,.25);z-index:30}
+  .pop-h{padding:12px 14px;font-weight:600;border-bottom:1px solid var(--border)}
+  .pop-empty{padding:22px 14px;color:var(--muted);font-size:.86rem;text-align:center}
+  .pop-it{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:11px 14px;border:0;border-bottom:1px solid rgba(231,221,208,.6);background:transparent;cursor:pointer;font-family:inherit;font-size:.83rem;line-height:1.35}
+  .pop-it:last-child{border-bottom:0} .pop-it:hover{background:rgba(142,44,176,.05)}
+  .pi-ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:0 0 auto}
+  .pi-ic svg{width:15px;height:15px} .pi-ic.warn{background:rgba(185,131,37,.15);color:var(--warn)} .pi-ic.low{background:rgba(142,44,176,.12);color:var(--violet)}
+  /* mobile nav */
+  .menu-btn{display:none}
+  @media(max-width:820px){
+    .app{grid-template-columns:1fr}
+    .side{position:fixed;left:0;top:0;z-index:30;width:260px;transform:translateX(-100%);transition:.2s}
+    .side.open{transform:none}
+    .menu-btn{display:inline-flex}
+    .backdrop{position:fixed;inset:0;background:rgba(46,43,49,.4);z-index:25}
+  }
 </style>
 </head>
 <body>
@@ -70,101 +217,1097 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script type="module">
 import htm from 'https://esm.sh/htm@3.1.1';
-const { createElement, useState, useEffect } = React;
+const { createElement, useState, useEffect, useMemo, useCallback, useRef, Fragment } = React;
 const html = htm.bind(createElement);
 
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
 
-const Mark = () => html`<svg class="mark breathe" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-  <path d="M14 34 L33 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-  <circle cx="34.5" cy="13.5" r="2.4" stroke="currentColor" stroke-width="2"/>
-  <path d="M14 34 C6 30, 9 22, 16 24 C23 26, 18 33, 12 31" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
-  <circle cx="38" cy="38" r="2" fill="currentColor"/></svg>`;
+/* ---------- helpers ---------- */
+const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const onlyDigits = s => (s||'').replace(/\D/g,'');
+const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('pt-BR') : '—';
+const todayISO = () => new Date().toISOString().slice(0,10);
+const monthStart = () => { const d=new Date(); return new Date(d.getFullYear(),d.getMonth(),1).toISOString().slice(0,10); };
+const daysBetween = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
+const addDays = (iso,n) => { const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+Number(n||0)); return d.toISOString().slice(0,10); };
+const esc = s => String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function printDoc(title, bodyHtml, tenantName){
+  const w=window.open('','_blank','width=900,height=760');
+  if(!w){ toast('Permita pop-ups para gerar a impressão.','err'); return; }
+  const base=location.href.replace(/[#?].*$/,'').replace(/[^/]*$/,'');
+  const css='@page{margin:0}*{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;color:#2e2b31;margin:0;padding:18mm 16mm}'
+    +'.brand{display:flex;align-items:center;gap:12px;border-bottom:2px solid #5e3a56;padding-bottom:12px;margin-bottom:18px}'
+    +'.brand img{width:52px;height:52px;border-radius:50%;object-fit:cover}'
+    +'.brand h1{font-family:Georgia,serif;color:#2e2b31;font-size:20px;margin:0}.brand .s{color:#8a7e86;font-size:12px}'
+    +'.brand .meta{margin-left:auto;text-align:right;color:#8a7e86;font-size:11px}'
+    +'table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}th{text-align:left;color:#8a7e86;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid #e7ddd0;padding:6px 8px}'
+    +'td{padding:7px 8px;border-bottom:1px solid #f0e9df}.r{text-align:right}tfoot td{font-weight:700;border-top:2px solid #5e3a56;color:#5e3a56}h3{color:#5e3a56;font-size:14px;margin:16px 0 4px}'
+    +'.kv{display:flex;gap:22px;margin:8px 0 4px;font-size:12px}.kv b{color:#5e3a56}.ft{margin-top:26px;color:#b6a9b1;font-size:10px;text-align:center}';
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>'+css+'</style></head><body>'
+    +'<div class="brand"><img src="'+base+'costureira-logo.jpg" alt=""><div><h1>'+esc(tenantName||'Ateliê')+'</h1><div class="s">Ateliê de costura · Salvador</div></div>'
+    +'<div class="meta">'+esc(title)+'<br>Emitido em '+new Date().toLocaleString('pt-BR')+'</div></div>'
+    +bodyHtml+'<div class="ft">Ateliê Manager By Vizio</div>'
+    +'<'+'script>window.onload=function(){setTimeout(function(){window.print()},150)}<'+'/script></body></html>');
+  w.document.close();
+}
+const maskPhone = v => { const d=onlyDigits(v).slice(0,11); if(d.length<=10) return d.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3').replace(/[-\s()]+$/,''); return d.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'); };
+const maskCPF = v => { const d=onlyDigits(v).slice(0,11); return d.replace(/(\d{3})(\d{0,3})/,'$1.$2').replace(/(\d{3})\.(\d{3})(\d{0,3})/,'$1.$2.$3').replace(/(\d{3})\.(\d{3})\.(\d{3})(\d{0,2})/,'$1.$2.$3-$4').replace(/[.\-]+$/,''); };
 
-function Login(){
-  const [email,setEmail]=useState('');
-  const [senha,setSenha]=useState('');
-  const [show,setShow]=useState(false);
-  const [err,setErr]=useState('');
+const STATUS = {
+  orcamento:{l:'Orçamento',c:'#8a7e86',bg:'rgba(138,126,134,.12)'},
+  aberto:{l:'Aberto',c:'#4c6fb3',bg:'rgba(76,111,179,.12)'},
+  em_andamento:{l:'Em andamento',c:'#b98325',bg:'rgba(185,131,37,.14)'},
+  costurando:{l:'Costurando',c:'#8e2cb0',bg:'rgba(142,44,176,.12)'},
+  aguardando_prova:{l:'Aguardando prova',c:'#2f8f8f',bg:'rgba(47,143,143,.14)'},
+  aguardando_retirada:{l:'Aguardando retirada',c:'#5e3a56',bg:'rgba(94,58,86,.14)'},
+  finalizado:{l:'Finalizado',c:'#3f7d52',bg:'rgba(63,125,82,.14)'},
+  entregue:{l:'Entregue',c:'#2f6b43',bg:'rgba(47,107,67,.16)'},
+  cancelado:{l:'Cancelado',c:'#b3452f',bg:'rgba(179,69,47,.12)'},
+};
+const STATUS_ORDER = Object.keys(STATUS);
+const ACTIVE = ['orcamento','aberto','em_andamento','costurando','aguardando_prova','aguardando_retirada'];
+const isClosed = s => s==='entregue'||s==='cancelado';
+const dueDate = o => o.prazo || (o.dias_previstos&&o.data_entrada ? addDays(o.data_entrada,o.dias_previstos) : null);
+const isLate = o => ACTIVE.includes(o.status) && (()=>{ const d=dueDate(o); return !!d && d<todayISO(); })();
+const bdayThisMonth = c => !!c.nascimento && Number(c.nascimento.slice(5,7))===(new Date().getMonth()+1);
+const bdayDay = c => Number((c.nascimento||'0000-00-00').slice(8,10));
+const isBdayToday = c => c.nascimento && c.nascimento.slice(5,10)===todayISO().slice(5,10);
+
+/* ---------- icons ---------- */
+const I = {
+  home:'M3 11.5 12 4l9 7.5M5 10v10h5v-6h4v6h5V10',
+  users:'M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M17 11a3 3 0 1 0 0-6M21 20v-1a3.6 3.6 0 0 0-3-3.5',
+  scissors:'M6 6l12 12M6 18L18 6M9 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+  box:'M21 8 12 3 3 8m18 0-9 5-9-5m18 0v8l-9 5-9-5V8',
+  money:'M3 6h18v12H3zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M6 9h.01M18 15h.01',
+  chart:'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  file:'M14 3v5h5M14 3H6v18h12V8zM9 13h6M9 17h4',
+  tag:'M20.6 13.4 13 21l-9-9V4h8l8.6 8.6a2 2 0 0 1 0 2.8ZM7.5 7.5h.01',
+  gear:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9 2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 2.9-1.2 2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9Z',
+  plus:'M12 5v14M5 12h14', menu:'M4 6h16M4 12h16M4 18h16', back:'M15 18l-6-6 6-6',
+  wa:'M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2Zm0 18a8 8 0 0 1-4-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 20Z',
+  print:'M6 9V3h12v6M6 18H4v-6h16v6h-2M8 14h8v7H8z', alert:'M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z',
+  edit:'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z', trash:'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', check:'M20 6 9 17l-5-5',
+  bell:'M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0',
+  refresh:'M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5',
+  rocket:'M5 15c-1.6 1.6-2 5.5-2 5.5s3.9-.4 5.5-2M9 11a5 5 0 0 0 4 4l6-6a6 6 0 0 0 1.5-5.5A6 6 0 0 0 15 5l-6 6ZM15.5 8.5h.01',
+  ruler:'M3 8l5-5 13 13-5 5zM7 7l2 2M11 5l2 2M9 11l2 2M13 9l2 2',
+};
+const Ic = ({d,cls,style}) => html`<svg class=${cls} style=${style} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d=${d}/></svg>`;
+
+const Mark = ({cls='mark breathe'}) => html`<svg class=${cls} viewBox="0 0 104 60" fill="none" aria-hidden="true">
+  <circle cx="24" cy="27" r="10" stroke="currentColor" stroke-width="4"/>
+  <path d="M32 34 C40 40 43 42 47 45" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"/>
+  <path d="M48 45 L96 20 L99 26 L52 48 Z" fill="var(--violet)"/>
+  <circle cx="48" cy="45" r="3.6" fill="currentColor"/>
+  <circle cx="48" cy="45" r="1.3" fill="var(--card)"/>
+</svg>`;
+
+const LivingBg = () => html`<div class="living" aria-hidden="true"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>`;
+const BrandLogo = ({size=40,cls=''}) => html`<img class=${'brandmark breathe-img '+cls} src="costureira-logo.jpg" width=${size} height=${size} alt="Costureira Salvador"/>`;
+const ByVizio = ({dark=true}) => html`<span class="byvizio">Ateliê Manager <b>By</b> <img class="vzfloat" src=${dark?'vizio-dark.svg':'vizio-light.svg'} alt="Vizio"/></span>`;
+const MiniChart = ({labels,data,fmt}) => {
+  const ref=useRef(null), inst=useRef(null);
+  useEffect(()=>{ if(!window.Chart||!ref.current) return;
+    if(inst.current) inst.current.destroy();
+    inst.current=new window.Chart(ref.current,{type:'bar',
+      data:{labels,datasets:[{data,backgroundColor:'#8e2cb0',hoverBackgroundColor:'#5e3a56',borderRadius:6,maxBarThickness:36}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(fmt?fmt(c.raw):c.raw)}}},
+      scales:{y:{beginAtZero:true,ticks:{maxTicksLimit:4,font:{size:10},callback:v=>'R$ '+v},grid:{color:'rgba(94,58,86,.08)'}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+    return ()=>{ if(inst.current){inst.current.destroy();inst.current=null;} };
+  },[labels.join(),data.join()]);
+  return html`<div class="chartbox"><canvas ref=${ref}></canvas></div>`;
+};
+
+/* ---------- toasts ---------- */
+let pushToast=()=>{};
+function Toaster(){
+  const [ts,setTs]=useState([]);
+  useEffect(()=>{ pushToast=(msg,kind='')=>{ const id=Math.random(); setTs(x=>[...x,{id,msg,kind}]); setTimeout(()=>setTs(x=>x.filter(t=>t.id!==id)),3400); }; },[]);
+  return html`<div class="toasts">${ts.map(t=>html`<div key=${t.id} class=${'toast '+t.kind}>${t.msg}</div>`)}</div>`;
+}
+const toast=(m,k)=>pushToast(m,k);
+
+/* ---------- primitives ---------- */
+const Badge = ({status}) => { const s=STATUS[status]||{l:status,c:'#8a7e86',bg:'rgba(0,0,0,.06)'};
+  return html`<span class="badge" style=${{color:s.c,background:s.bg}}><span class="dot"/>${s.l}</span>`; };
+
+function Modal({title,onClose,children,footer,wide}){
+  useEffect(()=>{ const h=e=>e.key==='Escape'&&onClose(); window.addEventListener('keydown',h); return ()=>window.removeEventListener('keydown',h); },[]);
+  return html`<div class="ov" onMouseDown=${e=>e.target===e.currentTarget&&onClose()}>
+    <div class="modal" style=${wide?{maxWidth:'720px'}:null}>
+      <div class="mh"><h3>${title}</h3><button class="x" onClick=${onClose}>×</button></div>
+      <div class="mb">${children}</div>
+      ${footer&&html`<div class="mf">${footer}</div>`}
+    </div></div>`;
+}
+const Empty = ({icon=I.box,title,children}) => html`<div class="empty"><${Ic} d=${icon} cls="em"/><h4>${title}</h4><div>${children}</div></div>`;
+function Confirm({text,onYes,onClose,danger}){
   const [busy,setBusy]=useState(false);
-  async function submit(e){
-    e.preventDefault(); setErr(''); setBusy(true);
+  return html`<${Modal} title="Confirmar" onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button>
+    <button class=${'btn '+(danger?'':'pri')} style=${danger?{background:'var(--danger)',borderColor:'var(--danger)',color:'#fff'}:null}
+      disabled=${busy} onClick=${async()=>{ setBusy(true); await onYes(); setBusy(false); onClose(); }}>${busy?'…':'Confirmar'}</button></${Fragment}>`}>
+    <div style=${{fontSize:'.92rem',color:'#5a525c'}}>${text}</div></${Modal}>`;
+}
+
+/* ---------- app context ---------- */
+const Ctx = React.createContext(null);
+const useApp = () => React.useContext(Ctx);
+const useHash = () => {
+  const [h,setH]=useState(location.hash.replace(/^#/,'')||'/');
+  useEffect(()=>{ const f=()=>setH(location.hash.replace(/^#/,'')||'/'); window.addEventListener('hashchange',f); return ()=>window.removeEventListener('hashchange',f); },[]);
+  return h;
+};
+const go = p => { location.hash = p; };
+
+/* ---------- login ---------- */
+function Login(){
+  const [email,setEmail]=useState(''),[senha,setSenha]=useState(''),[show,setShow]=useState(false),[err,setErr]=useState(''),[busy,setBusy]=useState(false);
+  async function submit(e){ e.preventDefault(); setErr(''); setBusy(true);
     const { error } = await db.auth.signInWithPassword({ email:email.trim(), password:senha });
-    setBusy(false);
-    if(error) setErr('E-mail ou senha incorretos.');
-  }
-  return html`<div class="center"><div class="glass card">
-    <div class="brand"><${Mark}/><div><div class="serif" style=${{fontSize:'1.2rem',lineHeight:1}}>Ateliê Manager</div>
-      <div style=${{fontSize:'.62rem',letterSpacing:'.18em',textTransform:'uppercase',color:'var(--muted)'}}>Gestão para ateliês</div></div></div>
+    setBusy(false); if(error) setErr('E-mail ou senha incorretos.'); }
+  return html`<${Fragment}><${LivingBg}/><div class="center"><div class="glass card">
+    <div style=${{display:'grid',placeItems:'center',marginBottom:'8px'}}><${BrandLogo} size=${96}/></div>
     <h1 class="title">Bem-vinda de volta</h1>
     <div class="sub">Acesse o painel do seu ateliê.</div>
     <form onSubmit=${submit}>
-      ${err && html`<div class="err">${err}</div>`}
+      ${err&&html`<div class="err">${err}</div>`}
       <label>E-mail</label>
-      <input type="email" autocomplete="email" placeholder="voce@atelie.com.br"
-        value=${email} onInput=${e=>setEmail(e.target.value)} required/>
+      <input type="email" autocomplete="email" placeholder="voce@atelie.com.br" value=${email} onInput=${e=>setEmail(e.target.value)} required/>
       <label>Senha</label>
       <div class="field">
-        <input type=${show?'text':'password'} autocomplete="current-password" placeholder="********"
-          value=${senha} onInput=${e=>setSenha(e.target.value)} required/>
+        <input type=${show?'text':'password'} autocomplete="current-password" placeholder="••••••••" value=${senha} onInput=${e=>setSenha(e.target.value)} required/>
         <button type="button" class="toggle" onClick=${()=>setShow(s=>!s)}>${show?'ocultar':'mostrar'}</button>
       </div>
       <button class="primary" disabled=${busy}>${busy?'Entrando…':'Entrar'}</button>
     </form>
-    <div class="foot">ATELIÊ MANAGER · uma solução INPERSON</div>
-  </div></div>`;
+    <div class="foot"><${ByVizio} dark=${true}/></div>
+  </div></div></${Fragment}>`;
 }
 
-function Kpi({n,l}){ return html`<div class="glass kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`; }
-
-function Dashboard({ user }){
-  const [tenant,setTenant]=useState(null);
-  const [kpi,setKpi]=useState({clientes:'—',ordens:'—'});
+/* ---------- shell ---------- */
+const NAV = [
+  {g:'Gestão'},
+  {p:'/', l:'HOME', i:I.home},
+  {p:'/clientes', l:'Clientes', i:I.users},
+  {p:'/ordens', l:'Ordens de serviço', i:I.scissors},
+  {p:'/servicos', l:'Serviços', i:I.tag},
+  {g:'Operação'},
+  {p:'/estoque', l:'Estoque', i:I.box},
+  {p:'/financeiro', l:'Financeiro', i:I.money, roles:['owner','gestor','financeiro']},
+  {p:'/relatorios', l:'Relatórios', i:I.chart},
+  {p:'/fiscal', l:'Fiscal (NFS-e)', i:I.file, roles:['owner','gestor','financeiro']},
+  {g:'Crescimento'},
+  {p:'/recuperacao', l:'Recuperação', i:I.refresh},
+  {p:'/alavancagem', l:'Alavancagem', i:I.rocket},
+  {g:'Ateliê'},
+  {p:'/config', l:'Configurações', i:I.gear, roles:['owner','gestor']},
+];
+function AlertsBell(){
+  const [open,setOpen]=useState(false);
+  const [al,setAl]=useState({late:[],low:[]});
   useEffect(()=>{ (async()=>{
-    const { data:t } = await db.from('tenants').select('nome,plano').limit(1).maybeSingle();
-    setTenant(t);
-    const c = await db.from('clientes').select('*',{count:'exact',head:true});
-    const o = await db.from('ordens').select('*',{count:'exact',head:true});
-    setKpi({ clientes: c.count ?? 0, ordens: o.count ?? 0 });
+    const [{data:os},{data:pr}]=await Promise.all([
+      db.from('ordens').select('id,numero,descricao,status,prazo,data_entrada,dias_previstos'),
+      db.from('estoque_produtos').select('id,nome,quantidade,quantidade_minima,unidade'),
+    ]);
+    setAl({ late:(os||[]).filter(isLate), low:(pr||[]).filter(p=>Number(p.quantidade)<=Number(p.quantidade_minima)) });
   })(); },[]);
-  const nome = (user?.user_metadata?.nome) || (user?.email||'').split('@')[0];
-  return html`<div class="shell">
-    <div class="topbar">
-      <${Mark}/>
-      <div><div class="name">${tenant?.nome || 'Ateliê'}</div>
-        <div style=${{fontSize:'.72rem',color:'var(--muted)'}}>Painel de gestão</div></div>
-      ${tenant?.plano && html`<span class="badge">Plano ${tenant.plano}</span>`}
-      <button class="out" onClick=${()=>db.auth.signOut()}>Sair</button>
-    </div>
-    <main>
-      <h1 class="hi">Olá, ${nome}</h1>
-      <div class="hint">Um panorama do seu ateliê — conectado ao Supabase em tempo real.</div>
-      <div class="grid">
-        <${Kpi} n=${kpi.ordens} l="Ordens de serviço"/>
-        <${Kpi} n=${kpi.clientes} l="Clientes"/>
-        <${Kpi} n="—" l="Atrasados"/>
-        <${Kpi} n="—" l="Receita no mês"/>
-      </div>
-      <div class="hint" style=${{marginTop:'22px'}}>Módulos (Clientes, Ordens, Estoque, Financeiro) entram na sequência, no mesmo padrão.</div>
-    </main>
+  const n=al.late.length+al.low.length;
+  return html`<div style=${{position:'relative'}}>
+    <button class="btn ghost sm" style=${{position:'relative'}} title="Avisos" onClick=${()=>setOpen(o=>!o)}><${Ic} d=${I.bell}/>${n>0&&html`<span class="bell-badge">${n}</span>`}</button>
+    ${open&&html`<div class="pop">
+      <div class="pop-h">Avisos ${n>0?'('+n+')':''}</div>
+      ${n===0&&html`<div class="pop-empty">Tudo em dia ✓</div>`}
+      ${al.late.map(o=>html`<button class="pop-it" key=${'l'+o.id} onClick=${()=>{setOpen(false);go('/ordens/'+o.id);}}>
+        <span class="pi-ic warn"><${Ic} d=${I.alert}/></span><span><b>OS #${o.numero}</b> atrasada<br/><span class="muted">${o.descricao||'serviço'} · venc. ${fmtDate(dueDate(o))}</span></span></button>`)}
+      ${al.low.map(p=>html`<button class="pop-it" key=${'e'+p.id} onClick=${()=>{setOpen(false);go('/estoque');}}>
+        <span class="pi-ic low"><${Ic} d=${I.box}/></span><span><b>${p.nome}</b> em baixa<br/><span class="muted">${p.quantidade} ${p.unidade} (mín. ${p.quantidade_minima})</span></span></button>`)}
+    </div>`}
   </div>`;
 }
-
-function App(){
-  const [session,setSession]=useState(undefined);
-  useEffect(()=>{
-    db.auth.getSession().then(({data})=>setSession(data.session));
-    const { data:sub } = db.auth.onAuthStateChange((_e,s)=>setSession(s));
-    return ()=>sub.subscription.unsubscribe();
-  },[]);
-  if(session===undefined) return html`<div class="center"><div class="sub">Carregando…</div></div>`;
-  return session ? html`<${Dashboard} user=${session.user}/>` : html`<${Login}/>`;
+function Shell({title,children}){
+  const {tenant,role,profile}=useApp();
+  const hash=useHash(); const base='/'+((hash.split('?')[0]).split('/')[1]||'');
+  const [open,setOpen]=useState(false);
+  const can = it => !it.roles || it.roles.includes(role);
+  useEffect(()=>{ setOpen(false); },[hash]);
+  return html`<div class="app">
+    ${base==='/'&&html`<${LivingBg}/>`}
+    ${open&&html`<div class="backdrop" onClick=${()=>setOpen(false)}/>`}
+    <aside class=${'side'+(open?' open':'')}>
+      <div class="brand"><${BrandLogo} size=${40}/><div><div class="nm">${tenant?.nome||'Ateliê'}</div><div class="tg">Ateliê Manager</div></div></div>
+      <nav class="nav">
+        ${NAV.filter(can).map((it,k)=> it.g
+          ? html`<div class="sep" key=${'g'+k}>${it.g}</div>`
+          : html`<a key=${it.p} class=${base===it.p?'on':''} onClick=${()=>go(it.p)}><${Ic} d=${it.i}/>${it.l}</a>`)}
+      </nav>
+      <div class="who"><b>${profile?.nome||'Você'}</b><span>${({owner:'Administradora',gestor:'Gestora',financeiro:'Financeiro',atendente:'Atendente',costureira:'Costureira',estoque:'Estoque'})[role]||role}</span>
+        <div style=${{margin:'9px 0'}}><${ByVizio} dark=${true}/></div>
+        <button onClick=${()=>db.auth.signOut()}>Sair</button></div>
+    </aside>
+    <div class="main">
+      <div class="topbar">
+        <button class="btn ghost menu-btn sm" onClick=${()=>setOpen(true)}><${Ic} d=${I.menu}/></button>
+        <button class="btn ghost sm" title="Voltar" onClick=${()=>history.back()}><${Ic} d=${I.back}/></button>
+        <h2>${title}</h2>
+        <div class="spacer"></div>
+        <${AlertsBell}/>
+      </div>
+      <div class="wrap">${children}</div>
+    </div></div>`;
 }
 
+/* ---------- data hook ---------- */
+function useRows(table, {order='created_at', asc=false, select='*', deps=[]}={}){
+  const [rows,setRows]=useState(null); const [n,setN]=useState(0);
+  const reload=useCallback(()=>setN(x=>x+1),[]);
+  useEffect(()=>{ let live=true; (async()=>{
+    setRows(null);
+    let q=db.from(table).select(select); if(order) q=q.order(order,{ascending:asc});
+    const {data,error}=await q; if(!live) return;
+    if(error){ toast('Erro ao carregar: '+error.message,'err'); setRows([]); } else setRows(data||[]);
+  })(); return ()=>{live=false;}; },[table,n,...deps]);
+  return [rows,reload];
+}
+
+/* ========== DASHBOARD ========== */
+function Dashboard(){
+  const {tenant,profile}=useApp();
+  const [k,setK]=useState(null);
+  useEffect(()=>{ (async()=>{
+    const [cli,ord,rec] = await Promise.all([
+      db.from('clientes').select('id,nome,nascimento,whatsapp'),
+      db.from('ordens').select('id,status,valor,prazo,data_entrada,dias_previstos,entregue_em,descricao,cliente_id,numero'),
+      db.from('financeiro_lancamentos').select('valor,tipo,pago,pago_em'),
+    ]);
+    const clientesRows=cli.data||[];
+    const aniversariantes=clientesRows.filter(bdayThisMonth).sort((a,b)=>bdayDay(a)-bdayDay(b));
+    const os=ord.data||[];
+    const abertas=os.filter(o=>ACTIVE.includes(o.status));
+    const atrasadas=os.filter(isLate);
+    const ms=monthStart();
+    const recMes=(rec.data||[]).filter(l=>l.tipo==='receita'&&l.pago&&l.pago_em>=ms).reduce((a,l)=>a+Number(l.valor||0),0);
+    const doneM=os.filter(o=>o.entregue_em&&o.entregue_em.slice(0,10)>=ms);
+    const durs=os.filter(o=>o.entregue_em&&o.data_entrada).map(o=>daysBetween(o.data_entrada,o.entregue_em.slice(0,10))).filter(d=>d>=0);
+    const tempoMedio=durs.length?Math.round(durs.reduce((a,b)=>a+b,0)/durs.length):null;
+    const topServ=Object.entries(os.reduce((m,o)=>{ const key=(o.descricao||'Sem descrição').trim(); m[key]=(m[key]||0)+1; return m; },{})).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const cm=[]; const now=new Date();
+    for(let i=5;i>=0;i--){ const dd=new Date(now.getFullYear(),now.getMonth()-i,1); cm.push({key:dd.toISOString().slice(0,7),label:dd.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}); }
+    const chart={labels:cm.map(m=>m.label), data:cm.map(m=>os.filter(o=>o.entregue_em&&o.entregue_em.slice(0,7)===m.key).reduce((a,o)=>a+Number(o.valor||0),0))};
+    setK({clientes:clientesRows.length, abertas:abertas.length, atrasadas:atrasadas.length, recMes, doneM:doneM.length, tempoMedio, topServ, aniversariantes, chart,
+      recent:[...os].sort((a,b)=>(b.numero||0)-(a.numero||0)).slice(0,6)});
+  })(); },[]);
+  if(!k) return html`<div class="hint">Carregando indicadores…</div>`;
+  return html`<${Shell} title="HOME">
+    <h1 class="hi serif">Olá, ${(profile?.nome||'').split(' ')[0]}</h1>
+    <div class="hint">Panorama do ${tenant?.nome||'ateliê'} — em tempo real, conectado ao Supabase.</div>
+    <div class="grid">
+      <button class="kpi" onClick=${()=>go('/ordens?f=ativas')}><div class="n">${k.abertas}</div><div class="l">Ordens em aberto</div></button>
+      <button class="kpi warn" onClick=${()=>go('/ordens?f=atrasadas')}><div class="n">${k.atrasadas}</div><div class="l">Atrasadas</div></button>
+      <button class="kpi" onClick=${()=>go('/clientes')}><div class="n">${k.clientes}</div><div class="l">Clientes</div></button>
+      <button class="kpi ok" onClick=${()=>go('/financeiro')}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(k.recMes)}</div><div class="l">Recebido no mês</div></button>
+    </div>
+    <div class="glass panel" style=${{marginTop:'18px'}}>
+      <h3>Faturamento — últimos 6 meses</h3><p class="desc">Serviços entregues por mês.</p>
+      <${MiniChart} labels=${k.chart.labels} data=${k.chart.data} fmt=${BRL}/>
+    </div>
+    <div class="row side">
+      <div class="glass panel">
+        <h3>Ordens recentes</h3><p class="desc">As últimas OS registradas.</p>
+        ${k.recent.length? html`<div class="tblwrap"><table class="tbl"><thead><tr><th>#</th><th>Descrição</th><th>Status</th><th class="r">Valor</th></tr></thead>
+          <tbody>${k.recent.map(o=>html`<tr key=${o.id} class="click" onClick=${()=>go('/ordens/'+o.id)}>
+            <td class="b">${o.numero??'—'}</td><td>${o.descricao||'—'}</td><td><${Badge} status=${o.status}/></td><td class="r b">${BRL(o.valor)}</td></tr>`)}</tbody></table></div>`
+          : html`<${Empty} icon=${I.scissors} title="Nenhuma OS ainda">Crie a primeira ordem de serviço.</${Empty}>`}
+      </div>
+      <div style=${{display:'grid',gap:'16px',alignContent:'start'}}>
+        <div class="glass panel">
+          <h3>Serviços mais solicitados</h3><p class="desc">No histórico do ateliê.</p>
+          ${k.topServ.length? html`<div class="stat-list">${k.topServ.map(([s,c])=>html`<div class="it" key=${s}><span>${s}</span><span class="v">${c}×</span></div>`)}</div>`
+            : html`<div class="muted" style=${{fontSize:'.85rem'}}>Sem dados ainda.</div>`}
+        </div>
+        <div class="glass panel">
+          <h3>Produtividade</h3>
+          <div class="stat-list">
+            <div class="it"><span>Concluídas no mês</span><span class="v">${k.doneM}</span></div>
+            <div class="it"><span>Tempo médio de execução</span><span class="v">${k.tempoMedio!=null?k.tempoMedio+' dias':'—'}</span></div>
+          </div>
+        </div>
+        ${k.aniversariantes.length>0&&html`<div class="glass panel">
+          <h3>Aniversariantes do mês</h3><p class="desc">Um carinho que fideliza.</p>
+          <div class="stat-list">${k.aniversariantes.map(c=>html`<div class="it" key=${c.id}>
+            <span>${isBdayToday(c)?'🎉 ':''}<b>${c.nome}</b> <span class="muted">· dia ${String(bdayDay(c)).padStart(2,'0')}</span></span>
+            ${c.whatsapp?html`<a class="btn sm" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+encodeURIComponent('Feliz aniversário, '+(c.nome||'').split(' ')[0]+'! Desejamos tudo de bom. Com carinho, '+(tenant?.nome||''))} title="Enviar felicitação"><${Ic} d=${I.wa}/></a>`:html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}
+          </div>`)}</div>
+        </div>`}
+      </div>
+    </div>
+  </${Shell}>`;
+}
+
+/* ========== CLIENTES ========== */
+function ClienteForm({row,onClose,onSaved,tenantId}){
+  const [f,setF]=useState(()=>{ const b={nome:'',telefone:'',whatsapp:'',cpf:'',nascimento:'',cep:'',endereco:'',bairro:'',cidade:'',observacoes:'',...(row||{})}; b.medidas=b.medidas||{}; return b; });
+  const [err,setErr]=useState({}),[busy,setBusy]=useState(false);
+  const set=(k,v)=>setF(x=>({...x,[k]:v}));
+  const setMed=(k,v)=>setF(x=>({...x,medidas:{...(x.medidas||{}),[k]:v}}));
+  async function save(){ const e={}; if(!f.nome||f.nome.trim().length<2) e.nome='Informe o nome.'; setErr(e); if(Object.keys(e).length) return;
+    setBusy(true);
+    const payload={ tenant_id:tenantId, nome:f.nome.trim(), telefone:f.telefone||null, whatsapp:f.whatsapp||null,
+      cpf:f.cpf?onlyDigits(f.cpf):null, nascimento:f.nascimento||null, cep:f.cep||null, endereco:f.endereco||null,
+      bairro:f.bairro||null, cidade:f.cidade||null,
+      medidas:(f.medidas&&Object.values(f.medidas).some(v=>v!==''&&v!=null))?f.medidas:null,
+      observacoes:f.observacoes||null };
+    const res = row?.id ? await db.from('clientes').update(payload).eq('id',row.id) : await db.from('clientes').insert(payload);
+    setBusy(false);
+    if(res.error){ toast('Erro: '+res.error.message,'err'); return; }
+    toast(row?.id?'Cliente atualizado.':'Cliente cadastrado.','ok'); onSaved();
+  }
+  return html`<${Modal} title=${row?.id?'Editar cliente':'Novo cliente'} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button>
+    <button class="btn pri" disabled=${busy} onClick=${save}>${busy?'Salvando…':'Salvar'}</button></${Fragment}>`}>
+    <label>Nome completo</label><input value=${f.nome} onInput=${e=>set('nome',e.target.value)} placeholder="Ex.: Maria Souza"/>
+    ${err.nome&&html`<div class="ferr">${err.nome}</div>`}
+    <div class="f2">
+      <div><label>Telefone</label><input value=${f.telefone} onInput=${e=>set('telefone',maskPhone(e.target.value))} placeholder="(71) 90000-0000"/></div>
+      <div><label>WhatsApp</label><input value=${f.whatsapp} onInput=${e=>set('whatsapp',maskPhone(e.target.value))} placeholder="(71) 90000-0000"/></div>
+    </div>
+    <div class="f2">
+      <div><label>CPF</label><input value=${f.cpf?maskCPF(f.cpf):''} onInput=${e=>set('cpf',e.target.value)} placeholder="000.000.000-00"/></div>
+      <div><label>Nascimento</label><input type="date" value=${f.nascimento||''} onInput=${e=>set('nascimento',e.target.value)}/></div>
+    </div>
+    <div class="f2">
+      <div><label>CEP</label><input value=${f.cep||''} onInput=${e=>set('cep',e.target.value)} placeholder="40000-000"/></div>
+      <div><label>Bairro</label><input value=${f.bairro||''} onInput=${e=>set('bairro',e.target.value)}/></div>
+    </div>
+    <div class="f2">
+      <div><label>Endereço</label><input value=${f.endereco||''} onInput=${e=>set('endereco',e.target.value)}/></div>
+      <div><label>Cidade</label><input value=${f.cidade||''} onInput=${e=>set('cidade',e.target.value)} placeholder="Salvador"/></div>
+    </div>
+    <label style=${{marginTop:'10px'}}>Medidas (cm)</label>
+    <div class="measure-grid">
+      ${[['altura','Altura'],['busto','Busto'],['cintura','Cintura'],['quadril','Quadril'],['ombro','Ombro'],['manga','Manga'],['comprimento','Comprim.'],['largura','Largura'],['gancho','Gancho']].map(([k,l])=>html`<div key=${k}><label style=${{fontWeight:500,fontSize:'.74rem',margin:'8px 0 4px'}}>${l}</label><input value=${(f.medidas&&f.medidas[k])||''} onInput=${e=>setMed(k,e.target.value)} placeholder="—"/></div>`)}
+    </div>
+    <label>Observações</label><textarea value=${f.observacoes||''} onInput=${e=>set('observacoes',e.target.value)} placeholder="Preferências, notas…"/>
+    <div class="notice" style=${{marginTop:'12px'}}><b>LGPD:</b> colete apenas o necessário. O RG não é solicitado por padrão.</div>
+  </${Modal}>`;
+}
+function Clientes(){
+  const {tenantId}=useApp();
+  const [rows,reload]=useRows('clientes',{order:'nome',asc:true});
+  const [q,setQ]=useState(''),[edit,setEdit]=useState(null),[del,setDel]=useState(null);
+  const filtered=useMemo(()=>{ if(!rows) return null; const s=q.toLowerCase();
+    return rows.filter(c=>!s||(c.nome||'').toLowerCase().includes(s)||onlyDigits(c.telefone).includes(onlyDigits(q))||onlyDigits(c.cpf).includes(onlyDigits(q))); },[rows,q]);
+  return html`<${Shell} title="Clientes">
+    <div class="bar">
+      <div class="search"><input placeholder="Buscar por nome, telefone ou CPF…" value=${q} onInput=${e=>setQ(e.target.value)}/></div>
+      <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Novo cliente</button>
+    </div>
+    <div class="glass panel">
+      ${!filtered? html`<div class="hint">Carregando…</div>`
+        : filtered.length===0? html`<${Empty} icon=${I.users} title=${q?'Nada encontrado':'Nenhum cliente'}>${q?'Ajuste a busca.':'Cadastre seu primeiro cliente.'}</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Nome</th><th>Telefone</th><th>Cidade</th><th class="r">Ações</th></tr></thead>
+          <tbody>${filtered.map(c=>html`<tr key=${c.id} class="click" onClick=${()=>go('/clientes/'+c.id)}>
+            <td class="b">${c.nome}</td><td>${c.telefone||'—'}</td><td>${c.cidade||'—'}</td>
+            <td class="r" onClick=${e=>e.stopPropagation()}>
+              ${c.whatsapp&&html`<a class="btn sm ghost" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank" title="WhatsApp"><${Ic} d=${I.wa}/></a>`}
+              <button class="btn sm ghost" onClick=${()=>setEdit(c)} title="Editar"><${Ic} d=${I.edit}/></button>
+              <button class="btn sm ghost" onClick=${()=>setDel(c)} title="Excluir"><${Ic} d=${I.trash}/></button>
+            </td></tr>`)}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${ClienteForm} row=${edit.id?edit:null} tenantId=${tenantId} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
+    ${del&&html`<${Confirm} danger text=${'Excluir '+del.nome+'? As OS vinculadas perderão o vínculo.'} onClose=${()=>setDel(null)}
+      onYes=${async()=>{ const{error}=await db.from('clientes').delete().eq('id',del.id); if(error)toast('Erro: '+error.message,'err'); else {toast('Cliente excluído.','ok');reload();} }}/>`}
+  </${Shell}>`;
+}
+function ClienteDetail({id}){
+  const {tenantId}=useApp();
+  const [c,setC]=useState(null),[os,setOs]=useState(null),[edit,setEdit]=useState(false);
+  const load=useCallback(async()=>{
+    const {data:cli}=await db.from('clientes').select('*').eq('id',id).maybeSingle(); setC(cli);
+    const {data:ord}=await db.from('ordens').select('*').eq('cliente_id',id).order('numero',{ascending:false}); setOs(ord||[]);
+  },[id]);
+  useEffect(()=>{load();},[id]);
+  if(c===null) return html`<${Shell} title="Cliente"><div class="hint">Carregando…</div></${Shell}>`;
+  if(!c) return html`<${Shell} title="Cliente"><${Empty} title="Cliente não encontrado"><button class="link" onClick=${()=>go('/clientes')}>Voltar</button></${Empty}></${Shell}>`;
+  const total=(os||[]).reduce((a,o)=>a+Number(o.valor||0),0);
+  const done=(os||[]).filter(o=>o.status==='entregue'||o.status==='finalizado').length;
+  return html`<${Shell} title="Cliente">
+    <button class="btn ghost sm" onClick=${()=>go('/clientes')}><${Ic} d=${I.back}/>Clientes</button>
+    <div class="row side" style=${{marginTop:'12px'}}>
+      <div class="glass panel">
+        <div style=${{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'10px'}}>
+          <div><h1 class="hi serif" style=${{fontSize:'1.7rem'}}>${c.nome}</h1>
+            <div class="hint" style=${{margin:'2px 0 0'}}>${[c.bairro,c.cidade].filter(Boolean).join(', ')||'—'}</div></div>
+          <div style=${{display:'flex',gap:'6px'}}>
+            ${c.whatsapp&&html`<a class="btn sm" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank"><${Ic} d=${I.wa}/>WhatsApp</a>`}
+            <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
+          </div>
+        </div>
+        <div class="f3" style=${{marginTop:'14px',gap:'12px'}}>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Telefone</div><div class="b">${c.telefone||'—'}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>CPF</div><div class="b">${c.cpf?maskCPF(c.cpf):'—'}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Nascimento</div><div class="b">${fmtDate(c.nascimento)}</div></div>
+        </div>
+        ${c.medidas&&Object.values(c.medidas).some(v=>v)&&html`<div style=${{marginTop:'14px'}}>
+          <div class="muted" style=${{fontSize:'.74rem',marginBottom:'6px'}}>Medidas (cm)</div>
+          <div class="seg">${Object.entries(c.medidas).filter(([,v])=>v).map(([k,v])=>html`<span class="tag" key=${k}>${k}: ${v}</span>`)}</div>
+        </div>`}
+        ${c.observacoes&&html`<div class="notice" style=${{marginTop:'14px'}}>${c.observacoes}</div>`}
+      </div>
+      <div style=${{display:'grid',gap:'12px',alignContent:'start'}}>
+        <div class="glass panel"><h3>Resumo</h3><div class="stat-list">
+          <div class="it"><span>Serviços solicitados</span><span class="v">${os?.length||0}</span></div>
+          <div class="it"><span>Concluídos</span><span class="v">${done}</span></div>
+          <div class="it"><span>Total gasto em serviços</span><span class="v">${BRL(total)}</span></div>
+        </div></div>
+      </div>
+    </div>
+    <div class="glass panel" style=${{marginTop:'16px'}}>
+      <h3>Histórico de serviços</h3><p class="desc">Todas as vezes que esta cliente veio ao ateliê.</p>
+      ${!os? html`<div class="hint">Carregando…</div>`
+        : os.length===0? html`<${Empty} icon=${I.scissors} title="Sem serviços">Nenhuma OS vinculada.</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>#</th><th>Serviço</th><th>Entrada</th><th>Status</th><th class="r">Valor</th></tr></thead>
+          <tbody>${os.map(o=>html`<tr key=${o.id} class="click" onClick=${()=>go('/ordens/'+o.id)}>
+            <td class="b">${o.numero}</td><td>${o.descricao||'—'}</td><td>${fmtDate(o.data_entrada)}</td><td><${Badge} status=${o.status}/></td><td class="r b">${BRL(o.valor)}</td></tr>`)}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${ClienteForm} row=${c} tenantId=${tenantId} onClose=${()=>setEdit(false)} onSaved=${()=>{setEdit(false);load();}}/>`}
+  </${Shell}>`;
+}
+
+/* ========== ORDENS ========== */
+function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]}){
+  const [f,setF]=useState(()=>({cliente_id:'',servico_id:'',descricao:'',valor:'',status:'aberto',data_entrada:todayISO(),prazo:'',dias_previstos:'',responsavel_id:'',observacoes:'',...(row||{})}));
+  const [err,setErr]=useState({}),[busy,setBusy]=useState(false);
+  const set=(k,v)=>setF(x=>({...x,[k]:v}));
+  function pickServ(sid){ const s=servicos.find(x=>x.id===sid); setF(x=>({...x,servico_id:sid, descricao:x.descricao||(s?s.nome:''), valor:x.valor||(s?s.preco_base:'')})); }
+  async function save(){ const e={}; if(!f.descricao||!f.descricao.trim()) e.descricao='Descreva o serviço.'; if(f.valor===''||isNaN(Number(f.valor))) e.valor='Informe o valor.'; setErr(e); if(Object.keys(e).length) return;
+    setBusy(true);
+    const dias=f.dias_previstos?Number(f.dias_previstos):null;
+    const prazoCalc=f.prazo || (dias?addDays(f.data_entrada||todayISO(),dias):null);
+    const payload={ tenant_id:tenantId, cliente_id:f.cliente_id||null, descricao:f.descricao.trim(), valor:Number(f.valor)||0,
+      status:f.status, data_entrada:f.data_entrada||todayISO(), prazo:prazoCalc, dias_previstos:dias, responsavel_id:f.responsavel_id||null, observacoes:f.observacoes||null };
+    if(!isClosed(payload.status) && payload.status==='entregue'){} // entregue set below
+    let res, ordemId=row?.id;
+    if(row?.id){ if(f.status==='entregue'&&row.status!=='entregue') payload.entregue_em=new Date().toISOString();
+      res=await db.from('ordens').update(payload).eq('id',row.id); }
+    else { if(f.status==='entregue') payload.entregue_em=new Date().toISOString();
+      const ins=await db.from('ordens').insert(payload).select('id').maybeSingle(); res=ins; ordemId=ins.data?.id; }
+    if(res.error){ setBusy(false); toast('Erro: '+res.error.message,'err'); return; }
+    if(!row?.id && ordemId && f.servico_id){ await db.from('ordem_itens').insert({tenant_id:tenantId,ordem_id:ordemId,servico_id:f.servico_id,descricao:f.descricao.trim(),quantidade:1,valor_unit:Number(f.valor)||0}); }
+    setBusy(false); toast(row?.id?'OS atualizada.':'OS criada.','ok'); onSaved();
+  }
+  return html`<${Modal} title=${row?.id?('OS #'+row.numero):'Nova ordem de serviço'} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button>
+    <button class="btn pri" disabled=${busy} onClick=${save}>${busy?'Salvando…':'Salvar'}</button></${Fragment}>`}>
+    <label>Cliente</label>
+    <select value=${f.cliente_id||''} onInput=${e=>set('cliente_id',e.target.value)}>
+      <option value="">— Sem cliente vinculado —</option>
+      ${clientes.map(c=>html`<option key=${c.id} value=${c.id}>${c.nome}</option>`)}
+    </select>
+    ${usuarios.length>0&&html`<${Fragment}><label>Responsável (usuário)</label>
+      <select value=${f.responsavel_id||''} onInput=${e=>set('responsavel_id',e.target.value)}>
+        <option value="">— Não atribuído —</option>
+        ${usuarios.map(u=>html`<option key=${u.id} value=${u.id}>${u.nome}</option>`)}
+      </select></${Fragment}>`}
+    ${servicos.length>0&&html`<${Fragment}><label>Serviço do catálogo (opcional)</label>
+      <select value=${f.servico_id||''} onInput=${e=>pickServ(e.target.value)}>
+        <option value="">— Serviço avulso —</option>
+        ${servicos.map(s=>html`<option key=${s.id} value=${s.id}>${s.nome} · ${BRL(s.preco_base)}</option>`)}
+      </select></${Fragment}>`}
+    <label>Descrição do serviço</label><input value=${f.descricao} onInput=${e=>set('descricao',e.target.value)} placeholder="Ex.: Bainha de calça"/>
+    ${err.descricao&&html`<div class="ferr">${err.descricao}</div>`}
+    <div class="f3">
+      <div><label>Valor (R$)</label><input type="number" step="0.01" value=${f.valor} onInput=${e=>set('valor',e.target.value)} placeholder="0,00"/>${err.valor&&html`<div class="ferr">${err.valor}</div>`}</div>
+      <div><label>Entrada</label><input type="date" value=${f.data_entrada} onInput=${e=>set('data_entrada',e.target.value)}/></div>
+      <div><label>Prazo</label><input type="date" value=${f.prazo||''} onInput=${e=>set('prazo',e.target.value)}/></div>
+    </div>
+    <label>Prazo em dias (opcional — define a entrega e o alerta de atraso)</label>
+    <input type="number" min="1" value=${f.dias_previstos||''} onInput=${e=>set('dias_previstos',e.target.value)} placeholder="Ex.: 7"/>
+    <label>Status</label>
+    <select value=${f.status} onInput=${e=>set('status',e.target.value)}>${STATUS_ORDER.map(s=>html`<option key=${s} value=${s}>${STATUS[s].l}</option>`)}</select>
+    <label>Observações</label><textarea value=${f.observacoes||''} onInput=${e=>set('observacoes',e.target.value)}/>
+  </${Modal}>`;
+}
+function Ordens(){
+  const {tenantId}=useApp();
+  const hash=useHash(); const initF=new URLSearchParams((hash.split('?')[1]||'')).get('f')||'todas';
+  const [rows,reload]=useRows('ordens',{order:'numero',asc:false});
+  const [clientes]=useRows('clientes',{order:'nome',asc:true});
+  const [servicos]=useRows('servicos',{order:'nome',asc:true});
+  const [usuarios]=useRows('profiles',{order:'nome',asc:true});
+  const [q,setQ]=useState(''),[filt,setFilt]=useState(initF),[edit,setEdit]=useState(null);
+  useEffect(()=>{setFilt(initF);},[initF]);
+  const cliName=useMemo(()=>Object.fromEntries((clientes||[]).map(c=>[c.id,c.nome])),[clientes]);
+  const filtered=useMemo(()=>{ if(!rows) return null; const s=q.toLowerCase();
+    return rows.filter(o=>{
+      if(filt==='ativas'&&!ACTIVE.includes(o.status)) return false;
+      if(filt==='atrasadas'&&!(ACTIVE.includes(o.status)&&o.prazo&&o.prazo<todayISO())) return false;
+      if(filt!=='todas'&&filt!=='ativas'&&filt!=='atrasadas'&&o.status!==filt) return false;
+      if(s){ const nm=(cliName[o.cliente_id]||'').toLowerCase(); return (o.descricao||'').toLowerCase().includes(s)||nm.includes(s)||String(o.numero).includes(s); }
+      return true; }); },[rows,q,filt,cliName]);
+  return html`<${Shell} title="Ordens de serviço">
+    <div class="bar">
+      <div class="search"><input placeholder="Buscar por #, cliente ou serviço…" value=${q} onInput=${e=>setQ(e.target.value)}/></div>
+      <select value=${filt} onInput=${e=>setFilt(e.target.value)} style=${{maxWidth:'190px'}}>
+        <option value="todas">Todas</option><option value="ativas">Em aberto</option><option value="atrasadas">Atrasadas</option>
+        <option disabled>──────</option>${STATUS_ORDER.map(s=>html`<option key=${s} value=${s}>${STATUS[s].l}</option>`)}
+      </select>
+      <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Nova OS</button>
+    </div>
+    <div class="glass panel">
+      ${!filtered? html`<div class="hint">Carregando…</div>`
+        : filtered.length===0? html`<${Empty} icon=${I.scissors} title="Nenhuma OS">${q||filt!=='todas'?'Ajuste os filtros.':'Crie a primeira ordem de serviço.'}</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrada</th><th>Prazo</th><th>Status</th><th class="r">Valor</th></tr></thead>
+          <tbody>${filtered.map(o=>{ const late=ACTIVE.includes(o.status)&&o.prazo&&o.prazo<todayISO();
+            return html`<tr key=${o.id} class="click" onClick=${()=>go('/ordens/'+o.id)}>
+              <td class="b">${o.numero}</td><td>${cliName[o.cliente_id]||html`<span class="muted">—</span>`}</td><td>${o.descricao||'—'}</td>
+              <td>${fmtDate(o.data_entrada)}</td><td style=${late?{color:'var(--danger)',fontWeight:600}:null}>${fmtDate(o.prazo)}${late?' ⚠':''}</td>
+              <td><${Badge} status=${o.status}/></td><td class="r b">${BRL(o.valor)}</td></tr>`; })}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${OrdemForm} row=${edit.id?edit:null} tenantId=${tenantId} clientes=${clientes||[]} servicos=${servicos||[]} usuarios=${usuarios||[]} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
+  </${Shell}>`;
+}
+function OrdemDetail({id}){
+  const {tenantId,tenant}=useApp();
+  const [o,setO]=useState(null),[cli,setCli]=useState(null),[hist,setHist]=useState([]),[clientes]=useRows('clientes',{order:'nome',asc:true}),[servicos]=useRows('servicos',{order:'nome',asc:true}),[usuarios]=useRows('profiles',{order:'nome',asc:true}),[edit,setEdit]=useState(false),[del,setDel]=useState(false);
+  const load=useCallback(async()=>{
+    const {data}=await db.from('ordens').select('*').eq('id',id).maybeSingle(); setO(data);
+    if(data?.cliente_id){ const {data:c}=await db.from('clientes').select('*').eq('id',data.cliente_id).maybeSingle(); setCli(c); } else setCli(null);
+    const {data:h}=await db.from('ordem_status_history').select('*').eq('ordem_id',id).order('criado_em',{ascending:false}); setHist(h||[]);
+  },[id]);
+  useEffect(()=>{load();},[id]);
+  async function setStatus(s){ const patch={status:s}; if(s==='entregue') patch.entregue_em=new Date().toISOString();
+    const {error}=await db.from('ordens').update(patch).eq('id',id); if(error)toast('Erro: '+error.message,'err'); else {toast('Status atualizado.','ok');load();} }
+  if(o===null) return html`<${Shell} title="OS"><div class="hint">Carregando…</div></${Shell}>`;
+  if(!o) return html`<${Shell} title="OS"><${Empty} title="OS não encontrada"><button class="link" onClick=${()=>go('/ordens')}>Voltar</button></${Empty}></${Shell}>`;
+  return html`<${Shell} title=${'OS #'+o.numero}>
+    <div style=${{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
+      <button class="btn ghost sm" onClick=${()=>go('/ordens')}><${Ic} d=${I.back}/>Ordens</button>
+      <div style=${{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+        ${cli?.whatsapp&&html`<a class="btn sm pri" target="_blank" title="Avisar cliente pelo WhatsApp"
+          href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent('Olá '+(cli.nome||'').split(' ')[0]+'! Seu serviço'+(o.descricao?' ("'+o.descricao+'")':'')+' está pronto para retirada. 🧵 — '+(tenant?.nome||''))}>
+          <${Ic} d=${I.wa}/>Avisar pronto</a>`}
+        <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
+        <button class="btn sm ghost" onClick=${()=>setDel(true)}><${Ic} d=${I.trash}/></button>
+      </div>
+    </div>
+    <div class="row side" style=${{marginTop:'12px'}}>
+      <div class="glass panel">
+        <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <h1 class="hi serif" style=${{fontSize:'1.7rem'}}>${o.descricao||'Serviço'}</h1><${Badge} status=${o.status}/></div>
+        <div class="f3" style=${{marginTop:'14px',gap:'12px'}}>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Cliente</div><div class="b">${cli?html`<button class="link" onClick=${()=>go('/clientes/'+cli.id)}>${cli.nome}</button>`:'—'}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Valor</div><div class="b">${BRL(o.valor)}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Entrada</div><div class="b">${fmtDate(o.data_entrada)}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Prazo</div><div class="b">${fmtDate(o.prazo)}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Entregue</div><div class="b">${o.entregue_em?fmtDate(o.entregue_em.slice(0,10)):'—'}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Responsável</div><div class="b">${(usuarios||[]).find(u=>u.id===o.responsavel_id)?.nome||'—'}</div></div>
+        </div>
+        ${o.observacoes&&html`<div class="notice" style=${{marginTop:'14px'}}>${o.observacoes}</div>`}
+        <label style=${{marginTop:'16px'}}>Avançar status</label>
+        <div style=${{display:'flex',flexWrap:'wrap',gap:'6px'}}>
+          ${STATUS_ORDER.map(s=>html`<button key=${s} class=${'btn sm'+(o.status===s?' pri':'')} onClick=${()=>setStatus(s)}>${STATUS[s].l}</button>`)}
+        </div>
+      </div>
+      <div class="glass panel">
+        <h3>Histórico de status</h3><p class="desc">Trilha de auditoria.</p>
+        ${hist.length===0? html`<div class="muted" style=${{fontSize:'.85rem'}}>Sem mudanças registradas.</div>`
+          : html`<div class="stat-list">${hist.map(h=>html`<div class="it" key=${h.id}>
+            <span>${h.de?STATUS[h.de]?.l+' → ':''}<b>${STATUS[h.para]?.l||h.para}</b></span>
+            <span class="muted" style=${{fontSize:'.76rem'}}>${new Date(h.criado_em).toLocaleDateString('pt-BR')}</span></div>`)}</div>`}
+      </div>
+    </div>
+    ${edit&&html`<${OrdemForm} row=${o} tenantId=${tenantId} clientes=${clientes||[]} servicos=${servicos||[]} usuarios=${usuarios||[]} onClose=${()=>setEdit(false)} onSaved=${()=>{setEdit(false);load();}}/>`}
+    ${del&&html`<${Confirm} danger text=${'Excluir a OS #'+o.numero+'?'} onClose=${()=>setDel(false)}
+      onYes=${async()=>{ const{error}=await db.from('ordens').delete().eq('id',id); if(error)toast('Erro: '+error.message,'err'); else{toast('OS excluída.','ok');go('/ordens');} }}/>`}
+  </${Shell}>`;
+}
+
+/* ========== SERVIÇOS ========== */
+function ServicoForm({row,onClose,onSaved,tenantId}){
+  const [f,setF]=useState(()=>({nome:'',descricao:'',preco_base:'',ativo:true,...(row||{})}));
+  const [busy,setBusy]=useState(false); const set=(k,v)=>setF(x=>({...x,[k]:v}));
+  async function save(){ if(!f.nome||!f.nome.trim()){toast('Informe o nome do serviço.','err');return;} setBusy(true);
+    const payload={tenant_id:tenantId,nome:f.nome.trim(),descricao:f.descricao||null,preco_base:Number(f.preco_base)||0,ativo:f.ativo!==false};
+    const res=row?.id?await db.from('servicos').update(payload).eq('id',row.id):await db.from('servicos').insert(payload);
+    setBusy(false); if(res.error){toast('Erro: '+res.error.message,'err');return;} toast('Serviço salvo.','ok'); onSaved(); }
+  return html`<${Modal} title=${row?.id?'Editar serviço':'Novo serviço'} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'…':'Salvar'}</button></${Fragment}>`}>
+    <label>Nome</label><input value=${f.nome} onInput=${e=>set('nome',e.target.value)} placeholder="Ex.: Bainha de calça"/>
+    <div class="f2"><div><label>Preço base (R$)</label><input type="number" step="0.01" value=${f.preco_base} onInput=${e=>set('preco_base',e.target.value)}/></div>
+      <div><label>Ativo</label><select value=${f.ativo?'1':'0'} onInput=${e=>set('ativo',e.target.value==='1')}><option value="1">Sim</option><option value="0">Não</option></select></div></div>
+    <label>Descrição</label><textarea value=${f.descricao||''} onInput=${e=>set('descricao',e.target.value)}/>
+  </${Modal}>`;
+}
+function Servicos(){
+  const {tenantId}=useApp();
+  const [rows,reload]=useRows('servicos',{order:'nome',asc:true});
+  const [edit,setEdit]=useState(null),[del,setDel]=useState(null);
+  return html`<${Shell} title="Serviços">
+    <div class="bar"><div class="search"><div class="hint" style=${{margin:0}}>Catálogo padrão para agilizar a criação de OS e alimentar os relatórios.</div></div>
+      <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Novo serviço</button></div>
+    <div class="glass panel">
+      ${!rows? html`<div class="hint">Carregando…</div>`
+        : rows.length===0? html`<${Empty} icon=${I.tag} title="Nenhum serviço">Cadastre os serviços que você oferece.</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Serviço</th><th>Descrição</th><th>Status</th><th class="r">Preço · Ações</th></tr></thead>
+          <tbody>${rows.map(s=>html`<tr key=${s.id}><td class="b">${s.nome}</td><td class="muted">${s.descricao||'—'}</td>
+            <td>${s.ativo?html`<span class="tag">Ativo</span>`:html`<span class="muted">Inativo</span>`}</td>
+            <td class="r"><span class="b">${BRL(s.preco_base)}</span>
+              <button class="btn sm ghost" onClick=${()=>setEdit(s)}><${Ic} d=${I.edit}/></button>
+              <button class="btn sm ghost" onClick=${()=>setDel(s)}><${Ic} d=${I.trash}/></button></td></tr>`)}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${ServicoForm} row=${edit.id?edit:null} tenantId=${tenantId} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
+    ${del&&html`<${Confirm} danger text=${'Excluir o serviço '+del.nome+'?'} onClose=${()=>setDel(null)}
+      onYes=${async()=>{const{error}=await db.from('servicos').delete().eq('id',del.id);if(error)toast('Erro: '+error.message,'err');else{toast('Serviço excluído.','ok');reload();}}}/>`}
+  </${Shell}>`;
+}
+
+/* ========== ESTOQUE ========== */
+function ProdutoForm({row,onClose,onSaved,tenantId}){
+  const [f,setF]=useState(()=>({nome:'',categoria:'',unidade:'un',quantidade:0,quantidade_minima:0,preco:0,fornecedor:'',localizacao:'',...(row||{})}));
+  const [busy,setBusy]=useState(false); const set=(k,v)=>setF(x=>({...x,[k]:v}));
+  async function save(){ if(!f.nome||!f.nome.trim()){toast('Informe o nome.','err');return;} setBusy(true);
+    const payload={tenant_id:tenantId,nome:f.nome.trim(),categoria:f.categoria||null,unidade:f.unidade||'un',
+      quantidade:Number(f.quantidade)||0,quantidade_minima:Number(f.quantidade_minima)||0,preco:Number(f.preco)||0,
+      fornecedor:f.fornecedor||null,localizacao:f.localizacao||null};
+    const res=row?.id?await db.from('estoque_produtos').update(payload).eq('id',row.id):await db.from('estoque_produtos').insert(payload);
+    setBusy(false); if(res.error){toast('Erro: '+res.error.message,'err');return;} toast('Produto salvo.','ok'); onSaved(); }
+  return html`<${Modal} title=${row?.id?'Editar item':'Novo item de estoque'} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'…':'Salvar'}</button></${Fragment}>`}>
+    <label>Nome</label><input value=${f.nome} onInput=${e=>set('nome',e.target.value)} placeholder="Ex.: Linha preta 120"/>
+    <div class="f2"><div><label>Categoria</label><input value=${f.categoria||''} onInput=${e=>set('categoria',e.target.value)} placeholder="Linhas, agulhas…"/></div>
+      <div><label>Unidade</label><input value=${f.unidade} onInput=${e=>set('unidade',e.target.value)} placeholder="un, m, cx"/></div></div>
+    <div class="f3"><div><label>Quantidade</label><input type="number" step="0.01" value=${f.quantidade} onInput=${e=>set('quantidade',e.target.value)}/></div>
+      <div><label>Mínimo</label><input type="number" step="0.01" value=${f.quantidade_minima} onInput=${e=>set('quantidade_minima',e.target.value)}/></div>
+      <div><label>Preço unit. (R$)</label><input type="number" step="0.01" value=${f.preco} onInput=${e=>set('preco',e.target.value)}/></div></div>
+    <div class="f2"><div><label>Fornecedor</label><input value=${f.fornecedor||''} onInput=${e=>set('fornecedor',e.target.value)}/></div>
+      <div><label>Localização</label><input value=${f.localizacao||''} onInput=${e=>set('localizacao',e.target.value)} placeholder="Gaveta 2"/></div></div>
+    ${row?.id&&html`<div class="notice" style=${{marginTop:'12px'}}>Para dar entrada/saída de quantidade, use <b>Movimentar</b> na lista — mantém o histórico correto.</div>`}
+  </${Modal}>`;
+}
+function MovForm({produto,onClose,onSaved,tenantId}){
+  const [tipo,setTipo]=useState('entrada'),[qtd,setQtd]=useState(''),[motivo,setMotivo]=useState(''),[busy,setBusy]=useState(false);
+  async function save(){ const q=Number(qtd); if(!q||q<=0){toast('Informe a quantidade.','err');return;} setBusy(true);
+    const {error}=await db.from('estoque_movimentos').insert({tenant_id:tenantId,produto_id:produto.id,tipo,quantidade:q,motivo:motivo||null});
+    setBusy(false); if(error){toast('Erro: '+error.message,'err');return;} toast('Movimentação registrada.','ok'); onSaved(); }
+  return html`<${Modal} title=${'Movimentar · '+produto.nome} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'…':'Registrar'}</button></${Fragment}>`}>
+    <div class="notice" style=${{marginBottom:'12px'}}>Saldo atual: <b>${produto.quantidade} ${produto.unidade}</b></div>
+    <div class="f2"><div><label>Tipo</label><select value=${tipo} onInput=${e=>setTipo(e.target.value)}>
+      <option value="entrada">Entrada (compra/reposição)</option><option value="saida">Saída (uso/baixa)</option><option value="ajuste">Ajuste (definir saldo)</option></select></div>
+      <div><label>Quantidade</label><input type="number" step="0.01" value=${qtd} onInput=${e=>setQtd(e.target.value)}/></div></div>
+    <label>Motivo</label><input value=${motivo} onInput=${e=>setMotivo(e.target.value)} placeholder="Opcional"/>
+  </${Modal}>`;
+}
+function Estoque(){
+  const {tenantId}=useApp();
+  const [rows,reload]=useRows('estoque_produtos',{order:'nome',asc:true});
+  const [q,setQ]=useState(''),[edit,setEdit]=useState(null),[mov,setMov]=useState(null),[del,setDel]=useState(null),[low,setLow]=useState(false);
+  const filtered=useMemo(()=>{ if(!rows) return null; const s=q.toLowerCase();
+    return rows.filter(p=>(!s||(p.nome||'').toLowerCase().includes(s)||(p.categoria||'').toLowerCase().includes(s))&&(!low||Number(p.quantidade)<=Number(p.quantidade_minima))); },[rows,q,low]);
+  const lowCount=(rows||[]).filter(p=>Number(p.quantidade)<=Number(p.quantidade_minima)).length;
+  return html`<${Shell} title="Estoque">
+    <div class="bar">
+      <div class="search"><input placeholder="Buscar item ou categoria…" value=${q} onInput=${e=>setQ(e.target.value)}/></div>
+      <button class=${'btn'+(low?' pri':'')} onClick=${()=>setLow(l=>!l)}><${Ic} d=${I.alert}/>Estoque baixo${lowCount?' ('+lowCount+')':''}</button>
+      <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Novo item</button>
+    </div>
+    <div class="glass panel">
+      ${!filtered? html`<div class="hint">Carregando…</div>`
+        : filtered.length===0? html`<${Empty} icon=${I.box} title=${q||low?'Nada encontrado':'Estoque vazio'}>${q||low?'Ajuste os filtros.':'Cadastre linhas, agulhas e insumos.'}</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Item</th><th>Categoria</th><th class="r">Saldo</th><th class="r">Mín.</th><th class="r">Valor</th><th class="r">Ações</th></tr></thead>
+          <tbody>${filtered.map(p=>{ const lo=Number(p.quantidade)<=Number(p.quantidade_minima);
+            return html`<tr key=${p.id} class=${lo?'low':''}><td class="b">${p.nome}</td><td class="muted">${p.categoria||'—'}</td>
+              <td class="r b" style=${lo?{color:'var(--warn)'}:null}>${p.quantidade} ${p.unidade}${lo?' ⚠':''}</td>
+              <td class="r muted">${p.quantidade_minima}</td><td class="r">${BRL(p.preco)}</td>
+              <td class="r"><button class="btn sm" onClick=${()=>setMov(p)}>Movimentar</button>
+                <button class="btn sm ghost" onClick=${()=>setEdit(p)}><${Ic} d=${I.edit}/></button>
+                <button class="btn sm ghost" onClick=${()=>setDel(p)}><${Ic} d=${I.trash}/></button></td></tr>`; })}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${ProdutoForm} row=${edit.id?edit:null} tenantId=${tenantId} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
+    ${mov&&html`<${MovForm} produto=${mov} tenantId=${tenantId} onClose=${()=>setMov(null)} onSaved=${()=>{setMov(null);reload();}}/>`}
+    ${del&&html`<${Confirm} danger text=${'Excluir '+del.nome+'?'} onClose=${()=>setDel(null)}
+      onYes=${async()=>{const{error}=await db.from('estoque_produtos').delete().eq('id',del.id);if(error)toast('Erro: '+error.message,'err');else{toast('Item excluído.','ok');reload();}}}/>`}
+  </${Shell}>`;
+}
+
+/* ========== FINANCEIRO ========== */
+function LancForm({row,onClose,onSaved,tenantId,categorias}){
+  const [f,setF]=useState(()=>({tipo:'receita',categoria_id:'',descricao:'',valor:'',vencimento:todayISO(),pago:true,...(row||{})}));
+  const [busy,setBusy]=useState(false); const set=(k,v)=>setF(x=>({...x,[k]:v}));
+  async function save(){ if(f.valor===''||isNaN(Number(f.valor))){toast('Informe o valor.','err');return;} setBusy(true);
+    const payload={tenant_id:tenantId,tipo:f.tipo,categoria_id:f.categoria_id||null,descricao:f.descricao||null,valor:Number(f.valor)||0,
+      vencimento:f.vencimento||null,pago:!!f.pago,pago_em:f.pago?(f.pago_em||todayISO()):null};
+    const res=row?.id?await db.from('financeiro_lancamentos').update(payload).eq('id',row.id):await db.from('financeiro_lancamentos').insert(payload);
+    setBusy(false); if(res.error){toast('Erro: '+res.error.message,'err');return;} toast('Lançamento salvo.','ok'); onSaved(); }
+  const cats=categorias.filter(c=>c.tipo===f.tipo);
+  return html`<${Modal} title=${row?.id?'Editar lançamento':'Novo lançamento'} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'…':'Salvar'}</button></${Fragment}>`}>
+    <div class="f2"><div><label>Tipo</label><select value=${f.tipo} onInput=${e=>set('tipo',e.target.value)}>
+      <option value="receita">Receita (a receber)</option><option value="despesa">Despesa (a pagar)</option></select></div>
+      <div><label>Categoria</label><select value=${f.categoria_id||''} onInput=${e=>set('categoria_id',e.target.value)}>
+        <option value="">— Sem categoria —</option>${cats.map(c=>html`<option key=${c.id} value=${c.id}>${c.nome}</option>`)}</select></div></div>
+    <label>Descrição</label><input value=${f.descricao||''} onInput=${e=>set('descricao',e.target.value)} placeholder="Ex.: Compra de linhas"/>
+    <div class="f3"><div><label>Valor (R$)</label><input type="number" step="0.01" value=${f.valor} onInput=${e=>set('valor',e.target.value)}/></div>
+      <div><label>Vencimento</label><input type="date" value=${f.vencimento||''} onInput=${e=>set('vencimento',e.target.value)}/></div>
+      <div><label>Pago/Recebido</label><select value=${f.pago?'1':'0'} onInput=${e=>set('pago',e.target.value==='1')}><option value="1">Sim</option><option value="0">Não</option></select></div></div>
+  </${Modal}>`;
+}
+function Financeiro(){
+  const {tenantId}=useApp();
+  const [rows,reload]=useRows('financeiro_lancamentos',{order:'vencimento',asc:false});
+  const [categorias]=useRows('financeiro_categorias',{order:'nome',asc:true});
+  const [filt,setFilt]=useState('todas'),[edit,setEdit]=useState(null),[del,setDel]=useState(null);
+  const catName=useMemo(()=>Object.fromEntries((categorias||[]).map(c=>[c.id,c.nome])),[categorias]);
+  const ms=monthStart();
+  const kpis=useMemo(()=>{ const r=rows||[]; const inMonth=x=>(x.pago_em||x.vencimento||'')>=ms;
+    const rec=r.filter(l=>l.tipo==='receita'&&l.pago&&inMonth(l)).reduce((a,l)=>a+Number(l.valor||0),0);
+    const desp=r.filter(l=>l.tipo==='despesa'&&l.pago&&inMonth(l)).reduce((a,l)=>a+Number(l.valor||0),0);
+    const aReceber=r.filter(l=>l.tipo==='receita'&&!l.pago).reduce((a,l)=>a+Number(l.valor||0),0);
+    const aPagar=r.filter(l=>l.tipo==='despesa'&&!l.pago).reduce((a,l)=>a+Number(l.valor||0),0);
+    return {rec,desp,saldo:rec-desp,aReceber,aPagar}; },[rows]);
+  const filtered=useMemo(()=>{ if(!rows) return null;
+    return rows.filter(l=> filt==='todas'||(filt==='receita'&&l.tipo==='receita')||(filt==='despesa'&&l.tipo==='despesa')||(filt==='aberto'&&!l.pago)); },[rows,filt]);
+  async function togglePago(l){ const{error}=await db.from('financeiro_lancamentos').update({pago:!l.pago,pago_em:!l.pago?todayISO():null}).eq('id',l.id);
+    if(error)toast('Erro: '+error.message,'err'); else reload(); }
+  return html`<${Shell} title="Financeiro">
+    <div class="grid">
+      <div class="glass kpi ok" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.rec)}</div><div class="l">Recebido no mês</div></div>
+      <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:'var(--danger)'}}>${BRL(kpis.desp)}</div><div class="l">Pago no mês</div></div>
+      <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:kpis.saldo>=0?'var(--ok)':'var(--danger)'}}>${BRL(kpis.saldo)}</div><div class="l">Saldo do mês</div></div>
+      <div class="glass kpi warn" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.aReceber)}</div><div class="l">A receber (aberto)</div></div>
+    </div>
+    <div class="bar" style=${{marginTop:'18px'}}>
+      <select value=${filt} onInput=${e=>setFilt(e.target.value)} style=${{maxWidth:'190px'}}>
+        <option value="todas">Todos</option><option value="receita">Receitas</option><option value="despesa">Despesas</option><option value="aberto">Em aberto</option></select>
+      <div class="search"/>
+      <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Novo lançamento</button>
+    </div>
+    <div class="glass panel">
+      ${!filtered? html`<div class="hint">Carregando…</div>`
+        : filtered.length===0? html`<${Empty} icon=${I.money} title="Sem lançamentos">Registre receitas e despesas do ateliê.</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Descrição</th><th>Categoria</th><th>Venc.</th><th>Situação</th><th class="r">Valor</th><th class="r">Ações</th></tr></thead>
+          <tbody>${filtered.map(l=>html`<tr key=${l.id}>
+            <td class="b">${l.descricao||'—'}</td><td class="muted">${catName[l.categoria_id]||'—'}</td><td>${fmtDate(l.vencimento)}</td>
+            <td>${l.pago?html`<span class="badge" style=${{color:'var(--ok)',background:'rgba(63,125,82,.14)'}}><span class="dot"/>${l.tipo==='receita'?'Recebido':'Pago'}</span>`
+              :html`<span class="badge" style=${{color:'var(--warn)',background:'rgba(185,131,37,.14)'}}><span class="dot"/>Em aberto</span>`}</td>
+            <td class="r b" style=${{color:l.tipo==='receita'?'var(--ok)':'var(--danger)'}}>${l.tipo==='receita'?'+':'−'} ${BRL(l.valor)}</td>
+            <td class="r"><button class="btn sm" onClick=${()=>togglePago(l)}>${l.pago?'Reabrir':'Baixar'}</button>
+              <button class="btn sm ghost" onClick=${()=>setEdit(l)}><${Ic} d=${I.edit}/></button>
+              <button class="btn sm ghost" onClick=${()=>setDel(l)}><${Ic} d=${I.trash}/></button></td></tr>`)}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${LancForm} row=${edit.id?edit:null} tenantId=${tenantId} categorias=${categorias||[]} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
+    ${del&&html`<${Confirm} danger text="Excluir este lançamento?" onClose=${()=>setDel(null)}
+      onYes=${async()=>{const{error}=await db.from('financeiro_lancamentos').delete().eq('id',del.id);if(error)toast('Erro: '+error.message,'err');else{toast('Excluído.','ok');reload();}}}/>`}
+  </${Shell}>`;
+}
+
+/* ========== RELATÓRIOS ========== */
+function Relatorios(){
+  const {tenant}=useApp();
+  const [data,setData]=useState(null);
+  const [ini,setIni]=useState(monthStart()),[fim,setFim]=useState(todayISO());
+  const load=useCallback(async()=>{
+    setData(null);
+    const [{data:os},{data:cli},{data:fin}]=await Promise.all([
+      db.from('ordens').select('*'),
+      db.from('clientes').select('id,nome'),
+      db.from('financeiro_lancamentos').select('tipo,valor,pago,pago_em,descricao,vencimento'),
+    ]);
+    const cn=Object.fromEntries((cli||[]).map(c=>[c.id,c.nome]));
+    const inRange=o=>o.data_entrada>=ini&&o.data_entrada<=fim;
+    const per=(os||[]).filter(inRange);
+    const receita=per.reduce((a,o)=>a+Number(o.valor||0),0);
+    const porStatus=STATUS_ORDER.map(s=>[s,per.filter(o=>o.status===s).length]).filter(([,c])=>c>0);
+    const topServ=Object.entries(per.reduce((m,o)=>{const k=(o.descricao||'Sem descrição').trim();m[k]=m[k]||{c:0,v:0};m[k].c++;m[k].v+=Number(o.valor||0);return m;},{})).sort((a,b)=>b[1].c-a[1].c).slice(0,8);
+    const topCli=Object.entries((os||[]).reduce((m,o)=>{if(!o.cliente_id)return m;m[o.cliente_id]=(m[o.cliente_id]||0)+1;return m;},{})).map(([id,c])=>[cn[id]||'—',c]).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const durs=per.filter(o=>o.entregue_em&&o.data_entrada).map(o=>daysBetween(o.data_entrada,o.entregue_em.slice(0,10))).filter(d=>d>=0);
+    const tempoMedio=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1):null;
+    setData({qtd:per.length,receita,porStatus,topServ,topCli,tempoMedio,per,cn,fin:fin||[],ini,fim});
+  },[ini,fim]);
+  useEffect(()=>{load();},[]);
+  const periodo = data? fmtDate(data.ini)+' a '+fmtDate(data.fim) : '';
+  const printEntradas=()=>{ const rows=data.per.slice().sort((a,b)=>a.data_entrada.localeCompare(b.data_entrada));
+    const tot=rows.reduce((s,o)=>s+Number(o.valor||0),0);
+    const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span><span>Serviços: <b>'+rows.length+'</b></span></div>'
+      +'<table><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrada</th><th class="r">Valor</th></tr></thead><tbody>'
+      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+fmtDate(o.data_entrada)+'</td><td class="r">'+BRL(o.valor)+'</td></tr>').join('')
+      +'</tbody><tfoot><tr><td colspan="4">Total de entradas</td><td class="r">'+BRL(tot)+'</td></tr></tfoot></table>';
+    printDoc('Relatório de Entradas — '+periodo, body, tenant?.nome); };
+  const printFinalizados=()=>{ const rows=data.per.filter(o=>o.status==='finalizado'||o.status==='entregue').sort((a,b)=>(a.entregue_em||'').localeCompare(b.entregue_em||''));
+    const tot=rows.reduce((s,o)=>s+Number(o.valor||0),0);
+    const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span><span>Finalizados: <b>'+rows.length+'</b></span><span>Tempo médio: <b>'+(data.tempoMedio??'—')+' dias</b></span></div>'
+      +'<table><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrega</th><th class="r">Valor</th></tr></thead><tbody>'
+      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+(o.entregue_em?fmtDate(o.entregue_em.slice(0,10)):'—')+'</td><td class="r">'+BRL(o.valor)+'</td></tr>').join('')
+      +'</tbody><tfoot><tr><td colspan="4">Total finalizado</td><td class="r">'+BRL(tot)+'</td></tr></tfoot></table>';
+    printDoc('Relatório de Finalizados — '+periodo, body, tenant?.nome); };
+  const printFaturamento=()=>{ const inR=l=>{ const d=l.pago_em||l.vencimento||''; return d>=data.ini&&d<=data.fim; };
+    const rec=data.fin.filter(l=>l.tipo==='receita'&&l.pago&&inR(l)); const desp=data.fin.filter(l=>l.tipo==='despesa'&&l.pago&&inR(l));
+    const tr=rec.reduce((s,l)=>s+Number(l.valor||0),0), td=desp.reduce((s,l)=>s+Number(l.valor||0),0);
+    const osTot=data.per.reduce((s,o)=>s+Number(o.valor||0),0);
+    const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span></div>'
+      +'<table><tbody>'
+      +'<tr><td>Serviços registrados no período</td><td class="r">'+BRL(osTot)+'</td></tr>'
+      +'<tr><td>Receitas recebidas</td><td class="r">'+BRL(tr)+'</td></tr>'
+      +'<tr><td>Despesas pagas</td><td class="r">− '+BRL(td)+'</td></tr>'
+      +'</tbody><tfoot><tr><td>Saldo do período</td><td class="r">'+BRL(tr-td)+'</td></tr></tfoot></table>'
+      +(rec.length?('<h3 style="margin-top:18px">Receitas recebidas</h3><table><thead><tr><th>Descrição</th><th>Data</th><th class="r">Valor</th></tr></thead><tbody>'+rec.map(l=>'<tr><td>'+esc(l.descricao||'—')+'</td><td>'+fmtDate(l.pago_em||l.vencimento)+'</td><td class="r">'+BRL(l.valor)+'</td></tr>').join('')+'</tbody></table>'):'');
+    printDoc('Relatório de Faturamento — '+periodo, body, tenant?.nome); };
+  return html`<${Shell} title="Relatórios">
+    <div class="bar">
+      <div><label style=${{margin:'0 0 4px'}}>De</label><input type="date" value=${ini} onInput=${e=>setIni(e.target.value)}/></div>
+      <div><label style=${{margin:'0 0 4px'}}>Até</label><input type="date" value=${fim} onInput=${e=>setFim(e.target.value)}/></div>
+      <div style=${{alignSelf:'flex-end'}}><button class="btn pri" onClick=${load}>Aplicar</button></div>
+      <div style=${{alignSelf:'flex-end',marginLeft:'auto'}}><button class="btn" onClick=${()=>window.print()}><${Ic} d=${I.print}/>Imprimir / PDF</button></div>
+    </div>
+    ${!data? html`<div class="hint">Calculando…</div>`: html`<${Fragment}>
+      <div class="grid">
+        <div class="glass kpi" style=${{cursor:'default'}}><div class="n">${data.qtd}</div><div class="l">Serviços no período</div></div>
+        <div class="glass kpi ok" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(data.receita)}</div><div class="l">Valor no período</div></div>
+        <div class="glass kpi" style=${{cursor:'default'}}><div class="n">${data.tempoMedio??'—'}</div><div class="l">Tempo médio (dias)</div></div>
+        <div class="glass kpi" style=${{cursor:'default'}}><div class="n">${data.qtd?BRL(data.receita/data.qtd):BRL(0)}</div><div class="l">Ticket médio</div></div>
+      </div>
+      <div class="glass panel" style=${{marginTop:'16px'}}>
+        <h3>Gerenciador de relatórios</h3><p class="desc">Emita cada relatório individualmente — abre versão pronta para impressão / PDF.</p>
+        <div style=${{display:'flex',gap:'10px',flexWrap:'wrap'}}>
+          <button class="btn" onClick=${printEntradas}><${Ic} d=${I.print}/>Entradas do período</button>
+          <button class="btn" onClick=${printFinalizados}><${Ic} d=${I.print}/>Finalizados</button>
+          <button class="btn" onClick=${printFaturamento}><${Ic} d=${I.print}/>Faturamento</button>
+        </div>
+      </div>
+      <div class="row two">
+        <div class="glass panel"><h3>Serviços mais solicitados</h3><p class="desc">No período selecionado.</p>
+          ${data.topServ.length? html`<div class="stat-list">${data.topServ.map(([s,o])=>html`<div class="it" key=${s}><span>${s}</span><span><span class="muted" style=${{marginRight:'10px'}}>${BRL(o.v)}</span><span class="v">${o.c}×</span></span></div>`)}</div>`:html`<div class="muted">Sem dados.</div>`}
+        </div>
+        <div class="glass panel"><h3>Clientes mais frequentes</h3><p class="desc">Total histórico de serviços.</p>
+          ${data.topCli.length? html`<div class="stat-list">${data.topCli.map(([n,c])=>html`<div class="it" key=${n}><span>${n}</span><span class="v">${c}×</span></div>`)}</div>`:html`<div class="muted">Sem dados.</div>`}
+        </div>
+      </div>
+      <div class="glass panel" style=${{marginTop:'16px'}}><h3>Distribuição por status</h3>
+        ${data.porStatus.length? html`<div class="stat-list">${data.porStatus.map(([s,c])=>html`<div class="it" key=${s}><${Badge} status=${s}/><span class="v">${c}</span></div>`)}</div>`:html`<div class="muted">Sem dados.</div>`}
+      </div>
+    </${Fragment}>`}
+  </${Shell}>`;
+}
+
+/* ========== FISCAL (arquitetado, ativação futura) ========== */
+function Fiscal(){
+  const [os,setOs]=useState(null),[cfg,setCfg]=useState(null);
+  useEffect(()=>{ (async()=>{
+    const {data}=await db.from('ordens').select('id,numero,valor,status,descricao').in('status',['finalizado','entregue']).order('numero',{ascending:false});
+    setOs(data||[]);
+    const {data:s}=await db.from('tenant_settings').select('cnpj').maybeSingle(); setCfg(s||{});
+  })(); },[]);
+  const total=(os||[]).reduce((a,o)=>a+Number(o.valor||0),0);
+  const ativo=false; // gateway ainda não configurado
+  return html`<${Shell} title="Fiscal (NFS-e)">
+    <div class="notice" style=${{marginBottom:'16px'}}>
+      <b>Módulo fiscal arquitetado.</b> A emissão de <b>NFS-e</b> (nota de serviço, prefeitura de Salvador) será ativada por
+      integração com um gateway fiscal (ex.: Nuvem Fiscal, Focus NFe, PlugNotas). Costureira presta serviço — o documento é
+      NFS-e, não NFe de produto.
+    </div>
+    <div class="row two">
+      <div class="glass panel"><h3>Pré-requisitos para ativar</h3><p class="desc">Reúna estes itens para ligar a emissão automática.</p>
+        ${[['CNPJ ativo (MEI ou ME)',!!cfg?.cnpj],['Inscrição Municipal em Salvador',false],['Certificado digital e-CNPJ (A1)',false],['Conta no gateway fiscal',false],['Alíquota de ISS do serviço definida',false]]
+          .map(([t,ok])=>html`<div class="chk" key=${t}><${Ic} d=${ok?I.check:I.file} cls="m" style=${ok?{color:'var(--ok)'}:null}/><span>${t}${ok?html` <span class="tag">ok</span>`:''}</span></div>`)}
+        <button class="btn pri" style=${{marginTop:'12px'}} onClick=${()=>toast('Ative o gateway em Configurações → Fiscal (próxima etapa).','')}>Configurar emissão</button>
+      </div>
+      <div class="glass panel"><h3>Serviços prontos para emitir</h3><p class="desc">OS finalizadas/entregues aguardando NFS-e.</p>
+        <div class="stat-list"><div class="it"><span>Documentos pendentes</span><span class="v">${os?os.length:'…'}</span></div>
+          <div class="it"><span>Valor total</span><span class="v">${BRL(total)}</span></div></div>
+        ${os&&os.length>0&&html`<div class="tblwrap" style=${{marginTop:'10px'}}><table class="tbl"><thead><tr><th>#</th><th>Serviço</th><th class="r">Valor · NFS-e</th></tr></thead>
+          <tbody>${os.slice(0,8).map(o=>html`<tr key=${o.id}><td class="b">${o.numero}</td><td>${o.descricao||'—'}</td>
+            <td class="r">${BRL(o.valor)} <button class="btn sm" disabled title="Requer gateway fiscal ativo" style=${{opacity:.5,cursor:'not-allowed'}}>Emitir</button></td></tr>`)}</tbody></table></div>`}
+      </div>
+    </div>
+  </${Shell}>`;
+}
+
+/* ========== CONFIG ========== */
+function ContaPanel({profile,role}){
+  const [nome,setNome]=useState(profile?.nome||'');
+  const [s1,setS1]=useState(''),[s2,setS2]=useState(''),[busy,setBusy]=useState(false),[busyP,setBusyP]=useState(false);
+  async function saveNome(){ if(!nome.trim()){toast('Informe o nome.','err');return;} setBusy(true);
+    const {error}=await db.from('profiles').update({nome:nome.trim()}).eq('id',profile.id); setBusy(false);
+    if(error)toast('Erro: '+error.message,'err'); else toast('Perfil atualizado.','ok'); }
+  async function savePwd(){ if((s1||'').length<6){toast('A senha deve ter ao menos 6 caracteres.','err');return;}
+    if(s1!==s2){toast('As senhas não coincidem.','err');return;} setBusyP(true);
+    const {error}=await db.auth.updateUser({password:s1}); setBusyP(false);
+    if(error)toast('Erro: '+error.message,'err'); else {toast('Senha alterada com sucesso.','ok'); setS1('');setS2('');} }
+  return html`<div class="glass panel"><h3>Sua conta</h3><p class="desc">Gerencie seu nome e senha de acesso.</p>
+    <label>Nome</label><input value=${nome} onInput=${e=>setNome(e.target.value)}/>
+    <div style=${{marginTop:'8px'}}><button class="btn sm pri" disabled=${busy} onClick=${saveNome}>${busy?'…':'Salvar nome'}</button></div>
+    <div class="it" style=${{marginTop:'12px',paddingTop:'12px',borderTop:'1px solid var(--border)'}}><span class="muted">Papel</span><span class="v">${role}</span></div>
+    <label style=${{marginTop:'10px'}}>Nova senha</label><input type="password" value=${s1} onInput=${e=>setS1(e.target.value)} placeholder="mín. 6 caracteres"/>
+    <label>Confirmar nova senha</label><input type="password" value=${s2} onInput=${e=>setS2(e.target.value)}/>
+    <div style=${{marginTop:'10px',display:'flex',gap:'8px'}}>
+      <button class="btn sm" disabled=${busyP} onClick=${savePwd}>${busyP?'…':'Alterar senha'}</button>
+      <button class="btn sm ghost" onClick=${()=>db.auth.signOut()}>Sair da conta</button></div>
+  </div>`;
+}
+function AteliePanel({tenant,role}){
+  const canEdit = role==='owner'||role==='gestor';
+  const [nome,setNome]=useState(tenant?.nome||'');
+  const [st,setSt]=useState(null),[busy,setBusy]=useState(false);
+  useEffect(()=>{ (async()=>{ const {data}=await db.from('tenant_settings').select('*').eq('tenant_id',tenant.id).maybeSingle(); setSt(data||{tenant_id:tenant.id}); })(); },[]);
+  const set=(k,v)=>setSt(x=>({...x,[k]:v}));
+  async function save(){ setBusy(true);
+    const r1=await db.from('tenants').update({nome:nome.trim()}).eq('id',tenant.id);
+    const r2=await db.from('tenant_settings').upsert({tenant_id:tenant.id,subtitulo:st.subtitulo||null,telefone:st.telefone||null,whatsapp:st.whatsapp||null,email:st.email||null,cnpj:st.cnpj||null});
+    setBusy(false);
+    if(r1.error||r2.error){ toast('Erro: '+((r1.error||r2.error).message),'err'); return; }
+    tenant.nome=nome.trim(); toast('Dados do ateliê salvos.','ok');
+  }
+  if(!st) return html`<div class="glass panel"><h3>Ateliê</h3><div class="hint">Carregando…</div></div>`;
+  return html`<div class="glass panel"><h3>Ateliê</h3><p class="desc">Informações do seu ateliê (aparecem no sistema e nas impressões).</p>
+    <label>Nome do ateliê</label><input value=${nome} disabled=${!canEdit} onInput=${e=>setNome(e.target.value)}/>
+    <label>Subtítulo</label><input value=${st.subtitulo||''} disabled=${!canEdit} onInput=${e=>set('subtitulo',e.target.value)} placeholder="Ex.: Ajustes, reformas e sob medida"/>
+    <div class="f2"><div><label>Telefone</label><input value=${st.telefone||''} disabled=${!canEdit} onInput=${e=>set('telefone',maskPhone(e.target.value))}/></div>
+      <div><label>WhatsApp</label><input value=${st.whatsapp||''} disabled=${!canEdit} onInput=${e=>set('whatsapp',maskPhone(e.target.value))}/></div></div>
+    <div class="f2"><div><label>E-mail</label><input value=${st.email||''} disabled=${!canEdit} onInput=${e=>set('email',e.target.value)}/></div>
+      <div><label>CNPJ (opcional)</label><input value=${st.cnpj||''} disabled=${!canEdit} onInput=${e=>set('cnpj',e.target.value)}/></div></div>
+    ${canEdit? html`<div style=${{marginTop:'10px'}}><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'Salvando…':'Salvar dados do ateliê'}</button></div>`
+      : html`<div class="notice" style=${{marginTop:'10px'}}>Somente a administradora pode editar estes dados.</div>`}
+  </div>`;
+}
+function Config(){
+  const {tenant,role,profile}=useApp();
+  return html`<${Shell} title="Configurações">
+    <div class="row two">
+      <${AteliePanel} tenant=${tenant} role=${role}/>
+      <${ContaPanel} profile=${profile} role=${role}/>
+    </div>
+  </${Shell}>`;
+}
+
+/* ========== RECUPERAÇÃO DE RECEITA ========== */
+function Recuperacao(){
+  const {tenant}=useApp();
+  const [d,setD]=useState(null);
+  useEffect(()=>{ (async()=>{
+    const [{data:cli},{data:os}]=await Promise.all([
+      db.from('clientes').select('id,nome,whatsapp'),
+      db.from('ordens').select('cliente_id,valor,status,data_entrada'),
+    ]);
+    const by={}; (os||[]).forEach(o=>{ if(!o.cliente_id)return; const b=by[o.cliente_id]||(by[o.cliente_id]={last:null,total:0,n:0}); b.n++; b.total+=Number(o.valor||0); if(!b.last||o.data_entrada>b.last)b.last=o.data_entrada; });
+    const hoje=todayISO();
+    const inativos=(cli||[]).map(c=>{ const b=by[c.id]; return {...c, dias:b&&b.last?daysBetween(b.last,hoje):null, total:b?b.total:0, n:b?b.n:0}; })
+      .filter(c=>c.n>0 && c.dias!=null && c.dias>=60).sort((a,b)=>b.dias-a.dias);
+    setD({inativos, orcamentos:(os||[]).filter(o=>o.status==='orcamento'), cancel:(os||[]).filter(o=>o.status==='cancelado')});
+  })(); },[]);
+  const msg=c=>encodeURIComponent('Olá '+((c.nome||'').split(' ')[0])+'! Sentimos sua falta no ateliê. Faz um tempinho que você não aparece — tem alguma peça esperando um ajuste? Estou à disposição. — '+(tenant?.nome||''));
+  return html`<${Shell} title="Recuperação de receita">
+    <div class="hint">Reative clientes parados e resgate orçamentos que não fecharam — receita que já estava ao seu alcance.</div>
+    ${!d? html`<div class="hint">Carregando…</div>`: html`<${Fragment}>
+      <div class="grid">
+        <div class="glass kpi" style=${{cursor:'default'}}><div class="n">${d.inativos.length}</div><div class="l">Inativos (60+ dias)</div></div>
+        <button class="kpi" onClick=${()=>go('/ordens?f=orcamento')}><div class="n">${d.orcamentos.length}</div><div class="l">Orçamentos em aberto</div></button>
+        <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(d.inativos.reduce((a,c)=>a+c.total,0))}</div><div class="l">Já gasto pelos inativos</div></div>
+        <button class="kpi" onClick=${()=>go('/ordens?f=cancelado')}><div class="n">${d.cancel.length}</div><div class="l">OS canceladas</div></button>
+      </div>
+      <div class="glass panel" style=${{marginTop:'18px'}}>
+        <h3>Clientes para reconquistar</h3><p class="desc">Sem voltar há 60 dias ou mais — comece pelos que mais gastaram.</p>
+        ${d.inativos.length===0? html`<${Empty} icon=${I.refresh} title="Ninguém parado">Seus clientes estão ativos.</${Empty}>`
+          : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Sem voltar</th><th class="r">Serviços</th><th class="r">Total gasto</th><th class="r">Ação</th></tr></thead>
+            <tbody>${d.inativos.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${c.dias} dias</td><td class="r">${c.n}</td><td class="r b">${BRL(c.total)}</td>
+              <td class="r">${c.whatsapp? html`<a class="btn sm pri" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Reconquistar</a>`: html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}</td></tr>`)}</tbody></table></div>`}
+      </div>
+    </${Fragment}>`}
+  </${Shell}>`;
+}
+
+/* ========== ALAVANCAGEM ========== */
+function Alavancagem(){
+  const {tenant}=useApp();
+  const [clientes]=useRows('clientes',{order:'nome',asc:true});
+  const [servicos]=useRows('servicos',{order:'nome',asc:true});
+  const [counts,setCounts]=useState({});
+  const [seg,setSeg]=useState('todos'),[servId,setServId]=useState(''),[desc,setDesc]=useState(15);
+  useEffect(()=>{ (async()=>{ const {data:os}=await db.from('ordens').select('cliente_id'); const m={}; (os||[]).forEach(o=>{ if(o.cliente_id) m[o.cliente_id]=(m[o.cliente_id]||0)+1; }); setCounts(m); })(); },[]);
+  const serv=(servicos||[]).find(s=>s.id===servId);
+  const preco=serv?Number(serv.preco_base):0, precoDesc=preco*(1-Number(desc||0)/100);
+  const alvo=useMemo(()=>{ let list=(clientes||[]).filter(c=>c.whatsapp);
+    if(seg==='aniversariantes') list=list.filter(bdayThisMonth);
+    if(seg==='frequentes') list=list.filter(c=>(counts[c.id]||0)>=3);
+    if(seg==='novos') list=list.filter(c=>(counts[c.id]||0)<=1);
+    return list; },[clientes,seg,counts]);
+  const msg=c=>encodeURIComponent('Olá '+((c.nome||'').split(' ')[0])+'! Oferta especial pra você'
+    +(serv? ' em '+serv.nome+': de '+BRL(preco)+' por '+BRL(precoDesc)+' ('+desc+'% off)':' aqui no ateliê')+'. Vamos agendar? — '+(tenant?.nome||''));
+  return html`<${Shell} title="Alavancagem">
+    <div class="hint">Gere mais receita da base atual: escolha um público, um serviço e um desconto, e dispare a oferta por WhatsApp.</div>
+    <div class="glass panel">
+      <label>Público-alvo</label>
+      <div class="seg" style=${{marginBottom:'10px'}}>
+        ${[['todos','Todos'],['aniversariantes','Aniversariantes do mês'],['frequentes','Frequentes (3+)'],['novos','Novos (1 visita)']].map(([k,l])=>html`<button key=${k} class=${'chip'+(seg===k?' on':'')} onClick=${()=>setSeg(k)}>${l}</button>`)}
+      </div>
+      <div class="f2">
+        <div><label>Serviço em oferta</label><select value=${servId} onInput=${e=>setServId(e.target.value)}><option value="">— Oferta genérica —</option>${(servicos||[]).map(s=>html`<option key=${s.id} value=${s.id}>${s.nome} · ${BRL(s.preco_base)}</option>`)}</select></div>
+        <div><label>Desconto (%)</label><input type="number" min="0" max="90" value=${desc} onInput=${e=>setDesc(e.target.value)}/></div>
+      </div>
+      ${serv&&html`<div class="notice" style=${{marginTop:'12px'}}>${serv.nome}: de <b>${BRL(preco)}</b> por <b>${BRL(precoDesc)}</b> (${desc}% off).</div>`}
+    </div>
+    <div class="glass panel" style=${{marginTop:'16px'}}>
+      <h3>Clientes no público (${alvo.length})</h3><p class="desc">Cada disparo abre o WhatsApp com a mensagem pronta.</p>
+      ${alvo.length===0? html`<${Empty} icon=${I.rocket} title="Nenhum cliente">Ajuste o público ou cadastre WhatsApp nos clientes.</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Serviços feitos</th><th class="r">Enviar oferta</th></tr></thead>
+          <tbody>${alvo.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${counts[c.id]||0}</td>
+            <td class="r"><a class="btn sm pri" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Oferecer</a></td></tr>`)}</tbody></table></div>`}
+    </div>
+  </${Shell}>`;
+}
+
+/* ========== ROUTER ========== */
+function Router(){
+  const h=useHash(); const [path]=h.split('?'); const seg=path.split('/').filter(Boolean);
+  if(seg[0]==='clientes'&&seg[1]) return html`<${ClienteDetail} id=${seg[1]}/>`;
+  if(seg[0]==='clientes') return html`<${Clientes}/>`;
+  if(seg[0]==='ordens'&&seg[1]) return html`<${OrdemDetail} id=${seg[1]}/>`;
+  if(seg[0]==='ordens') return html`<${Ordens}/>`;
+  if(seg[0]==='servicos') return html`<${Servicos}/>`;
+  if(seg[0]==='estoque') return html`<${Estoque}/>`;
+  if(seg[0]==='financeiro') return html`<${Financeiro}/>`;
+  if(seg[0]==='relatorios') return html`<${Relatorios}/>`;
+  if(seg[0]==='fiscal') return html`<${Fiscal}/>`;
+  if(seg[0]==='recuperacao') return html`<${Recuperacao}/>`;
+  if(seg[0]==='alavancagem') return html`<${Alavancagem}/>`;
+  if(seg[0]==='config') return html`<${Config}/>`;
+  return html`<${Dashboard}/>`;
+}
+
+/* ========== ROOT ========== */
+function App(){
+  const [session,setSession]=useState(undefined);
+  const [ctx,setCtx]=useState(null);
+  useEffect(()=>{
+    db.auth.getSession().then(({data})=>setSession(data.session));
+    const { data:sub }=db.auth.onAuthStateChange((_e,s)=>setSession(s));
+    return ()=>sub.subscription.unsubscribe();
+  },[]);
+  useEffect(()=>{ if(!session){ setCtx(null); return; } (async()=>{
+    const [{data:m},{data:prof}]=await Promise.all([
+      db.from('tenant_memberships').select('tenant_id,role').eq('user_id',session.user.id).eq('ativo',true).limit(1).maybeSingle(),
+      db.from('profiles').select('*').eq('id',session.user.id).maybeSingle(),
+    ]);
+    let tenant=null;
+    if(m?.tenant_id){ const {data:t}=await db.from('tenants').select('*').eq('id',m.tenant_id).maybeSingle(); tenant=t;
+      const {data:st}=await db.from('tenant_settings').select('cor_primaria,cor_secundaria').eq('tenant_id',m.tenant_id).maybeSingle();
+      if(st?.cor_primaria) document.documentElement.style.setProperty('--plum',st.cor_primaria);
+      if(st?.cor_secundaria) document.documentElement.style.setProperty('--violet',st.cor_secundaria);
+    }
+    setCtx({ tenant, tenantId:m?.tenant_id, role:m?.role||'atendente', profile:prof||{nome:(session.user.email||'').split('@')[0]} });
+  })(); },[session]);
+  if(session===undefined) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Carregando…</div></div></${Fragment}>`;
+  if(!session) return html`<${Fragment}><${Toaster}/><${Login}/></${Fragment}>`;
+  if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
+  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${Router}/></${Ctx.Provider}>`;
+}
 ReactDOM.createRoot(document.getElementById('root')).render(createElement(App));
 </script>
 </body>
