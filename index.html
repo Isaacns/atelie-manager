@@ -98,8 +98,8 @@ function Login(){
     if(error) setErr('E-mail ou senha incorretos.');
   }
   return html`<div class="center"><div class="glass card">
-    <div class="brand"><${Mark}/><div><div class="serif" style="font-size:1.2rem;line-height:1">Ateliê Manager</div>
-      <div style="font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Gestão para ateliês</div></div></div>
+    <div class="brand"><${Mark}/><div><div class="serif" style=${{fontSize:'1.2rem',lineHeight:1}}>Ateliê Manager</div>
+      <div style=${{fontSize:'.62rem',letterSpacing:'.18em',textTransform:'uppercase',color:'var(--muted)'}}>Gestão para ateliês</div></div></div>
     <h1 class="title">Bem-vinda de volta</h1>
     <div class="sub">Acesse o painel do seu ateliê.</div>
     <form onSubmit=${submit}>
@@ -136,7 +136,7 @@ function Dashboard({ user }){
     <div class="topbar">
       <${Mark}/>
       <div><div class="name">${tenant?.nome || 'Ateliê'}</div>
-        <div style="font-size:.72rem;color:var(--muted)">Painel de gestão</div></div>
+        <div style=${{fontSize:'.72rem',color:'var(--muted)'}}>Painel de gestão</div></div>
       ${tenant?.plano && html`<span class="badge">Plano ${tenant.plano}</span>`}
       <button class="out" onClick=${()=>db.auth.signOut()}>Sair</button>
     </div>
@@ -149,7 +149,7 @@ function Dashboard({ user }){
         <${Kpi} n="—" l="Atrasados"/>
         <${Kpi} n="—" l="Receita no mês"/>
       </div>
-      <div class="hint" style="margin-top:22px">Módulos (Clientes, Ordens, Estoque, Financeiro) entram na sequência, no mesmo padrão.</div>
+      <div class="hint" style=${{marginTop:'22px'}}>Módulos (Clientes, Ordens, Estoque, Financeiro) entram na sequência, no mesmo padrão.</div>
     </main>
   </div>`;
 }
