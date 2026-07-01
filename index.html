@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ateliê Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4efe8; --card:#fbf8f3; --fg:#2b2730; --muted:#8a7e86;
+    --primary:#5e4b6b; --accent:#7a6488; --border:#e5dcd0; --danger:#b3452f;
+    --radius:1rem;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:Inter,system-ui,sans-serif;color:var(--fg);background:var(--bg);
+    background-image:
+      radial-gradient(60rem 60rem at 110% -10%, rgba(190,170,210,.20), transparent 60%),
+      radial-gradient(50rem 50rem at -10% 10%, rgba(220,200,170,.22), transparent 55%);
+    background-attachment:fixed;-webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:"Cormorant Garamond",Georgia,serif}
+  .center{min-height:100dvh;display:grid;place-items:center;padding:24px}
+  .glass{background:rgba(251,248,243,.72);backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.5);box-shadow:0 8px 32px rgba(70,40,80,.10);border-radius:1.25rem}
+  .card{width:100%;max-width:420px;padding:32px}
+  .brand{display:flex;gap:12px;align-items:center;justify-content:center;margin-bottom:22px}
+  .mark{width:38px;height:38px;color:var(--primary)}
+  @media (prefers-reduced-motion:no-preference){.breathe{animation:br 4.5s ease-in-out infinite}}
+  @keyframes br{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+  h1.title{font-family:"Cormorant Garamond",serif;font-size:2rem;margin:.2rem 0 .1rem;text-align:center}
+  .sub{color:var(--muted);text-align:center;font-size:.9rem;margin-bottom:20px}
+  label{display:block;font-size:.85rem;font-weight:500;margin:14px 0 6px}
+  .field{position:relative}
+  input{width:100%;height:44px;border:1px solid var(--border);background:rgba(255,255,255,.7);
+    border-radius:.6rem;padding:0 14px;font-size:.95rem;color:var(--fg);outline:none}
+  input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(94,75,107,.15)}
+  .toggle{position:absolute;right:6px;top:6px;height:32px;width:36px;border:0;background:transparent;
+    color:var(--muted);cursor:pointer;font-size:.8rem}
+  button.primary{width:100%;height:46px;margin-top:22px;border:0;border-radius:.6rem;
+    background:var(--primary);color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;transition:.15s}
+  button.primary:hover{background:#523f61}
+  button.primary:disabled{opacity:.6;cursor:default}
+  .err{background:rgba(179,69,47,.1);border:1px solid rgba(179,69,47,.3);color:var(--danger);
+    border-radius:.5rem;padding:10px 12px;font-size:.85rem;margin-bottom:8px}
+  .foot{color:var(--muted);text-align:center;font-size:.72rem;margin-top:18px}
+  /* app */
+  .shell{min-height:100dvh}
+  .topbar{position:sticky;top:0;display:flex;align-items:center;gap:14px;height:64px;padding:0 20px;
+    background:rgba(244,239,232,.75);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);z-index:5}
+  .topbar .name{font-weight:600;font-size:.95rem}
+  .badge{font-size:.7rem;padding:3px 9px;border-radius:999px;background:rgba(94,75,107,.1);color:var(--primary)}
+  .out{margin-left:auto;border:1px solid var(--border);background:rgba(255,255,255,.6);border-radius:.6rem;
+    height:38px;padding:0 14px;cursor:pointer;color:var(--fg)}
+  main{max-width:1000px;margin:0 auto;padding:28px 20px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:8px}
+  @media(min-width:800px){.grid{grid-template-columns:repeat(4,1fr)}}
+  .kpi{padding:20px;border-radius:1.25rem}
+  .kpi .n{font-family:"Cormorant Garamond",serif;font-size:2.1rem;line-height:1}
+  .kpi .l{color:var(--muted);font-size:.85rem;margin-top:6px}
+  .hi{font-family:"Cormorant Garamond",serif;font-size:2rem;margin:0}
+  .hint{color:var(--muted);font-size:.9rem;margin:2px 0 18px}
+</style>
+</head>
+<body>
+<div id="root" class="center"><div class="sub">Carregando…</div></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script type="module">
+import htm from 'https://esm.sh/htm@3.1.1';
+const { createElement, useState, useEffect } = React;
+const html = htm.bind(createElement);
+
+const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
+
+const Mark = () => html`<svg class="mark breathe" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+  <path d="M14 34 L33 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="34.5" cy="13.5" r="2.4" stroke="currentColor" stroke-width="2"/>
+  <path d="M14 34 C6 30, 9 22, 16 24 C23 26, 18 33, 12 31" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
+  <circle cx="38" cy="38" r="2" fill="currentColor"/></svg>`;
+
+function Login(){
+  const [email,setEmail]=useState('');
+  const [senha,setSenha]=useState('');
+  const [show,setShow]=useState(false);
+  const [err,setErr]=useState('');
+  const [busy,setBusy]=useState(false);
+  async function submit(e){
+    e.preventDefault(); setErr(''); setBusy(true);
+    const { error } = await db.auth.signInWithPassword({ email:email.trim(), password:senha });
+    setBusy(false);
+    if(error) setErr('E-mail ou senha incorretos.');
+  }
+  return html`<div class="center"><div class="glass card">
+    <div class="brand"><${Mark}/><div><div class="serif" style="font-size:1.2rem;line-height:1">Ateliê Manager</div>
+      <div style="font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Gestão para ateliês</div></div></div>
+    <h1 class="title">Bem-vinda de volta</h1>
+    <div class="sub">Acesse o painel do seu ateliê.</div>
+    <form onSubmit=${submit}>
+      ${err && html`<div class="err">${err}</div>`}
+      <label>E-mail</label>
+      <input type="email" autocomplete="email" placeholder="voce@atelie.com.br"
+        value=${email} onInput=${e=>setEmail(e.target.value)} required/>
+      <label>Senha</label>
+      <div class="field">
+        <input type=${show?'text':'password'} autocomplete="current-password" placeholder="********"
+          value=${senha} onInput=${e=>setSenha(e.target.value)} required/>
+        <button type="button" class="toggle" onClick=${()=>setShow(s=>!s)}>${show?'ocultar':'mostrar'}</button>
+      </div>
+      <button class="primary" disabled=${busy}>${busy?'Entrando…':'Entrar'}</button>
+    </form>
+    <div class="foot">ATELIÊ MANAGER · uma solução INPERSON</div>
+  </div></div>`;
+}
+
+function Kpi({n,l}){ return html`<div class="glass kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`; }
+
+function Dashboard({ user }){
+  const [tenant,setTenant]=useState(null);
+  const [kpi,setKpi]=useState({clientes:'—',ordens:'—'});
+  useEffect(()=>{ (async()=>{
+    const { data:t } = await db.from('tenants').select('nome,plano').limit(1).maybeSingle();
+    setTenant(t);
+    const c = await db.from('clientes').select('*',{count:'exact',head:true});
+    const o = await db.from('ordens').select('*',{count:'exact',head:true});
+    setKpi({ clientes: c.count ?? 0, ordens: o.count ?? 0 });
+  })(); },[]);
+  const nome = (user?.user_metadata?.nome) || (user?.email||'').split('@')[0];
+  return html`<div class="shell">
+    <div class="topbar">
+      <${Mark}/>
+      <div><div class="name">${tenant?.nome || 'Ateliê'}</div>
+        <div style="font-size:.72rem;color:var(--muted)">Painel de gestão</div></div>
+      ${tenant?.plano && html`<span class="badge">Plano ${tenant.plano}</span>`}
+      <button class="out" onClick=${()=>db.auth.signOut()}>Sair</button>
+    </div>
+    <main>
+      <h1 class="hi">Olá, ${nome}</h1>
+      <div class="hint">Um panorama do seu ateliê — conectado ao Supabase em tempo real.</div>
+      <div class="grid">
+        <${Kpi} n=${kpi.ordens} l="Ordens de serviço"/>
+        <${Kpi} n=${kpi.clientes} l="Clientes"/>
+        <${Kpi} n="—" l="Atrasados"/>
+        <${Kpi} n="—" l="Receita no mês"/>
+      </div>
+      <div class="hint" style="margin-top:22px">Módulos (Clientes, Ordens, Estoque, Financeiro) entram na sequência, no mesmo padrão.</div>
+    </main>
+  </div>`;
+}
+
+function App(){
+  const [session,setSession]=useState(undefined);
+  useEffect(()=>{
+    db.auth.getSession().then(({data})=>setSession(data.session));
+    const { data:sub } = db.auth.onAuthStateChange((_e,s)=>setSession(s));
+    return ()=>sub.subscription.unsubscribe();
+  },[]);
+  if(session===undefined) return html`<div class="center"><div class="sub">Carregando…</div></div>`;
+  return session ? html`<${Dashboard} user=${session.user}/>` : html`<${Login}/>`;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(createElement(App));
+</script>
+</body>
+</html>
