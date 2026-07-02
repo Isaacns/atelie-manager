@@ -201,6 +201,23 @@
   .pop-it:last-child{border-bottom:0} .pop-it:hover{background:rgba(142,44,176,.05)}
   .pi-ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:0 0 auto}
   .pi-ic svg{width:15px;height:15px} .pi-ic.warn{background:rgba(185,131,37,.15);color:var(--warn)} .pi-ic.low{background:rgba(142,44,176,.12);color:var(--violet)}
+  /* billing gate */
+  .gate-bar{position:sticky;top:0;z-index:8;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 16px;font-size:.85rem;font-weight:600;color:#5a3d16;background:linear-gradient(90deg,#fbf1dc,#fce9c0,#fbf1dc);border-bottom:1px solid #f0d69a}
+  .gate-bar.info{color:#4c2e46;background:linear-gradient(90deg,#f2e9f4,#ecdcf0,#f2e9f4);border-bottom:1px solid rgba(142,44,176,.25)}
+  .gate-bar .gd{width:8px;height:8px;border-radius:50%;background:#b98325}
+  .gate-bar.info .gd{background:var(--violet)}
+  .gate-bar .gb{cursor:pointer;border:0;background:var(--ink);color:#fff;font-weight:700;font-size:.8rem;padding:6px 14px;border-radius:8px;font-family:inherit}
+  .gate-bar.info .gb{background:var(--plum)}
+  .gate-ov{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;padding:24px;background:radial-gradient(120% 120% at 50% -10%,rgba(142,44,176,.24),rgba(46,43,49,.6) 60%);backdrop-filter:blur(7px)}
+  .gate-card{position:relative;max-width:430px;width:100%;background:var(--card);border-radius:20px;padding:34px 30px 26px;text-align:center;border:1px solid rgba(255,255,255,.6);box-shadow:0 24px 70px rgba(46,43,49,.35)}
+  .gate-ring{width:60px;height:60px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--violet),var(--plum))}
+  .gate-ring svg{width:26px;height:26px}
+  .gate-price{font-size:.74rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--violet);margin-bottom:10px}
+  .gate-card h3{margin:0 0 6px;font-family:"Cormorant Garamond",serif;font-size:1.5rem;font-weight:600;color:var(--ink)}
+  .gate-card p{margin:0 auto 18px;font-size:.9rem;color:#5f5760;max-width:330px}
+  .gate-btn{border:0;cursor:pointer;background:var(--plum);color:#fff;font-weight:700;font-size:.96rem;padding:13px 26px;border-radius:11px;font-family:inherit;box-shadow:0 10px 26px rgba(94,58,86,.34)}
+  .gate-btn:hover{background:var(--plum-2)}
+  .gate-exit{display:block;margin:14px auto 0;background:0;border:0;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:inherit}
   /* mobile nav */
   .menu-btn{display:none}
   @media(max-width:820px){
@@ -1329,6 +1346,73 @@ function Router(){
   return html`<${Dashboard}/>`;
 }
 
+/* ========== BILLING GATE (assinatura Stripe · reusa fin_assinaturas/criar-checkout) ========== */
+function BillingGate({user}){
+  const [st,setSt]=useState(null);
+  const load=useCallback(async()=>{
+    try{
+      const pub=(typeof db.schema==='function')?db.schema('public'):db;
+      const [perf,ass,cfg]=await Promise.all([
+        pub.from('fin_perfis').select('is_admin').maybeSingle(),
+        pub.from('fin_assinaturas').select('status,current_period_end').maybeSingle(),
+        pub.from('config').select('valor').eq('chave','atelie_billing').maybeSingle(),
+      ]);
+      const admin=!!(perf.data&&perf.data.is_admin);
+      const status=(ass.data&&ass.data.status)||'none';
+      const active=status==='active'||status==='trialing';
+      const pastDue=status==='past_due';
+      const billing=(cfg.data&&cfg.data.valor)||{};
+      const GRACE=Number(billing.grace_days!=null?billing.grace_days:45);
+      const created=(user&&user.created_at)?new Date(user.created_at):null;
+      const graceLeft=created?Math.ceil((created.getTime()+GRACE*86400000-Date.now())/86400000):null;
+      const graceValid=GRACE>0&&graceLeft!=null&&graceLeft>0;
+      setSt({admin,status,active,pastDue,graceLeft,graceValid,
+        blocked:!admin&&!active&&!pastDue&&!graceValid,
+        priceLabel:billing.preco_label||'Plano mensal', priceId:billing.stripe_price_id||null});
+    }catch(_){ setSt({admin:false,active:false,pastDue:false,graceValid:true,blocked:false}); } // falha aberta: nunca bloqueia
+  },[user]);
+  useEffect(()=>{ load(); },[user]);
+  useEffect(()=>{
+    const q=location.search||''; if(q.indexOf('assinatura=')<0) return;
+    const ok=/assinatura=ok/.test(q);
+    toast(ok?'Pagamento recebido! Ativando seu acesso…':'Checkout cancelado. Você pode assinar quando quiser.', ok?'ok':'');
+    try{ history.replaceState(null,'',location.origin+location.pathname+location.hash); }catch(_){}
+    if(ok){ [1500,4000,8000].forEach(ms=>setTimeout(load,ms)); }
+  },[]);
+  async function assinar(){
+    const { data:{ session } }=await db.auth.getSession();
+    if(!session){ toast('Sua sessão expirou. Entre novamente para assinar.','err'); return; }
+    const back=location.origin+location.pathname;
+    try{
+      const r=await fetch(SUPABASE_URL+'/functions/v1/criar-checkout',{ method:'POST',
+        headers:{ 'Content-Type':'application/json','apikey':SUPABASE_ANON,'Authorization':'Bearer '+session.access_token },
+        body: JSON.stringify({ success_url:back+'?assinatura=ok', cancel_url:back+'?assinatura=cancelada', price_id: (st&&st.priceId)||undefined }) });
+      const j=await r.json().catch(()=>({}));
+      if(j&&j.url) location.href=j.url; else toast('Não foi possível abrir o checkout'+(j&&j.error?': '+j.error:'.'),'err');
+    }catch(_){ toast('Falha ao iniciar assinatura. Tente novamente.','err'); }
+  }
+  if(!st) return null;
+  const showBanner=!st.admin&&!st.active&&(st.pastDue||(st.graceValid&&!st.blocked));
+  const lock=html`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+  return html`<${Fragment}>
+    ${showBanner&&html`<div class=${'gate-bar '+(st.pastDue?'':'info')}>
+      <span class="gd"></span>
+      <span>${st.pastDue?'Pagamento pendente — regularize para manter o acesso.':'Período de cortesia — '+st.graceLeft+' dia(s). Assine para garantir seu acesso.'}</span>
+      <button class="gb" onClick=${assinar}>${st.pastDue?'Regularizar':'Assinar'}</button>
+    </div>`}
+    ${st.blocked&&html`<div class="gate-ov">
+      <div class="gate-card">
+        <div class="gate-ring">${lock}</div>
+        <div class="gate-price">${st.priceLabel}</div>
+        <h3>Assine para acessar</h3>
+        <p>Seu acesso ao Ateliê Manager está pausado. Reative em segundos — seus dados continuam salvos e voltam exatamente como estavam.</p>
+        <button class="gate-btn" onClick=${assinar}>Assinar agora</button>
+        <button class="gate-exit" onClick=${()=>db.auth.signOut()}>Sair da conta</button>
+      </div>
+    </div>`}
+  </${Fragment}>`;
+}
+
 /* ========== ROOT ========== */
 function App(){
   const [session,setSession]=useState(undefined);
@@ -1354,7 +1438,7 @@ function App(){
   if(session===undefined) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Carregando…</div></div></${Fragment}>`;
   if(!session) return html`<${Fragment}><${Toaster}/><${Login}/></${Fragment}>`;
   if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
-  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${Router}/></${Ctx.Provider}>`;
+  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${BillingGate} user=${session.user}/><${Router}/></${Ctx.Provider}>`;
 }
 ReactDOM.createRoot(document.getElementById('root')).render(createElement(App));
 </script>
