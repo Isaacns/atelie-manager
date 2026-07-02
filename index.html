@@ -61,9 +61,10 @@
   .side .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
   .side .brand .nm{font-family:"Cormorant Garamond",serif;font-size:1.15rem;line-height:1;font-weight:600}
   .side .brand .tg{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-  .nav{display:flex;flex-direction:column;gap:2px;overflow:auto}
-  .nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:.6rem;
+  .nav{display:flex;flex-direction:column;gap:2px;overflow:visible}
+  .nav a{position:relative;display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:.6rem;
     font-size:.9rem;font-weight:500;color:#5a525c;text-decoration:none;cursor:pointer;transition:.12s}
+  @media(hover:hover){.nav a[data-desc]:not([data-desc=""]):hover::after{content:attr(data-desc);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);white-space:nowrap;background:var(--ink);color:#fff;font-size:.72rem;font-weight:500;padding:6px 10px;border-radius:7px;box-shadow:0 8px 20px rgba(46,43,49,.3);z-index:60;pointer-events:none}}
   .nav a:hover{background:rgba(142,44,176,.07);color:var(--plum)}
   .nav a.on{background:var(--plum);color:#fff}
   .nav a.on svg{color:#fff}
@@ -162,20 +163,20 @@
   .chk .m{width:18px;height:18px;flex:0 0 auto;color:var(--muted)}
   /* living background — padrão VIZIO (adaptado à paleta Costureira) */
   .living{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-  .living .orb{position:absolute;border-radius:50%;filter:blur(70px)}
-  .living .orb.a{width:540px;height:540px;left:-150px;top:-110px;background:radial-gradient(circle,rgba(142,44,176,.58),transparent 68%)}
-  .living .orb.b{width:470px;height:470px;right:-130px;top:22%;background:radial-gradient(circle,rgba(142,44,176,.44),transparent 70%)}
-  .living .orb.c{width:620px;height:620px;left:22%;bottom:-250px;background:radial-gradient(circle,rgba(142,44,176,.52),transparent 70%)}
+  .living .orb{position:absolute;border-radius:50%;filter:blur(64px)}
+  .living .orb.a{width:540px;height:540px;left:-150px;top:-110px;background:radial-gradient(circle,rgba(142,44,176,.72),transparent 66%)}
+  .living .orb.b{width:470px;height:470px;right:-130px;top:22%;background:radial-gradient(circle,rgba(142,44,176,.56),transparent 68%)}
+  .living .orb.c{width:620px;height:620px;left:22%;bottom:-250px;background:radial-gradient(circle,rgba(142,44,176,.64),transparent 68%)}
   @media (prefers-reduced-motion:no-preference){
     .living .orb.a{animation:orbB 8s ease-in-out infinite}
     .living .orb.b{animation:orbB 8s ease-in-out infinite -2.5s}
     .living .orb.c{animation:orbB 8s ease-in-out infinite -5s}
-    @keyframes orbB{0%,100%{transform:scale(1) translate(0,0);opacity:.46}50%{transform:scale(1.17) translate(14px,-20px);opacity:.68}}
+    @keyframes orbB{0%,100%{transform:scale(1) translate(0,0);opacity:.58}50%{transform:scale(1.17) translate(14px,-20px);opacity:.82}}
   }
   .center,.app{position:relative;z-index:1}
   .app{background:transparent}
   /* brand logos */
-  .brandmark{border-radius:50%;object-fit:cover;box-shadow:0 8px 22px rgba(46,43,49,.26);display:block}
+  .brandmark{border-radius:50%;object-fit:cover;display:block;box-shadow:0 0 0 2px var(--cream),0 0 0 4px rgba(142,44,176,.5),0 8px 22px rgba(46,43,49,.28)}
   @media (prefers-reduced-motion:no-preference){.breathe-img{animation:imgBr 4.6s ease-in-out infinite;transform-origin:center}}
   @keyframes imgBr{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
   .byvizio{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.72rem}
@@ -421,20 +422,20 @@ function Login(){
 /* ---------- shell ---------- */
 const NAV = [
   {g:'Gestão'},
-  {p:'/', l:'HOME', i:I.home},
-  {p:'/clientes', l:'Clientes', i:I.users},
-  {p:'/ordens', l:'Ordens de serviço', i:I.scissors},
-  {p:'/servicos', l:'Serviços', i:I.tag},
+  {p:'/', l:'HOME', i:I.home, d:'Visão geral do ateliê'},
+  {p:'/clientes', l:'Clientes', i:I.users, d:'Cadastro, medidas e histórico'},
+  {p:'/ordens', l:'Ordens de serviço', i:I.scissors, d:'Do orçamento à entrega'},
+  {p:'/servicos', l:'Serviços', i:I.tag, d:'Catálogo de serviços e preços'},
   {g:'Operação'},
-  {p:'/estoque', l:'Estoque', i:I.box},
-  {p:'/financeiro', l:'Financeiro', i:I.money, roles:['owner','gestor','financeiro']},
-  {p:'/relatorios', l:'Relatórios', i:I.chart},
-  {p:'/fiscal', l:'Fiscal (NFS-e)', i:I.file, roles:['owner','gestor','financeiro']},
+  {p:'/estoque', l:'Estoque', i:I.box, d:'Insumos, saldo e movimentações'},
+  {p:'/financeiro', l:'Financeiro', i:I.money, roles:['owner','gestor','financeiro'], d:'Receitas, despesas e saldo'},
+  {p:'/relatorios', l:'Relatórios', i:I.chart, d:'Faturamento e desempenho'},
+  {p:'/fiscal', l:'Fiscal (NFS-e)', i:I.file, roles:['owner','gestor','financeiro'], d:'Emissão de nota de serviço'},
   {g:'Crescimento'},
-  {p:'/recuperacao', l:'Recuperação', i:I.refresh},
-  {p:'/alavancagem', l:'Alavancagem', i:I.rocket},
+  {p:'/recuperacao', l:'Recuperação', i:I.refresh, d:'Reative clientes parados'},
+  {p:'/alavancagem', l:'Alavancagem', i:I.rocket, d:'Ofertas para vender mais'},
   {g:'Ateliê'},
-  {p:'/config', l:'Configurações', i:I.gear, roles:['owner','gestor']},
+  {p:'/config', l:'Configurações', i:I.gear, roles:['owner','gestor'], d:'Ateliê, conta e preferências'},
 ];
 function AlertsBell(){
   const [open,setOpen]=useState(false);
@@ -469,11 +470,11 @@ function Shell({title,children}){
     <${LivingBg}/>
     ${open&&html`<div class="backdrop" onClick=${()=>setOpen(false)}/>`}
     <aside class=${'side'+(open?' open':'')}>
-      <div class="brand"><${BrandLogo} size=${54}/><div><div class="nm">${tenant?.nome||'Ateliê'}</div><div class="tg">Ateliê Manager</div></div></div>
+      <div class="brand"><${BrandLogo} size=${60}/><div><div class="nm">${tenant?.nome||'Ateliê'}</div><div class="tg">Ateliê Manager</div></div></div>
       <nav class="nav">
         ${NAV.filter(can).map((it,k)=> it.g
           ? html`<div class="sep" key=${'g'+k}>${it.g}</div>`
-          : html`<a key=${it.p} class=${base===it.p?'on':''} onClick=${()=>go(it.p)}><${Ic} d=${it.i}/>${it.l}</a>`)}
+          : html`<a key=${it.p} class=${base===it.p?'on':''} title=${it.d||''} data-desc=${it.d||''} onClick=${()=>go(it.p)}><${Ic} d=${it.i}/>${it.l}</a>`)}
       </nav>
       <div class="who"><b>${profile?.nome||'Você'}</b><span>${({owner:'Administradora',gestor:'Gestora',financeiro:'Financeiro',atendente:'Atendente',costureira:'Costureira',estoque:'Estoque'})[role]||role}</span>
         <div style=${{margin:'9px 0'}}><${ByVizio} dark=${true}/></div>
@@ -534,7 +535,7 @@ function Dashboard(){
   if(!k) return html`<div class="hint">Carregando indicadores…</div>`;
   return html`<${Shell} title="HOME">
     <h1 class="hi serif">Olá, ${(profile?.nome||'').split(' ')[0]}</h1>
-    <div class="hint">Panorama do ${tenant?.nome||'ateliê'} — em tempo real, conectado ao Supabase.</div>
+    <div class="hint">Panorama do ${tenant?.nome||'ateliê'} — atualizado em tempo real.</div>
     <div class="grid">
       <button class="kpi" onClick=${()=>go('/ordens?f=ativas')}><div class="n">${k.abertas}</div><div class="l">Ordens em aberto</div></button>
       <button class="kpi warn" onClick=${()=>go('/ordens?f=atrasadas')}><div class="n">${k.atrasadas}</div><div class="l">Atrasadas</div></button>
@@ -1111,7 +1112,6 @@ function Relatorios(){
       <div><label style=${{margin:'0 0 4px'}}>De</label><input type="date" value=${ini} onInput=${e=>setIni(e.target.value)}/></div>
       <div><label style=${{margin:'0 0 4px'}}>Até</label><input type="date" value=${fim} onInput=${e=>setFim(e.target.value)}/></div>
       <div style=${{alignSelf:'flex-end'}}><button class="btn pri" onClick=${load}>Aplicar</button></div>
-      <div style=${{alignSelf:'flex-end',marginLeft:'auto'}}><button class="btn" onClick=${()=>window.print()}><${Ic} d=${I.print}/>Imprimir / PDF</button></div>
     </div>
     ${!data? html`<div class="hint">Calculando…</div>`: html`<${Fragment}>
       <div class="grid">
