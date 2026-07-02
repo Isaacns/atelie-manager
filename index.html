@@ -264,6 +264,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
+const APP_VERSION = '1.6.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -335,6 +336,7 @@ const I = {
   refresh:'M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5',
   rocket:'M5 15c-1.6 1.6-2 5.5-2 5.5s3.9-.4 5.5-2M9 11a5 5 0 0 0 4 4l6-6a6 6 0 0 0 1.5-5.5A6 6 0 0 0 15 5l-6 6ZM15.5 8.5h.01',
   ruler:'M3 8l5-5 13 13-5 5zM7 7l2 2M11 5l2 2M9 11l2 2M13 9l2 2',
+  spark:'M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3ZM19 14l.9 2.3L22 17l-2.1.7L19 20l-.9-2.3L16 17l2.1-.7L19 14Z',
 };
 const Ic = ({d,cls,style}) => html`<svg class=${cls} style=${style} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d=${d}/></svg>`;
 
@@ -452,6 +454,7 @@ const NAV = [
   {p:'/recuperacao', l:'Recuperação', i:I.refresh, d:'Reative clientes parados'},
   {p:'/alavancagem', l:'Alavancagem', i:I.rocket, d:'Ofertas para vender mais'},
   {g:'Ateliê'},
+  {p:'/novidades', l:'Novidades', i:I.spark, d:'O que há de novo no sistema'},
   {p:'/config', l:'Configurações', i:I.gear, roles:['owner','gestor'], d:'Ateliê, conta e preferências'},
 ];
 function AlertsBell(){
@@ -494,7 +497,8 @@ function Shell({title,children}){
           : html`<a key=${it.p} class=${base===it.p?'on':''} title=${it.d||''} data-desc=${it.d||''} onClick=${()=>go(it.p)}><${Ic} d=${it.i}/>${it.l}</a>`)}
       </nav>
       <div class="who"><b>${profile?.nome||'Você'}</b><span>${({owner:'Administradora',gestor:'Gestora',financeiro:'Financeiro',atendente:'Atendente',costureira:'Costureira',estoque:'Estoque'})[role]||role}</span>
-        <div style=${{margin:'9px 0'}}><${ByVizio} dark=${true}/></div>
+        <div style=${{margin:'9px 0 4px'}}><${ByVizio} dark=${true}/></div>
+        <div class="muted" style=${{fontSize:'.66rem',marginBottom:'6px'}}>v${APP_VERSION}</div>
         <button onClick=${()=>db.auth.signOut()}>Sair</button></div>
     </aside>
     <div class="main">
@@ -1328,6 +1332,42 @@ function Alavancagem(){
   </${Shell}>`;
 }
 
+/* ========== NOVIDADES / CONTROLE DE VERSÃO ========== */
+function Novidades(){
+  const {isAdmin}=useApp();
+  const [rows,setRows]=useState(null);
+  useEffect(()=>{ (async()=>{
+    const pub=(typeof db.schema==='function')?db.schema('public'):db;
+    const {data}=await pub.from('plataforma_versoes').select('*').eq('sistema','atelie').order('ordem',{ascending:true});
+    setRows(data||[]);
+  })(); },[]);
+  const tipoMeta={novidade:'Novidade',melhoria:'Melhoria',correcao:'Correção'};
+  const lancados=(rows||[]).filter(r=>r.status==='lancado');
+  const roadmap=(rows||[]).filter(r=>r.status!=='lancado');
+  return html`<${Shell} title="Novidades">
+    <div class="hint">O que há de novo no Ateliê Manager — melhorias entregues para você.</div>
+    <div class="glass panel">
+      <h3>Lançado</h3><p class="desc">Já disponível no seu sistema.</p>
+      ${!rows? html`<div class="hint">Carregando…</div>`
+        : lancados.length===0? html`<${Empty} icon=${I.spark} title="Sem novidades ainda">Em breve, melhorias por aqui.</${Empty}>`
+        : html`<div class="stat-list">${lancados.map(r=>html`<div class="it" key=${r.id} style=${{alignItems:'flex-start',flexDirection:'column',gap:'3px',padding:'11px 4px'}}>
+            <div style=${{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}>
+              <span class="tag">${tipoMeta[r.tipo]||r.tipo}</span><b>${r.titulo}</b>
+              ${r.versao?html`<span class="muted" style=${{fontSize:'.72rem'}}>v${r.versao}</span>`:''}</div>
+            ${r.descricao&&html`<span class="muted" style=${{fontSize:'.86rem'}}>${r.descricao}</span>`}
+          </div>`)}</div>`}
+    </div>
+    ${isAdmin&&roadmap.length>0&&html`<div class="glass panel" style=${{marginTop:'16px'}}>
+      <h3>Roadmap · interno</h3><p class="desc">Planejado / em andamento — visível só para você (admin).</p>
+      <div class="stat-list">${roadmap.map(r=>html`<div class="it" key=${r.id}>
+        <span><b>${r.titulo}</b>${r.descricao?html` <span class="muted" style=${{fontSize:'.8rem'}}>— ${r.descricao}</span>`:''}</span>
+        <span class="badge" style=${r.status==='em_andamento'?{color:'#b98325',background:'rgba(185,131,37,.14)'}:{color:'#8a7e86',background:'rgba(0,0,0,.05)'}}>${r.status==='em_andamento'?'Em andamento':'Planejado'}</span>
+      </div>`)}</div>
+    </div>`}
+    <div class="hint" style=${{marginTop:'14px'}}>Versão atual: <b>v${APP_VERSION}</b></div>
+  </${Shell}>`;
+}
+
 /* ========== ROUTER ========== */
 function Router(){
   const h=useHash(); const [path]=h.split('?'); const seg=path.split('/').filter(Boolean);
@@ -1342,6 +1382,7 @@ function Router(){
   if(seg[0]==='fiscal') return html`<${Fiscal}/>`;
   if(seg[0]==='recuperacao') return html`<${Recuperacao}/>`;
   if(seg[0]==='alavancagem') return html`<${Alavancagem}/>`;
+  if(seg[0]==='novidades') return html`<${Novidades}/>`;
   if(seg[0]==='config') return html`<${Config}/>`;
   return html`<${Dashboard}/>`;
 }
@@ -1368,7 +1409,7 @@ function BillingGate({user}){
       const graceValid=GRACE>0&&graceLeft!=null&&graceLeft>0;
       setSt({admin,status,active,pastDue,graceLeft,graceValid,
         blocked:!admin&&!active&&!pastDue&&!graceValid,
-        priceLabel:billing.preco_label||'Plano mensal', priceId:billing.stripe_price_id||null});
+        priceLabel:billing.preco_label||'Plano mensal', priceId:billing.stripe_price_id||null, coupon:billing.coupon||null});
     }catch(_){ setSt({admin:false,active:false,pastDue:false,graceValid:true,blocked:false}); } // falha aberta: nunca bloqueia
   },[user]);
   useEffect(()=>{ load(); },[user]);
@@ -1386,7 +1427,7 @@ function BillingGate({user}){
     try{
       const r=await fetch(SUPABASE_URL+'/functions/v1/criar-checkout',{ method:'POST',
         headers:{ 'Content-Type':'application/json','apikey':SUPABASE_ANON,'Authorization':'Bearer '+session.access_token },
-        body: JSON.stringify({ success_url:back+'?assinatura=ok', cancel_url:back+'?assinatura=cancelada', price_id: (st&&st.priceId)||undefined }) });
+        body: JSON.stringify({ success_url:back+'?assinatura=ok', cancel_url:back+'?assinatura=cancelada', price_id:(st&&st.priceId)||undefined, coupon:(st&&st.coupon)||undefined }) });
       const j=await r.json().catch(()=>({}));
       if(j&&j.url) location.href=j.url; else toast('Não foi possível abrir o checkout'+(j&&j.error?': '+j.error:'.'),'err');
     }catch(_){ toast('Falha ao iniciar assinatura. Tente novamente.','err'); }
@@ -1423,9 +1464,10 @@ function App(){
     return ()=>sub.subscription.unsubscribe();
   },[]);
   useEffect(()=>{ if(!session){ setCtx(null); return; } (async()=>{
-    const [{data:m},{data:prof}]=await Promise.all([
+    const [{data:m},{data:prof},adm]=await Promise.all([
       db.from('tenant_memberships').select('tenant_id,role').eq('user_id',session.user.id).eq('ativo',true).limit(1).maybeSingle(),
       db.from('profiles').select('*').eq('id',session.user.id).maybeSingle(),
+      (typeof db.schema==='function'?db.schema('public'):db).from('fin_perfis').select('is_admin').maybeSingle(),
     ]);
     let tenant=null;
     if(m?.tenant_id){ const {data:t}=await db.from('tenants').select('*').eq('id',m.tenant_id).maybeSingle(); tenant=t;
@@ -1433,7 +1475,7 @@ function App(){
       if(st?.cor_primaria) document.documentElement.style.setProperty('--plum',st.cor_primaria);
       if(st?.cor_secundaria) document.documentElement.style.setProperty('--violet',st.cor_secundaria);
     }
-    setCtx({ tenant, tenantId:m?.tenant_id, role:m?.role||'atendente', profile:prof||{nome:(session.user.email||'').split('@')[0]} });
+    setCtx({ tenant, tenantId:m?.tenant_id, role:m?.role||'atendente', isAdmin:!!(adm&&adm.data&&adm.data.is_admin), profile:prof||{nome:(session.user.email||'').split('@')[0]} });
   })(); },[session]);
   if(session===undefined) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Carregando…</div></div></${Fragment}>`;
   if(!session) return html`<${Fragment}><${Toaster}/><${Login}/></${Fragment}>`;
