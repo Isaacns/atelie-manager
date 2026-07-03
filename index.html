@@ -64,7 +64,6 @@
   .nav{display:flex;flex-direction:column;gap:2px;overflow:visible}
   .nav a{position:relative;display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:.6rem;
     font-size:.9rem;font-weight:500;color:#5a525c;text-decoration:none;cursor:pointer;transition:.12s}
-  @media(hover:hover){.nav a[data-desc]:not([data-desc=""]):hover::after{content:attr(data-desc);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);white-space:nowrap;background:var(--ink);color:#fff;font-size:.72rem;font-weight:500;padding:6px 10px;border-radius:7px;box-shadow:0 8px 20px rgba(46,43,49,.3);z-index:60;pointer-events:none}}
   .nav a:hover{background:rgba(142,44,176,.07);color:var(--plum)}
   .nav a.on{background:var(--plum);color:#fff}
   .nav a.on svg{color:#fff}
@@ -266,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.7.1';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -496,7 +495,7 @@ function Shell({title,children}){
       <nav class="nav">
         ${NAV.filter(can).map((it,k)=> it.g
           ? html`<div class="sep" key=${'g'+k}>${it.g}</div>`
-          : html`<a key=${it.p} class=${base===it.p?'on':''} title=${it.d||''} data-desc=${it.d||''} onClick=${()=>go(it.p)}><${Ic} d=${it.i}/>${it.l}</a>`)}
+          : html`<a key=${it.p} class=${base===it.p?'on':''} onClick=${()=>go(it.p)}><${Ic} d=${it.i}/>${it.l}</a>`)}
       </nav>
       <div class="who"><b>${profile?.nome||'Você'}</b><span>${({owner:'Administradora',gestor:'Gestora',financeiro:'Financeiro',atendente:'Atendente',costureira:'Costureira',estoque:'Estoque'})[role]||role}</span>
         <div style=${{margin:'9px 0 4px'}}><${ByVizio} dark=${true}/></div>
