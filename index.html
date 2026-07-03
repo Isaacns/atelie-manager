@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.7.1';
+const APP_VERSION = '1.8.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -413,11 +413,15 @@ function Login(){
   async function submit(e){ e.preventDefault(); setErr(''); setBusy(true);
     try{
       const u=usuario.trim();
-      if(!u){ setErr('Informe o usuário.'); setBusy(false); return; }
-      const { data:mail, error:re } = await db.rpc('login_email',{ p_user:u });
-      if(re || !mail){ setBusy(false); setErr('Usuário ou senha incorretos.'); return; }
+      if(!u){ setErr('Informe o e-mail ou usuário.'); setBusy(false); return; }
+      let mail=u;
+      if(u.indexOf('@')<0){
+        const { data:m, error:re } = await db.rpc('login_email',{ p_user:u });
+        if(re || !m){ setBusy(false); setErr('E-mail/usuário ou senha incorretos.'); return; }
+        mail=m;
+      }
       const { error } = await db.auth.signInWithPassword({ email:mail, password:senha });
-      setBusy(false); if(error) setErr('Usuário ou senha incorretos.');
+      setBusy(false); if(error) setErr('E-mail/usuário ou senha incorretos.');
     }catch(_){ setBusy(false); setErr('Não foi possível entrar. Tente novamente.'); }
   }
   return html`<${Fragment}><${LivingBg}/><div class="center"><div class="glass card">
@@ -426,8 +430,8 @@ function Login(){
     <div class="sub">Acesse o painel do seu ateliê.</div>
     <form onSubmit=${submit}>
       ${err&&html`<div class="err">${err}</div>`}
-      <label>Usuário</label>
-      <input type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="seu usuário" value=${usuario} onInput=${e=>setUsuario(e.target.value)} required/>
+      <label>E-mail ou usuário</label>
+      <input type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="seu e-mail ou usuário" value=${usuario} onInput=${e=>setUsuario(e.target.value)} required/>
       <label>Senha</label>
       <div class="field">
         <input type=${show?'text':'password'} autocomplete="current-password" placeholder="••••••••" value=${senha} onInput=${e=>setSenha(e.target.value)} required/>
@@ -457,6 +461,7 @@ const NAV = [
   {g:'Ateliê'},
   {p:'/novidades', l:'Novidades', i:I.spark, d:'O que há de novo no sistema'},
   {p:'/config', l:'Configurações', i:I.gear, roles:['owner','gestor'], d:'Ateliê, conta e preferências'},
+  {p:'/master', l:'Ativação de cliente', i:I.file, admin:true, d:'Gerar link de acesso pós-pagamento'},
 ];
 function AlertsBell(){
   const [open,setOpen]=useState(false);
@@ -482,10 +487,10 @@ function AlertsBell(){
   </div>`;
 }
 function Shell({title,children}){
-  const {tenant,role,profile}=useApp();
+  const {tenant,role,profile,isAdmin}=useApp();
   const hash=useHash(); const base='/'+((hash.split('?')[0]).split('/')[1]||'');
   const [open,setOpen]=useState(false);
-  const can = it => !it.roles || it.roles.includes(role);
+  const can = it => it.admin ? !!isAdmin : (!it.roles || it.roles.includes(role));
   useEffect(()=>{ setOpen(false); },[hash]);
   return html`<div class="app">
     <${LivingBg}/>
@@ -1385,6 +1390,7 @@ function Router(){
   if(seg[0]==='alavancagem') return html`<${Alavancagem}/>`;
   if(seg[0]==='novidades') return html`<${Novidades}/>`;
   if(seg[0]==='config') return html`<${Config}/>`;
+  if(seg[0]==='master') return html`<${Master}/>`;
   return html`<${Dashboard}/>`;
 }
 
@@ -1481,6 +1487,101 @@ function FirstAccessModal({onClose}){
   </${Modal}>`;
 }
 
+/* ========== ATIVAÇÃO (primeiro acesso pós-pagamento) ========== */
+function getQ(name){ try{ return new URLSearchParams(location.search).get(name); }catch(_){ return null; } }
+function Ativar(){
+  const token=getQ('a')||'';
+  const [usuario,setUsuario]=useState(''),[s1,setS1]=useState(''),[s2,setS2]=useState('');
+  const [show,setShow]=useState(false),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[okMsg,setOkMsg]=useState('');
+  async function submit(e){ e.preventDefault(); setErr('');
+    if(!token){ setErr('Link de ativação inválido ou incompleto.'); return; }
+    const u=usuario.trim();
+    if(u.length<3){ setErr('Escolha um usuário com ao menos 3 caracteres.'); return; }
+    if(!/^[a-zA-Z0-9._-]+$/.test(u)){ setErr('No usuário, use apenas letras, números, ponto, hífen ou sublinhado.'); return; }
+    if(s1.length<6){ setErr('A senha deve ter ao menos 6 caracteres.'); return; }
+    if(s1!==s2){ setErr('As senhas não coincidem.'); return; }
+    setBusy(true);
+    try{
+      const r=await fetch(SUPABASE_URL+'/functions/v1/ativar-conta',{ method:'POST',
+        headers:{ 'Content-Type':'application/json','apikey':SUPABASE_ANON,'Authorization':'Bearer '+SUPABASE_ANON },
+        body: JSON.stringify({ token, username:u, senha:s1 }) });
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok || !j.ok){ setBusy(false); setErr(j.error||'Não foi possível ativar sua conta.'); return; }
+      setOkMsg('Conta criada! Entrando…');
+      const { error }=await db.auth.signInWithPassword({ email:j.email, password:s1 });
+      if(error){ setBusy(false); setErr('Conta criada. Use seu novo usuário e senha para entrar.'); setTimeout(()=>{ location.href=location.origin+location.pathname+'#/'; },1600); return; }
+      try{ history.replaceState(null,'',location.origin+location.pathname+'#/'); }catch(_){}
+      location.hash='/';
+    }catch(_){ setBusy(false); setErr('Falha na ativação. Tente novamente.'); }
+  }
+  return html`<${Fragment}><${LivingBg}/><div class="center"><div class="glass card">
+    <div style=${{display:'grid',placeItems:'center',marginBottom:'10px'}}><${BrandLogo} size=${110}/></div>
+    <h1 class="title">Ative seu acesso</h1>
+    <div class="sub">Crie seu usuário e senha para entrar no seu Ateliê Manager.</div>
+    <form onSubmit=${submit}>
+      ${err&&html`<div class="err">${err}</div>`}
+      ${okMsg&&html`<div style=${{background:'rgba(63,125,82,.12)',color:'#3f7d52',padding:'8px 10px',borderRadius:'8px',fontSize:'.85rem',marginBottom:'8px'}}>${okMsg}</div>`}
+      <label>Nome de usuário</label>
+      <input type="text" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ex.: costureirasalvador" value=${usuario} onInput=${e=>setUsuario(e.target.value)} required/>
+      <label>Senha</label>
+      <div class="field"><input type=${show?'text':'password'} placeholder="mín. 6 caracteres" value=${s1} onInput=${e=>setS1(e.target.value)} required/>
+        <button type="button" class="toggle" onClick=${()=>setShow(v=>!v)}>${show?'ocultar':'mostrar'}</button></div>
+      <label>Confirmar senha</label>
+      <input type=${show?'text':'password'} value=${s2} onInput=${e=>setS2(e.target.value)} required/>
+      <button class="primary" disabled=${busy}>${busy?'Ativando…':'Ativar e entrar'}</button>
+    </form>
+    <div class="foot"><${ByVizio} dark=${true}/></div>
+  </div></div></${Fragment}>`;
+}
+
+/* ========== MASTER · gerar link de ativação (admin) ========== */
+function Master(){
+  const {isAdmin}=useApp();
+  const [email,setEmail]=useState(''),[nome,setNome]=useState(''),[dias,setDias]=useState('7');
+  const [link,setLink]=useState(''),[err,setErr]=useState(''),[busy,setBusy]=useState(false);
+  async function gerar(e){ e.preventDefault(); setErr(''); setLink('');
+    const em=email.trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ setErr('Informe um e-mail válido.'); return; }
+    const { data:{ session } }=await db.auth.getSession();
+    if(!session){ setErr('Sessão expirada. Entre novamente.'); return; }
+    setBusy(true);
+    try{
+      const r=await fetch(SUPABASE_URL+'/functions/v1/gerar-ativacao',{ method:'POST',
+        headers:{ 'Content-Type':'application/json','apikey':SUPABASE_ANON,'Authorization':'Bearer '+session.access_token },
+        body: JSON.stringify({ email:em, nome:nome.trim()||undefined, dias:Number(dias)||7,
+          instancia:nome.trim()?('Ateliê Manager — '+nome.trim()):undefined }) });
+      const j=await r.json().catch(()=>({}));
+      setBusy(false);
+      if(!r.ok || !j.url){ setErr(j.error||'Não foi possível gerar o link.'); return; }
+      setLink(j.url);
+    }catch(_){ setBusy(false); setErr('Falha ao gerar o link. Tente novamente.'); }
+  }
+  function copiar(){ try{ navigator.clipboard.writeText(link); toast('Link copiado!','ok'); }catch(_){ toast('Copie manualmente o link.','err'); } }
+  return html`<${Shell}>
+    <div style=${{marginBottom:'14px'}}><h1 class="h1">Ativação de cliente</h1>
+      <p class="muted">Gere o link de primeiro acesso <b>depois</b> de confirmar o pagamento. O link cria a conta já ativa; a cliente define usuário e senha.</p></div>
+    ${!isAdmin?html`<div class="glass card"><h3>Acesso restrito</h3><p class="muted">Esta área é exclusiva do administrador da plataforma.</p></div>`
+    :html`<div class="glass card" style=${{maxWidth:'560px'}}>
+      <form onSubmit=${gerar}>
+        ${err&&html`<div class="err">${err}</div>`}
+        <label>E-mail da cliente (o mesmo do pagamento)</label>
+        <input type="email" autocapitalize="none" autocorrect="off" spellcheck="false" value=${email} onInput=${e=>setEmail(e.target.value)} placeholder="cliente@email.com" required/>
+        <label>Nome (opcional)</label>
+        <input type="text" value=${nome} onInput=${e=>setNome(e.target.value)} placeholder="Aimée"/>
+        <label>Validade do link (dias)</label>
+        <input type="number" min="1" max="30" value=${dias} onInput=${e=>setDias(e.target.value)}/>
+        <button class="primary" disabled=${busy}>${busy?'Gerando…':'Gerar link de ativação'}</button>
+      </form>
+      ${link&&html`<div style=${{marginTop:'16px'}}>
+        <label>Link para enviar à cliente</label>
+        <div class="field"><input type="text" readOnly value=${link} onFocus=${e=>e.target.select()}/>
+          <button type="button" class="toggle" onClick=${copiar}>copiar</button></div>
+        <p class="muted" style=${{fontSize:'.8rem'}}>Envie por WhatsApp ou e-mail. Ao abrir, ela cria usuário e senha e entra já com acesso liberado.</p>
+      </div>`}
+    </div>`}
+  </${Shell}>`;
+}
+
 /* ========== ROOT ========== */
 function App(){
   const [session,setSession]=useState(undefined);
@@ -1505,6 +1606,8 @@ function App(){
     }
     setCtx({ tenant, tenantId:m?.tenant_id, role:m?.role||'atendente', isAdmin:!!(adm&&adm.data&&adm.data.is_admin), trocarSenha:!!(prof&&prof.trocar_senha), profile:prof||{nome:(session.user.email||'').split('@')[0]} });
   })(); },[session]);
+  const onAtivar=(location.hash||'').replace(/^#\/?/,'').split('?')[0].split('/')[0]==='ativar';
+  if(onAtivar) return html`<${Fragment}><${Toaster}/><${Ativar}/></${Fragment}>`;
   if(session===undefined) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Carregando…</div></div></${Fragment}>`;
   if(!session) return html`<${Fragment}><${Toaster}/><${Login}/></${Fragment}>`;
   if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
