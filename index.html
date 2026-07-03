@@ -56,7 +56,7 @@
   .foot{color:var(--muted);text-align:center;font-size:.72rem;margin-top:18px;letter-spacing:.02em}
   /* app shell */
   .app{display:grid;grid-template-columns:236px 1fr;min-height:100dvh}
-  .side{position:sticky;top:0;height:100dvh;padding:20px 14px;border-right:1px solid var(--border);
+  .side{position:sticky;top:0;z-index:20;height:100dvh;padding:20px 14px;border-right:1px solid var(--border);
     background:rgba(248,244,238,.75);backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:4px}
   .side .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
   .side .brand .nm{font-family:"Cormorant Garamond",serif;font-size:1.15rem;line-height:1;font-weight:600}
@@ -177,6 +177,8 @@
   .app{background:transparent}
   /* brand logos */
   .brandmark{border-radius:50%;object-fit:cover;display:block;box-shadow:0 0 0 2px var(--cream),0 0 0 4px rgba(142,44,176,.5),0 8px 22px rgba(46,43,49,.28)}
+  .story-ring{display:inline-grid;place-items:center;border-radius:50%;padding:3px;background:conic-gradient(from 210deg,#8e2cb0,#c86ee0 25%,#8e2cb0 55%,#5e3a56 80%,#8e2cb0);box-shadow:0 6px 18px rgba(142,44,176,.28)}
+  .story-ring .brandmark{box-shadow:none;border:2.5px solid var(--cream)}
   @media (prefers-reduced-motion:no-preference){.breathe-img{animation:imgBr 4.6s ease-in-out infinite;transform-origin:center}}
   @keyframes imgBr{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
   .byvizio{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.72rem}
@@ -264,7 +266,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.7.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -490,7 +492,7 @@ function Shell({title,children}){
     <${LivingBg}/>
     ${open&&html`<div class="backdrop" onClick=${()=>setOpen(false)}/>`}
     <aside class=${'side'+(open?' open':'')}>
-      <div class="brand"><${BrandLogo} size=${60}/><div><div class="nm">${tenant?.nome||'Ateliê'}</div><div class="tg">Ateliê Manager</div></div></div>
+      <div class="brand"><span class="story-ring"><${BrandLogo} size=${64}/></span><div><div class="nm">${tenant?.nome||'Ateliê'}</div><div class="tg">Ateliê Manager</div></div></div>
       <nav class="nav">
         ${NAV.filter(can).map((it,k)=> it.g
           ? html`<div class="sep" key=${'g'+k}>${it.g}</div>`
@@ -1438,7 +1440,7 @@ function BillingGate({user}){
   return html`<${Fragment}>
     ${showBanner&&html`<div class=${'gate-bar '+(st.pastDue?'':'info')}>
       <span class="gd"></span>
-      <span>${st.pastDue?'Pagamento pendente — regularize para manter o acesso.':'Período de cortesia — '+st.graceLeft+' dia(s). Assine para garantir seu acesso.'}</span>
+      <span>${st.pastDue?'Pagamento pendente — regularize para manter o acesso.':'Ative sua assinatura para manter o acesso completo ao sistema.'}</span>
       <button class="gb" onClick=${assinar}>${st.pastDue?'Regularizar':'Assinar'}</button>
     </div>`}
     ${st.blocked&&html`<div class="gate-ov">
@@ -1454,10 +1456,37 @@ function BillingGate({user}){
   </${Fragment}>`;
 }
 
+/* ========== PRIMEIRO ACESSO (sugestão de trocar senha, 1x) ========== */
+function FirstAccessModal({onClose}){
+  const {profile}=useApp();
+  const [s1,setS1]=useState(''),[s2,setS2]=useState(''),[show,setShow]=useState(false),[busy,setBusy]=useState(false);
+  async function done(clearOnly){
+    if(!clearOnly){
+      if((s1||'').length<6){ toast('A senha deve ter ao menos 6 caracteres.','err'); return; }
+      if(s1!==s2){ toast('As senhas não coincidem.','err'); return; }
+      setBusy(true);
+      const {error}=await db.auth.updateUser({password:s1});
+      if(error){ setBusy(false); toast('Erro: '+error.message,'err'); return; }
+    }
+    try{ await db.from('profiles').update({trocar_senha:false}).eq('id',profile.id); }catch(_){}
+    setBusy(false); if(!clearOnly) toast('Senha atualizada. Bem-vinda!','ok'); onClose();
+  }
+  return html`<${Modal} title="Bem-vinda ao seu sistema!" onClose=${()=>done(true)} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${()=>done(true)}>Fazer depois</button>
+    <button class="btn pri" disabled=${busy} onClick=${()=>done(false)}>${busy?'Salvando…':'Salvar nova senha'}</button></${Fragment}>`}>
+    <p style=${{marginTop:0,color:'#5a525c',fontSize:'.92rem'}}>Seu sistema está pronto e no seu nome. Para começar com segurança, crie uma <b>nova senha</b> — só sua.</p>
+    <label>Nova senha</label>
+    <div class="field"><input type=${show?'text':'password'} value=${s1} onInput=${e=>setS1(e.target.value)} placeholder="mín. 6 caracteres"/>
+      <button type="button" class="toggle" onClick=${()=>setShow(v=>!v)}>${show?'ocultar':'mostrar'}</button></div>
+    <label>Confirmar nova senha</label><input type=${show?'text':'password'} value=${s2} onInput=${e=>setS2(e.target.value)}/>
+  </${Modal}>`;
+}
+
 /* ========== ROOT ========== */
 function App(){
   const [session,setSession]=useState(undefined);
   const [ctx,setCtx]=useState(null);
+  const [firstDone,setFirstDone]=useState(false);
   useEffect(()=>{
     db.auth.getSession().then(({data})=>setSession(data.session));
     const { data:sub }=db.auth.onAuthStateChange((_e,s)=>setSession(s));
@@ -1475,12 +1504,12 @@ function App(){
       if(st?.cor_primaria) document.documentElement.style.setProperty('--plum',st.cor_primaria);
       if(st?.cor_secundaria) document.documentElement.style.setProperty('--violet',st.cor_secundaria);
     }
-    setCtx({ tenant, tenantId:m?.tenant_id, role:m?.role||'atendente', isAdmin:!!(adm&&adm.data&&adm.data.is_admin), profile:prof||{nome:(session.user.email||'').split('@')[0]} });
+    setCtx({ tenant, tenantId:m?.tenant_id, role:m?.role||'atendente', isAdmin:!!(adm&&adm.data&&adm.data.is_admin), trocarSenha:!!(prof&&prof.trocar_senha), profile:prof||{nome:(session.user.email||'').split('@')[0]} });
   })(); },[session]);
   if(session===undefined) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Carregando…</div></div></${Fragment}>`;
   if(!session) return html`<${Fragment}><${Toaster}/><${Login}/></${Fragment}>`;
   if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
-  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${BillingGate} user=${session.user}/><${Router}/></${Ctx.Provider}>`;
+  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${BillingGate} user=${session.user}/>${ctx.trocarSenha&&!firstDone&&html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`}<${Router}/></${Ctx.Provider}>`;
 }
 ReactDOM.createRoot(document.getElementById('root')).render(createElement(App));
 </script>
