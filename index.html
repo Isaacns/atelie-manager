@@ -265,12 +265,13 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.10.1';
+const APP_VERSION = '1.10.2';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const onlyDigits = s => (s||'').replace(/\D/g,'');
 const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('pt-BR') : '—';
+const fmtDateTime = x => { if(!x) return '—'; const d=new Date(String(x).replace(' ','T').replace(/([+-]\d{2})$/,'$1:00')); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); };
 const todayISO = () => new Date().toISOString().slice(0,10);
 const monthStart = () => { const d=new Date(); return new Date(d.getFullYear(),d.getMonth(),1).toISOString().slice(0,10); };
 const daysBetween = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
@@ -1250,7 +1251,7 @@ function Fiscal(){
     ${done.length>0&&html`<div class="glass panel" style=${{marginTop:'16px'}}>
       <h3>Notas emitidas</h3><p class="desc">Registro das NFS-e já emitidas no portal.</p>
       <div class="tblwrap"><table class="tbl"><thead><tr><th>NFS-e</th><th>OS</th><th>Serviço</th><th class="r">Valor</th><th>Emitida em</th></tr></thead>
-        <tbody>${done.slice(0,20).map(o=>html`<tr key=${o.id}><td class="b">${o.nfse_numero||'—'}</td><td>#${o.numero}</td><td>${o.descricao||'—'}</td><td class="r">${BRL(o.valor)}</td><td>${o.nfse_emitida_em?new Date(o.nfse_emitida_em).toLocaleDateString('pt-BR'):'—'}</td></tr>`)}</tbody></table></div>
+        <tbody>${done.slice(0,20).map(o=>html`<tr key=${o.id}><td class="b">${o.nfse_numero||'—'}</td><td>#${o.numero}</td><td>${o.descricao||'—'}</td><td class="r">${BRL(o.valor)}</td><td>${fmtDateTime(o.nfse_emitida_em)}</td></tr>`)}</tbody></table></div>
     </div>`}
     ${emit&&html`<${EmitirNfse} ordem=${emit} portal=${portal} onClose=${()=>setEmit(null)} onDone=${()=>{setEmit(null);load();}}/>`}
   </${Shell}>`;
