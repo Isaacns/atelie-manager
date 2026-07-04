@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.10.0';
+const APP_VERSION = '1.10.1';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -1250,7 +1250,7 @@ function Fiscal(){
     ${done.length>0&&html`<div class="glass panel" style=${{marginTop:'16px'}}>
       <h3>Notas emitidas</h3><p class="desc">Registro das NFS-e já emitidas no portal.</p>
       <div class="tblwrap"><table class="tbl"><thead><tr><th>NFS-e</th><th>OS</th><th>Serviço</th><th class="r">Valor</th><th>Emitida em</th></tr></thead>
-        <tbody>${done.slice(0,20).map(o=>html`<tr key=${o.id}><td class="b">${o.nfse_numero||'—'}</td><td>#${o.numero}</td><td>${o.descricao||'—'}</td><td class="r">${BRL(o.valor)}</td><td>${o.nfse_emitida_em?fmtDate(o.nfse_emitida_em):'—'}</td></tr>`)}</tbody></table></div>
+        <tbody>${done.slice(0,20).map(o=>html`<tr key=${o.id}><td class="b">${o.nfse_numero||'—'}</td><td>#${o.numero}</td><td>${o.descricao||'—'}</td><td class="r">${BRL(o.valor)}</td><td>${o.nfse_emitida_em?new Date(o.nfse_emitida_em).toLocaleDateString('pt-BR'):'—'}</td></tr>`)}</tbody></table></div>
     </div>`}
     ${emit&&html`<${EmitirNfse} ordem=${emit} portal=${portal} onClose=${()=>setEmit(null)} onDone=${()=>{setEmit(null);load();}}/>`}
   </${Shell}>`;
