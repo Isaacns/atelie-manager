@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.9.0';
+const APP_VERSION = '1.10.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -1204,35 +1204,84 @@ function Relatorios(){
 
 /* ========== FISCAL (arquitetado, ativação futura) ========== */
 function Fiscal(){
-  const [os,setOs]=useState(null),[cfg,setCfg]=useState(null);
-  useEffect(()=>{ (async()=>{
-    const {data}=await db.from('ordens').select('id,numero,valor,status,descricao').in('status',['finalizado','entregue']).order('numero',{ascending:false});
-    setOs(data||[]);
-    const {data:s}=await db.from('tenant_settings').select('cnpj').maybeSingle(); setCfg(s||{});
-  })(); },[]);
-  const total=(os||[]).reduce((a,o)=>a+Number(o.valor||0),0);
-  const ativo=false; // gateway ainda não configurado
+  const {settings}=useApp();
+  const f=(settings&&settings.fiscal)||{};
+  const portal=f.portal||'https://www.nfse.gov.br';
+  const [rows,setRows]=useState(null),[emit,setEmit]=useState(null);
+  const load=useCallback(async()=>{
+    const {data}=await db.from('ordens').select('id,numero,valor,status,descricao,cliente_id,nfse_emitida,nfse_numero,nfse_emitida_em').in('status',['finalizado','entregue']).order('numero',{ascending:false});
+    const ids=[...new Set((data||[]).map(o=>o.cliente_id).filter(Boolean))];
+    let cmap={};
+    if(ids.length){ const {data:cs}=await db.from('clientes').select('id,nome,cpf').in('id',ids); (cs||[]).forEach(c=>{cmap[c.id]=c;}); }
+    setRows((data||[]).map(o=>({...o, cliente:cmap[o.cliente_id]||null})));
+  },[]);
+  useEffect(()=>{load();},[]);
+  if(rows===null) return html`<${Shell} title="Fiscal (NFS-e)"><div class="hint">Carregando…</div></${Shell}>`;
+  const pend=rows.filter(o=>!o.nfse_emitida), done=rows.filter(o=>o.nfse_emitida);
+  const totalPend=pend.reduce((a,o)=>a+Number(o.valor||0),0);
   return html`<${Shell} title="Fiscal (NFS-e)">
     <div class="notice" style=${{marginBottom:'16px'}}>
-      <b>Módulo fiscal arquitetado.</b> A emissão de <b>NFS-e</b> (nota de serviço, prefeitura de Salvador) será ativada por
-      integração com um gateway fiscal (ex.: Nuvem Fiscal, Focus NFe, PlugNotas). Costureira presta serviço — o documento é
-      NFS-e, não NFe de produto.
+      <b>NFS-e pelo Emissor Nacional — gratuito.</b> Como <b>${f.regime||'MEI'}</b>, a nota de serviço é emitida no
+      <b>Portal Nacional da NFS-e</b>, sem custo e sem gateway. O sistema prepara os dados de cada serviço e guarda o
+      número da nota para o seu controle.${f.iss_obs?html`<br/><span class="muted">${f.iss_obs}</span>`:''}
     </div>
     <div class="row two">
-      <div class="glass panel"><h3>Pré-requisitos para ativar</h3><p class="desc">Reúna estes itens para ligar a emissão automática.</p>
-        ${[['CNPJ ativo (MEI ou ME)',!!cfg?.cnpj],['Inscrição Municipal em Salvador',false],['Certificado digital e-CNPJ (A1)',false],['Conta no gateway fiscal',false],['Alíquota de ISS do serviço definida',false]]
-          .map(([t,ok])=>html`<div class="chk" key=${t}><${Ic} d=${ok?I.check:I.file} cls="m" style=${ok?{color:'var(--ok)'}:null}/><span>${t}${ok?html` <span class="tag">ok</span>`:''}</span></div>`)}
-        <button class="btn pri" style=${{marginTop:'12px'}} onClick=${()=>toast('Ative o gateway em Configurações → Fiscal (próxima etapa).','')}>Configurar emissão</button>
+      <div class="glass panel"><h3>Identidade fiscal</h3><p class="desc">Dados usados na emissão da nota de serviço.</p>
+        <div class="stat-list">
+          <div class="it"><span>CNPJ</span><span class="v">${settings?.cnpj||'—'}</span></div>
+          <div class="it"><span>Regime</span><span class="v">${f.regime||'MEI'}</span></div>
+          <div class="it"><span>Serviço · LC 116</span><span class="v">${f.item_lc116||'14.09'}</span></div>
+        </div>
+        ${f.descricao_servico?html`<p class="muted" style=${{marginTop:'8px',fontSize:'.82rem'}}>${f.descricao_servico}</p>`:''}
+        <a class="btn pri" style=${{marginTop:'12px',display:'inline-flex'}} href=${portal} target="_blank" rel="noopener"><${Ic} d=${I.file}/>Abrir Emissor Nacional</a>
+        <p class="muted" style=${{marginTop:'8px',fontSize:'.76rem'}}>Entre com sua conta <b>gov.br</b>. Há também o app <b>NFS-e Mobile</b> (Android/iOS).</p>
       </div>
-      <div class="glass panel"><h3>Serviços prontos para emitir</h3><p class="desc">OS finalizadas/entregues aguardando NFS-e.</p>
-        <div class="stat-list"><div class="it"><span>Documentos pendentes</span><span class="v">${os?os.length:'…'}</span></div>
-          <div class="it"><span>Valor total</span><span class="v">${BRL(total)}</span></div></div>
-        ${os&&os.length>0&&html`<div class="tblwrap" style=${{marginTop:'10px'}}><table class="tbl"><thead><tr><th>#</th><th>Serviço</th><th class="r">Valor · NFS-e</th></tr></thead>
-          <tbody>${os.slice(0,8).map(o=>html`<tr key=${o.id}><td class="b">${o.numero}</td><td>${o.descricao||'—'}</td>
-            <td class="r">${BRL(o.valor)} <button class="btn sm" disabled title="Requer gateway fiscal ativo" style=${{opacity:.5,cursor:'not-allowed'}}>Emitir</button></td></tr>`)}</tbody></table></div>`}
+      <div class="glass panel"><h3>Serviços a emitir</h3><p class="desc">OS finalizadas/entregues ainda sem NFS-e.</p>
+        <div class="stat-list"><div class="it"><span>Pendentes</span><span class="v">${pend.length}</span></div>
+          <div class="it"><span>Valor total</span><span class="v">${BRL(totalPend)}</span></div></div>
+        ${pend.length===0? html`<div class="muted" style=${{marginTop:'10px'}}>Nenhum serviço pendente de nota. ✓</div>`
+        : html`<div class="tblwrap" style=${{marginTop:'10px'}}><table class="tbl"><thead><tr><th>#</th><th>Serviço</th><th class="r">Valor</th><th></th></tr></thead>
+          <tbody>${pend.slice(0,10).map(o=>html`<tr key=${o.id}>
+            <td class="b">${o.numero}</td><td>${o.descricao||'—'}<br/><span class="muted" style=${{fontSize:'.72rem'}}>${o.cliente?.nome||'Consumidor'}</span></td>
+            <td class="r">${BRL(o.valor)}</td>
+            <td class="r"><button class="btn sm pri" onClick=${()=>setEmit(o)}>Emitir</button></td></tr>`)}</tbody></table></div>`}
       </div>
     </div>
+    ${done.length>0&&html`<div class="glass panel" style=${{marginTop:'16px'}}>
+      <h3>Notas emitidas</h3><p class="desc">Registro das NFS-e já emitidas no portal.</p>
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>NFS-e</th><th>OS</th><th>Serviço</th><th class="r">Valor</th><th>Emitida em</th></tr></thead>
+        <tbody>${done.slice(0,20).map(o=>html`<tr key=${o.id}><td class="b">${o.nfse_numero||'—'}</td><td>#${o.numero}</td><td>${o.descricao||'—'}</td><td class="r">${BRL(o.valor)}</td><td>${o.nfse_emitida_em?fmtDate(o.nfse_emitida_em):'—'}</td></tr>`)}</tbody></table></div>
+    </div>`}
+    ${emit&&html`<${EmitirNfse} ordem=${emit} portal=${portal} onClose=${()=>setEmit(null)} onDone=${()=>{setEmit(null);load();}}/>`}
   </${Shell}>`;
+}
+
+function EmitirNfse({ordem, portal, onClose, onDone}){
+  const [num,setNum]=useState(''),[busy,setBusy]=useState(false);
+  const disc=(ordem.descricao||'Serviço de costura')+' — Ref. OS #'+ordem.numero;
+  async function marcar(){
+    if(!num.trim()){ toast('Informe o número da NFS-e emitida.','err'); return; }
+    setBusy(true);
+    const {error}=await db.from('ordens').update({nfse_emitida:true, nfse_numero:num.trim(), nfse_emitida_em:new Date().toISOString()}).eq('id',ordem.id);
+    setBusy(false);
+    if(error){ toast('Erro ao registrar: '+error.message,'err'); return; }
+    toast('NFS-e registrada!','ok'); onDone();
+  }
+  function copiar(){ try{ navigator.clipboard.writeText(disc); toast('Discriminação copiada.','ok'); }catch(_){ toast('Copie manualmente.','err'); } }
+  return html`<${Modal} title=${'Emitir NFS-e — OS #'+ordem.numero} onClose=${onClose} footer=${html`<${Fragment}>
+    <a class="btn pri" href=${portal} target="_blank" rel="noopener">Abrir Emissor Nacional</a>
+    <button class="btn" disabled=${busy} onClick=${marcar}>${busy?'…':'Registrar nº da nota'}</button></${Fragment}>`}>
+    <p style=${{marginTop:0,color:'#5a525c',fontSize:'.9rem'}}>Emita a nota no <b>Portal Nacional</b> com os dados abaixo e depois registre o número aqui, para controle.</p>
+    <div class="stat-list">
+      <div class="it"><span>Tomador</span><span class="v">${ordem.cliente?.nome||'Consumidor não identificado'}</span></div>
+      ${ordem.cliente?.cpf?html`<div class="it"><span>CPF/CNPJ</span><span class="v">${ordem.cliente.cpf}</span></div>`:''}
+      <div class="it"><span>Valor do serviço</span><span class="v">${BRL(ordem.valor)}</span></div>
+    </div>
+    <label style=${{marginTop:'10px'}}>Discriminação do serviço</label>
+    <div class="field"><input type="text" readOnly value=${disc} onFocus=${e=>e.target.select()}/><button type="button" class="toggle" onClick=${copiar}>copiar</button></div>
+    <label style=${{marginTop:'10px'}}>Número da NFS-e (após emitir no portal)</label>
+    <input type="text" value=${num} onInput=${e=>setNum(e.target.value)} placeholder="ex.: 000123"/>
+  </${Modal}>`;
 }
 
 /* ========== CONFIG ========== */
@@ -1632,7 +1681,7 @@ function App(){
     ]);
     let tenant=null, settings={};
     if(m?.tenant_id){ const {data:t}=await db.from('tenants').select('*').eq('id',m.tenant_id).maybeSingle(); tenant=t;
-      const {data:st}=await db.from('tenant_settings').select('cor_primaria,cor_secundaria,cnpj,endereco,telefone,whatsapp,email,subtitulo').eq('tenant_id',m.tenant_id).maybeSingle();
+      const {data:st}=await db.from('tenant_settings').select('cor_primaria,cor_secundaria,cnpj,endereco,telefone,whatsapp,email,subtitulo,fiscal').eq('tenant_id',m.tenant_id).maybeSingle();
       settings=st||{};
       if(st?.cor_primaria) document.documentElement.style.setProperty('--plum',st.cor_primaria);
       if(st?.cor_secundaria) document.documentElement.style.setProperty('--violet',st.cor_secundaria);
