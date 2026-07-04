@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -292,6 +292,37 @@ function printDoc(title, bodyHtml, tenantName){
     +'<div class="brand"><img src="'+base+'costureira-logo.jpg" alt=""><div><h1>'+esc(tenantName||'Ateliê')+'</h1><div class="s">Ateliê de costura · Salvador</div></div>'
     +'<div class="meta">'+esc(title)+'<br>Emitido em '+new Date().toLocaleString('pt-BR')+'</div></div>'
     +bodyHtml+'<div class="ft">Ateliê Manager By Vizio</div>'
+    +'<'+'script>window.onload=function(){setTimeout(function(){window.print()},150)}<'+'/script></body></html>');
+  w.document.close();
+}
+function printCupom(o, cli, tenantName, st){
+  const w=window.open('','_blank','width=380,height=700');
+  if(!w){ toast('Permita pop-ups para gerar o cupom.','err'); return; }
+  const base=location.href.replace(/[#?].*$/,'').replace(/[^/]*$/,'');
+  const s=st||{};
+  const end=(typeof s.endereco==='string')?s.endereco:'';
+  const info=[].concat(s.cnpj?['CNPJ '+esc(s.cnpj)]:[])
+    .concat(end?[esc(end)]:[])
+    .concat((s.telefone||s.whatsapp)?[esc(s.telefone||s.whatsapp)]:[]).join('<br>');
+  const linha='<div style="border-top:1px dashed #999;margin:7px 0"></div>';
+  const css='@page{size:80mm auto;margin:0}*{box-sizing:border-box}'
+    +'body{font-family:"Courier New",monospace;color:#111;margin:0;padding:9px 11px;width:80mm;font-size:12px;line-height:1.35}'
+    +'.c{text-align:center}.b{font-weight:700}.nm{font-size:15px;font-weight:700}.mut{color:#555;font-size:10.5px}'
+    +'.row{display:flex;justify-content:space-between;gap:8px}.tot{font-size:14px;font-weight:700}'
+    +'.tag{font-size:11px;font-weight:700;letter-spacing:.08em}.disc{font-size:10px;color:#333;text-align:center;margin-top:6px}';
+  const body='<div class="c"><img src="'+base+'costureira-logo.jpg" style="width:44px;height:44px;border-radius:50%;object-fit:cover" alt="">'
+    +'<div class="nm">'+esc(tenantName||'Ateliê')+'</div><div class="mut">'+esc(s.subtitulo||'Ateliê de Costura')+'</div>'
+    +(info?'<div class="mut" style="margin-top:3px">'+info+'</div>':'')+'</div>'+linha
+    +'<div class="c tag">CUPOM NÃO FISCAL</div>'
+    +'<div class="mut c">OS #'+esc(String(o.numero))+' · '+new Date().toLocaleString('pt-BR')+'</div>'
+    +'<div style="margin-top:4px">Cliente: <b>'+esc(cli&&cli.nome?cli.nome:'Consumidor')+'</b></div>'+linha
+    +'<div class="row"><span>'+esc(o.descricao||'Serviço')+'</span><span class="b">'+BRL(o.valor)+'</span></div>'+linha
+    +'<div class="row tot"><span>TOTAL</span><span>'+BRL(o.valor)+'</span></div>'
+    +'<div class="mut" style="margin-top:5px">Forma de pagamento: ________________</div>'+linha
+    +'<div class="disc">Obrigado pela preferência!</div>'
+    +'<div class="disc b">ESTE DOCUMENTO NÃO POSSUI VALOR FISCAL</div>'
+    +'<div class="disc" style="margin-top:9px;color:#999">Ateliê Manager By Vizio</div>';
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Cupom não fiscal — OS '+esc(String(o.numero))+'</title><style>'+css+'</style></head><body>'+body
     +'<'+'script>window.onload=function(){setTimeout(function(){window.print()},150)}<'+'/script></body></html>');
   w.document.close();
 }
@@ -831,7 +862,7 @@ function Ordens(){
   </${Shell}>`;
 }
 function OrdemDetail({id}){
-  const {tenantId,tenant}=useApp();
+  const {tenantId,tenant,settings}=useApp();
   const [o,setO]=useState(null),[cli,setCli]=useState(null),[hist,setHist]=useState([]),[clientes]=useRows('clientes',{order:'nome',asc:true}),[servicos]=useRows('servicos',{order:'nome',asc:true}),[usuarios]=useRows('profiles',{order:'nome',asc:true}),[edit,setEdit]=useState(false),[del,setDel]=useState(false);
   const load=useCallback(async()=>{
     const {data}=await db.from('ordens').select('*').eq('id',id).maybeSingle(); setO(data);
@@ -867,6 +898,7 @@ function OrdemDetail({id}){
           href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent('Olá '+(cli.nome||'').split(' ')[0]+'! Seu serviço'+(o.descricao?' ("'+o.descricao+'")':'')+' está pronto para retirada. 🧵 — '+(tenant?.nome||''))}>
           <${Ic} d=${I.wa}/>Avisar pronto</a>`}
         <button class="btn sm" onClick=${printOS}><${Ic} d=${I.print}/>Imprimir OS</button>
+        <button class="btn sm" title="Cupom não fiscal (recibo)" onClick=${()=>printCupom(o,cli,tenant?.nome,settings)}><${Ic} d=${I.file}/>Cupom</button>
         ${cli?.whatsapp&&html`<a class="btn sm" target="_blank" title="Enviar a OS ao cliente" href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent(osText())}><${Ic} d=${I.wa}/>Enviar OS</a>`}
         <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
         <button class="btn sm ghost" onClick=${()=>setDel(true)}><${Ic} d=${I.trash}/></button>
@@ -1598,13 +1630,14 @@ function App(){
       db.from('profiles').select('*').eq('id',session.user.id).maybeSingle(),
       (typeof db.schema==='function'?db.schema('public'):db).from('fin_perfis').select('is_admin').maybeSingle(),
     ]);
-    let tenant=null;
+    let tenant=null, settings={};
     if(m?.tenant_id){ const {data:t}=await db.from('tenants').select('*').eq('id',m.tenant_id).maybeSingle(); tenant=t;
-      const {data:st}=await db.from('tenant_settings').select('cor_primaria,cor_secundaria').eq('tenant_id',m.tenant_id).maybeSingle();
+      const {data:st}=await db.from('tenant_settings').select('cor_primaria,cor_secundaria,cnpj,endereco,telefone,whatsapp,email,subtitulo').eq('tenant_id',m.tenant_id).maybeSingle();
+      settings=st||{};
       if(st?.cor_primaria) document.documentElement.style.setProperty('--plum',st.cor_primaria);
       if(st?.cor_secundaria) document.documentElement.style.setProperty('--violet',st.cor_secundaria);
     }
-    setCtx({ tenant, tenantId:m?.tenant_id, role:m?.role||'atendente', isAdmin:!!(adm&&adm.data&&adm.data.is_admin), trocarSenha:!!(prof&&prof.trocar_senha), profile:prof||{nome:(session.user.email||'').split('@')[0]} });
+    setCtx({ tenant, tenantId:m?.tenant_id, settings, role:m?.role||'atendente', isAdmin:!!(adm&&adm.data&&adm.data.is_admin), trocarSenha:!!(prof&&prof.trocar_senha), profile:prof||{nome:(session.user.email||'').split('@')[0]} });
   })(); },[session]);
   const onAtivar=(location.hash||'').replace(/^#\/?/,'').split('?')[0].split('/')[0]==='ativar';
   if(onAtivar) return html`<${Fragment}><${Toaster}/><${Ativar}/></${Fragment}>`;
