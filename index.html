@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.10.2';
+const APP_VERSION = '1.11.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -1664,11 +1664,44 @@ function Master(){
   </${Shell}>`;
 }
 
+/* ========== NOVIDADE (aviso de nova versão liberada) ========== */
+function NovidadeModal({onClose}){
+  const {profile}=useApp();
+  const [items,setItems]=useState(null);
+  useEffect(()=>{ (async()=>{
+    try{
+      const pub=(typeof db.schema==='function')?db.schema('public'):db;
+      const {data}=await pub.from('plataforma_versoes').select('titulo,descricao,tipo,versao,lancado_em')
+        .eq('sistema','atelie').eq('status','lancado').not('lancado_em','is',null).order('lancado_em',{ascending:false});
+      const vistoEm=profile&&profile.novidades_vistas_em;
+      if(!vistoEm){ try{ await db.from('profiles').update({novidades_vistas_em:new Date().toISOString()}).eq('id',profile.id); }catch(_){}
+        onClose(); return; }
+      const novos=(data||[]).filter(r=>r.lancado_em&&new Date(r.lancado_em)>new Date(vistoEm)).slice(0,4);
+      if(novos.length===0){ onClose(); return; }
+      setItems(novos);
+    }catch(_){ onClose(); }
+  })(); },[]);
+  async function fechar(ir){ try{ await db.from('profiles').update({novidades_vistas_em:new Date().toISOString()}).eq('id',profile.id); }catch(_){}
+    onClose(); if(ir) go('/novidades'); }
+  if(!items||items.length===0) return null;
+  const tag={novidade:'Novidade',melhoria:'Melhoria',correcao:'Correção'};
+  return html`<${Modal} title="✨ Novidade no seu sistema!" onClose=${()=>fechar(false)} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${()=>fechar(false)}>Agora não</button>
+    <button class="btn pri" onClick=${()=>fechar(true)}>Ver novidades</button></${Fragment}>`}>
+    <p style=${{marginTop:0,color:'#5a525c'}}>Preparamos melhorias novinhas pra você 💜</p>
+    <div class="stat-list">${items.map((r,i)=>html`<div class="it" key=${i} style=${{alignItems:'flex-start',flexDirection:'column',gap:'3px',padding:'10px 4px'}}>
+      <div style=${{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}><span class="tag">${tag[r.tipo]||r.tipo}</span><b>${r.titulo}</b>${r.versao?html`<span class="muted" style=${{fontSize:'.72rem'}}>v${r.versao}</span>`:''}</div>
+      ${r.descricao&&html`<span class="muted" style=${{fontSize:'.86rem'}}>${r.descricao}</span>`}
+    </div>`)}</div>
+  </${Modal}>`;
+}
+
 /* ========== ROOT ========== */
 function App(){
   const [session,setSession]=useState(undefined);
   const [ctx,setCtx]=useState(null);
   const [firstDone,setFirstDone]=useState(false);
+  const [novidDone,setNovidDone]=useState(false);
   useEffect(()=>{
     db.auth.getSession().then(({data})=>setSession(data.session));
     const { data:sub }=db.auth.onAuthStateChange((_e,s)=>setSession(s));
@@ -1682,7 +1715,7 @@ function App(){
     ]);
     let tenant=null, settings={};
     if(m?.tenant_id){ const {data:t}=await db.from('tenants').select('*').eq('id',m.tenant_id).maybeSingle(); tenant=t;
-      const {data:st}=await db.from('tenant_settings').select('cor_primaria,cor_secundaria,cnpj,endereco,telefone,whatsapp,email,subtitulo,fiscal').eq('tenant_id',m.tenant_id).maybeSingle();
+      const {data:st}=await db.from('tenant_settings').select('cor_primaria,cor_secundaria,cnpj,endereco,telefone,whatsapp,email,subtitulo,fiscal,features').eq('tenant_id',m.tenant_id).maybeSingle();
       settings=st||{};
       if(st?.cor_primaria) document.documentElement.style.setProperty('--plum',st.cor_primaria);
       if(st?.cor_secundaria) document.documentElement.style.setProperty('--violet',st.cor_secundaria);
@@ -1694,7 +1727,8 @@ function App(){
   if(session===undefined) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Carregando…</div></div></${Fragment}>`;
   if(!session) return html`<${Fragment}><${Toaster}/><${Login}/></${Fragment}>`;
   if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
-  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${BillingGate} user=${session.user}/>${ctx.trocarSenha&&!firstDone&&html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`}<${Router}/></${Ctx.Provider}>`;
+  const showFirst=ctx.trocarSenha&&!firstDone;
+  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${BillingGate} user=${session.user}/>${showFirst?html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`:(!novidDone&&html`<${NovidadeModal} onClose=${()=>setNovidDone(true)}/>`)}<${Router}/></${Ctx.Provider}>`;
 }
 ReactDOM.createRoot(document.getElementById('root')).render(createElement(App));
 </script>
