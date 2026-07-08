@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.14.0';
+const APP_VERSION = '1.15.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -464,7 +464,7 @@ const go = p => { location.hash = p; };
 
 /* ---------- login ---------- */
 function Login(){
-  const [usuario,setUsuario]=useState(''),[senha,setSenha]=useState(''),[show,setShow]=useState(false),[err,setErr]=useState(''),[busy,setBusy]=useState(false);
+  const [usuario,setUsuario]=useState(''),[senha,setSenha]=useState(''),[show,setShow]=useState(false),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[recuperar,setRecuperar]=useState(false);
   async function submit(e){ e.preventDefault(); setErr(''); setBusy(true);
     try{
       const u=usuario.trim();
@@ -493,6 +493,65 @@ function Login(){
         <button type="button" class="toggle" onClick=${()=>setShow(s=>!s)}>${show?'ocultar':'mostrar'}</button>
       </div>
       <button class="primary" disabled=${busy}>${busy?'Entrando…':'Entrar'}</button>
+    </form>
+    <div style=${{textAlign:'center',marginTop:'12px'}}>
+      <button type="button" class="link" style=${{fontSize:'.88rem',opacity:.9}} onClick=${()=>setRecuperar(true)}>Esqueci minha senha</button>
+    </div>
+    <div class="foot"><${ByVizio} dark=${true}/></div>
+  </div></div>
+  ${recuperar&&html`<${EsqueciSenha} onClose=${()=>setRecuperar(false)}/>`}
+  </${Fragment}>`;
+}
+function EsqueciSenha({onClose}){
+  const [u,setU]=useState(''),[busy,setBusy]=useState(false),[ok,setOk]=useState(false);
+  async function enviar(){
+    const val=(u||'').trim(); if(!val){ toast('Informe seu e-mail ou usuário.','err'); return; }
+    setBusy(true);
+    let mail=val;
+    if(val.indexOf('@')<0){ try{ const {data:m}=await db.rpc('login_email',{p_user:val}); if(m) mail=m; }catch(_){} }
+    const redirect=location.origin+location.pathname;
+    const {error}=await db.auth.resetPasswordForEmail(mail,{redirectTo:redirect});
+    setBusy(false);
+    if(error){ toast('Não foi possível enviar agora. Tente novamente em instantes.','err'); return; }
+    setOk(true);
+  }
+  return html`<${Modal} title="Recuperar acesso" onClose=${onClose} footer=${ok
+    ? html`<button class="btn pri" onClick=${onClose}>Entendi</button>`
+    : html`<${Fragment}><button class="btn" onClick=${onClose}>Cancelar</button>
+        <button class="btn pri" disabled=${busy} onClick=${enviar}>${busy?'Enviando…':'Enviar link'}</button></${Fragment}>`}>
+    ${ok
+      ? html`<p style=${{marginTop:0,color:'#5a525c'}}>Se houver uma conta com esse e-mail, enviamos um <b>link para redefinir a senha</b>. Confira a caixa de entrada (e o spam). Ao abrir o link, você cria uma nova senha e já entra no sistema.</p>`
+      : html`<${Fragment}>
+          <p style=${{marginTop:0,color:'#5a525c'}}>Informe o <b>e-mail cadastrado</b> (ou seu usuário) e enviaremos um link para você criar uma nova senha.</p>
+          <label>E-mail ou usuário</label>
+          <input type="text" autocapitalize="none" autocorrect="off" spellcheck="false" value=${u} onInput=${e=>setU(e.target.value)} placeholder="seu e-mail ou usuário"/>
+        </${Fragment}>`}
+  </${Modal}>`;
+}
+function ResetSenha({onDone}){
+  const [s1,setS1]=useState(''),[s2,setS2]=useState(''),[show,setShow]=useState(false),[busy,setBusy]=useState(false);
+  async function salvar(e){ if(e) e.preventDefault();
+    if((s1||'').length<6){ toast('A senha deve ter ao menos 6 caracteres.','err'); return; }
+    if(s1!==s2){ toast('As senhas não coincidem.','err'); return; }
+    setBusy(true);
+    const {error}=await db.auth.updateUser({password:s1});
+    if(error){ setBusy(false); toast('Erro ao salvar: '+error.message,'err'); return; }
+    try{ const {data}=await db.auth.getUser(); if(data&&data.user) await db.from('profiles').update({trocar_senha:false}).eq('id',data.user.id); }catch(_){}
+    setBusy(false); toast('Senha redefinida! Você já está no sistema.','ok');
+    try{ history.replaceState(null,'',location.pathname); }catch(_){}
+    onDone();
+  }
+  return html`<${Fragment}><${LivingBg}/><div class="center"><div class="glass card">
+    <div style=${{display:'grid',placeItems:'center',marginBottom:'10px'}}><${BrandLogo} size=${100}/></div>
+    <h1 class="title">Criar nova senha</h1>
+    <div class="sub">Defina a senha que você usará para entrar.</div>
+    <form onSubmit=${salvar}>
+      <label>Nova senha</label>
+      <div class="field"><input type=${show?'text':'password'} autocomplete="new-password" value=${s1} onInput=${e=>setS1(e.target.value)} placeholder="mín. 6 caracteres"/>
+        <button type="button" class="toggle" onClick=${()=>setShow(v=>!v)}>${show?'ocultar':'mostrar'}</button></div>
+      <label>Confirmar nova senha</label>
+      <input type=${show?'text':'password'} autocomplete="new-password" value=${s2} onInput=${e=>setS2(e.target.value)} placeholder="repita a senha"/>
+      <button class="primary" disabled=${busy}>${busy?'Salvando…':'Salvar nova senha'}</button>
     </form>
     <div class="foot"><${ByVizio} dark=${true}/></div>
   </div></div></${Fragment}>`;
@@ -1862,9 +1921,10 @@ function App(){
   const [ctx,setCtx]=useState(null);
   const [firstDone,setFirstDone]=useState(false);
   const [novidDone,setNovidDone]=useState(false);
+  const [recovery,setRecovery]=useState(()=>/type=recovery/.test(location.hash||''));
   useEffect(()=>{
     db.auth.getSession().then(({data})=>setSession(data.session));
-    const { data:sub }=db.auth.onAuthStateChange((_e,s)=>setSession(s));
+    const { data:sub }=db.auth.onAuthStateChange((_e,s)=>{ if(_e==='PASSWORD_RECOVERY') setRecovery(true); setSession(s); });
     return ()=>sub.subscription.unsubscribe();
   },[]);
   useEffect(()=>{ if(!session){ setCtx(null); return; } (async()=>{
@@ -1884,6 +1944,7 @@ function App(){
   })(); },[session]);
   const onAtivar=(location.hash||'').replace(/^#\/?/,'').split('?')[0].split('/')[0]==='ativar';
   if(onAtivar) return html`<${Fragment}><${Toaster}/><${Ativar}/></${Fragment}>`;
+  if(recovery) return html`<${Fragment}><${Toaster}/><${ResetSenha} onDone=${()=>setRecovery(false)}/></${Fragment}>`;
   if(session===undefined) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Carregando…</div></div></${Fragment}>`;
   if(!session) return html`<${Fragment}><${Toaster}/><${Login}/></${Fragment}>`;
   if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
