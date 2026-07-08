@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.11.0';
+const APP_VERSION = '1.14.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -296,7 +296,23 @@ function printDoc(title, bodyHtml, tenantName){
     +'<'+'script>window.onload=function(){setTimeout(function(){window.print()},150)}<'+'/script></body></html>');
   w.document.close();
 }
-function printCupom(o, cli, tenantName, st){
+function resizeImage(file, max=1600, quality=0.82){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file); const img=new Image();
+    img.onload=()=>{ URL.revokeObjectURL(url);
+      let w=img.width,h=img.height; if(w>max||h>max){ if(w>=h){ h=Math.round(h*max/w); w=max; } else { w=Math.round(w*max/h); h=max; } }
+      const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+      c.toBlob(b=> b?resolve(b):reject(new Error('Falha ao processar a imagem')), 'image/jpeg', quality); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
+    img.src=url;
+  });
+}
+const uuid=()=> (window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
+function pagInfo(o){ const net=Number(o&&o.valor)||0; const pago=Number(o&&o.valor_pago)||0; const saldo=+(net-pago).toFixed(2);
+  const st = pago<=0 ? 'pendente' : (saldo>0.009 ? 'parcial' : 'pago');
+  return {net,pago,saldo,st}; }
+const PAG={pendente:{l:'A receber',c:'#b3452f',bg:'rgba(179,69,47,.12)'},parcial:{l:'Sinal pago',c:'#b98325',bg:'rgba(185,131,37,.14)'},pago:{l:'Pago',c:'#2f6b43',bg:'rgba(47,107,67,.16)'}};
+function printCupom(o, cli, tenantName, st, itens){
   const w=window.open('','_blank','width=380,height=700');
   if(!w){ toast('Permita pop-ups para gerar o cupom.','err'); return; }
   const base=location.href.replace(/[#?].*$/,'').replace(/[^/]*$/,'');
@@ -317,8 +333,15 @@ function printCupom(o, cli, tenantName, st){
     +'<div class="c tag">CUPOM NÃO FISCAL</div>'
     +'<div class="mut c">OS #'+esc(String(o.numero))+' · '+new Date().toLocaleString('pt-BR')+'</div>'
     +'<div style="margin-top:4px">Cliente: <b>'+esc(cli&&cli.nome?cli.nome:'Consumidor')+'</b></div>'+linha
-    +'<div class="row"><span>'+esc(o.descricao||'Serviço')+'</span><span class="b">'+BRL(o.valor)+'</span></div>'+linha
+    +((itens&&itens.length>0)
+        ? itens.map(function(it){ var q=Number(it.quantidade)||1; var stv=(it.subtotal!=null?Number(it.subtotal):q*(Number(it.valor_unit)||0));
+            return '<div class="row"><span>'+(q>1?q+'x ':'')+esc(it.descricao||'Serviço')+'</span><span class="b">'+BRL(stv)+'</span></div>'; }).join('')
+        : '<div class="row"><span>'+esc(o.descricao||'Serviço')+'</span><span class="b">'+BRL(o.valor)+'</span></div>')
+    +linha
+    +(Number(o.desconto)>0?'<div class="row"><span>Desconto</span><span>− '+BRL(o.desconto)+'</span></div>':'')
     +'<div class="row tot"><span>TOTAL</span><span>'+BRL(o.valor)+'</span></div>'
+    +(Number(o.valor_pago)>0?'<div class="row" style="margin-top:3px"><span>Pago</span><span>'+BRL(o.valor_pago)+'</span></div>':'')
+    +(pagInfo(o).saldo>0.009?'<div class="row b"><span>Saldo a receber</span><span>'+BRL(pagInfo(o).saldo)+'</span></div>':'')
     +'<div class="mut" style="margin-top:5px">Forma de pagamento: ________________</div>'+linha
     +'<div class="disc">Obrigado pela preferência!</div>'
     +'<div class="disc b">ESTE DOCUMENTO NÃO POSSUI VALOR FISCAL</div>'
@@ -771,27 +794,52 @@ function ClienteDetail({id}){
 
 /* ========== ORDENS ========== */
 function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]}){
-  const [f,setF]=useState(()=>({cliente_id:'',servico_id:'',descricao:'',valor:'',status:'aberto',data_entrada:todayISO(),prazo:'',dias_previstos:'',responsavel_id:'',observacoes:'',...(row||{})}));
+  const blank=()=>({servico_id:'',descricao:'',quantidade:1,valor_unit:''});
+  const [f,setF]=useState(()=>({cliente_id:'',status:'aberto',data_entrada:todayISO(),prazo:'',dias_previstos:'',responsavel_id:'',observacoes:'',...(row||{})}));
+  const [itens,setItens]=useState(null);
   const [err,setErr]=useState({}),[busy,setBusy]=useState(false);
   const set=(k,v)=>setF(x=>({...x,[k]:v}));
-  function pickServ(sid){ const s=servicos.find(x=>x.id===sid); setF(x=>({...x,servico_id:sid, descricao:x.descricao||(s?s.nome:''), valor:x.valor||(s?s.preco_base:'')})); }
-  async function save(){ const e={}; if(!f.descricao||!f.descricao.trim()) e.descricao='Descreva o serviço.'; if(f.valor===''||isNaN(Number(f.valor))) e.valor='Informe o valor.'; setErr(e); if(Object.keys(e).length) return;
-    setBusy(true);
+  useEffect(()=>{ (async()=>{
+    if(row?.id){
+      const {data}=await db.from('ordem_itens').select('*').eq('ordem_id',row.id).order('created_at',{ascending:true});
+      if(data&&data.length) setItens(data.map(i=>({servico_id:i.servico_id||'',descricao:i.descricao||'',quantidade:Number(i.quantidade)||1,valor_unit:i.valor_unit!=null?String(i.valor_unit):''})));
+      else setItens([{servico_id:'',descricao:row.descricao||'',quantidade:1,valor_unit:row.valor!=null?String(row.valor):''}]);
+    } else setItens([blank()]);
+  })(); },[]);
+  const upItem=(i,k,v)=>setItens(arr=>arr.map((it,idx)=>idx===i?{...it,[k]:v}:it));
+  const pickServ=(i,sid)=>{ const s=servicos.find(x=>x.id===sid); setItens(arr=>arr.map((it,idx)=>idx===i?{...it,servico_id:sid,descricao:it.descricao||(s?s.nome:''),valor_unit:(it.valor_unit!==''&&it.valor_unit!=null)?it.valor_unit:(s?String(s.preco_base):'')}:it)); };
+  const addItem=()=>setItens(arr=>[...(arr||[]),blank()]);
+  const rmItem=(i)=>setItens(arr=>arr.length>1?arr.filter((_,idx)=>idx!==i):arr);
+  const sub=(it)=>(Number(it.quantidade)||0)*(Number(it.valor_unit)||0);
+  const total=(itens||[]).reduce((a,it)=>a+sub(it),0);
+  const descV=Math.min(Math.max(Number(f.desconto)||0,0), total||0);
+  const netV=+((total||0)-descV).toFixed(2);
+  const pagoV=Math.max(Number(f.valor_pago)||0,0);
+  const saldoV=+(netV-pagoV).toFixed(2);
+  async function save(){
+    const validos=(itens||[]).filter(it=>(it.descricao||'').trim() && it.valor_unit!=='' && !isNaN(Number(it.valor_unit)));
+    if(validos.length===0){ setErr({itens:'Adicione ao menos um serviço com descrição e valor.'}); toast('Adicione ao menos um serviço com descrição e valor.','err'); return; }
+    setErr({}); setBusy(true);
     const dias=f.dias_previstos?Number(f.dias_previstos):null;
     const prazoCalc=f.prazo || (dias?addDays(f.data_entrada||todayISO(),dias):null);
-    const payload={ tenant_id:tenantId, cliente_id:f.cliente_id||null, descricao:f.descricao.trim(), valor:Number(f.valor)||0,
+    const resumo=validos.map(it=>it.descricao.trim()).join(' + ');
+    const desc=Math.min(Math.max(Number(f.desconto)||0,0), total);
+    const net=+(total-desc).toFixed(2);
+    const pago=Math.max(Number(f.valor_pago)||0,0);
+    const payload={ tenant_id:tenantId, cliente_id:f.cliente_id||null, descricao:resumo, valor:net, desconto:desc, valor_pago:pago,
       status:f.status, data_entrada:f.data_entrada||todayISO(), prazo:prazoCalc, dias_previstos:dias, responsavel_id:f.responsavel_id||null, observacoes:f.observacoes||null };
-    if(!isClosed(payload.status) && payload.status==='entregue'){} // entregue set below
-    let res, ordemId=row?.id;
+    let ordemId=row?.id, res;
     if(row?.id){ if(f.status==='entregue'&&row.status!=='entregue') payload.entregue_em=new Date().toISOString();
       res=await db.from('ordens').update(payload).eq('id',row.id); }
     else { if(f.status==='entregue') payload.entregue_em=new Date().toISOString();
       const ins=await db.from('ordens').insert(payload).select('id').maybeSingle(); res=ins; ordemId=ins.data?.id; }
     if(res.error){ setBusy(false); toast('Erro: '+res.error.message,'err'); return; }
-    if(!row?.id && ordemId && f.servico_id){ await db.from('ordem_itens').insert({tenant_id:tenantId,ordem_id:ordemId,servico_id:f.servico_id,descricao:f.descricao.trim(),quantidade:1,valor_unit:Number(f.valor)||0}); }
+    if(row?.id) await db.from('ordem_itens').delete().eq('ordem_id',ordemId);
+    if(ordemId){ const linhas=validos.map(it=>({tenant_id:tenantId,ordem_id:ordemId,servico_id:it.servico_id||null,descricao:it.descricao.trim(),quantidade:Number(it.quantidade)||1,valor_unit:Number(it.valor_unit)||0,subtotal:sub(it)}));
+      const ir=await db.from('ordem_itens').insert(linhas); if(ir.error){ setBusy(false); toast('Erro ao salvar itens: '+ir.error.message,'err'); return; } }
     setBusy(false); toast(row?.id?'OS atualizada.':'OS criada.','ok'); onSaved();
   }
-  return html`<${Modal} title=${row?.id?('OS #'+row.numero):'Nova ordem de serviço'} onClose=${onClose} footer=${html`<${Fragment}>
+  return html`<${Modal} wide=${true} title=${row?.id?('OS #'+row.numero):'Nova ordem de serviço'} onClose=${onClose} footer=${html`<${Fragment}>
     <button class="btn" onClick=${onClose}>Cancelar</button>
     <button class="btn pri" disabled=${busy} onClick=${save}>${busy?'Salvando…':'Salvar'}</button></${Fragment}>`}>
     <label>Cliente</label>
@@ -804,20 +852,37 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
         <option value="">— Não atribuído —</option>
         ${usuarios.map(u=>html`<option key=${u.id} value=${u.id}>${u.nome}</option>`)}
       </select></${Fragment}>`}
-    ${servicos.length>0&&html`<${Fragment}><label>Serviço do catálogo (opcional)</label>
-      <select value=${f.servico_id||''} onInput=${e=>pickServ(e.target.value)}>
-        <option value="">— Serviço avulso —</option>
-        ${servicos.map(s=>html`<option key=${s.id} value=${s.id}>${s.nome} · ${BRL(s.preco_base)}</option>`)}
-      </select></${Fragment}>`}
-    <label>Descrição do serviço</label><input value=${f.descricao} onInput=${e=>set('descricao',e.target.value)} placeholder="Ex.: Bainha de calça"/>
-    ${err.descricao&&html`<div class="ferr">${err.descricao}</div>`}
-    <div class="f3">
-      <div><label>Valor (R$)</label><input type="number" step="0.01" value=${f.valor} onInput=${e=>set('valor',e.target.value)} placeholder="0,00"/>${err.valor&&html`<div class="ferr">${err.valor}</div>`}</div>
+    <label style=${{marginTop:'12px'}}>Serviços da OS</label>
+    ${itens===null? html`<div class="hint">Carregando…</div>`
+    : html`<div style=${{display:'grid',gap:'8px'}}>
+        ${itens.map((it,i)=>html`<div key=${i} style=${{display:'flex',gap:'6px',flexWrap:'wrap',alignItems:'center',background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'10px',padding:'8px'}}>
+          <select style=${{flex:'1 1 150px'}} value=${it.servico_id||''} onInput=${e=>pickServ(i,e.target.value)}>
+            <option value="">— avulso —</option>${servicos.map(s=>html`<option key=${s.id} value=${s.id}>${s.nome} · ${BRL(s.preco_base)}</option>`)}</select>
+          <input style=${{flex:'2 1 160px'}} placeholder="Descrição" value=${it.descricao} onInput=${e=>upItem(i,'descricao',e.target.value)}/>
+          <input type="number" min="1" step="1" title="Qtd" style=${{width:'56px'}} value=${it.quantidade} onInput=${e=>upItem(i,'quantidade',e.target.value)}/>
+          <input type="number" step="0.01" placeholder="Valor" title="Valor unitário" style=${{width:'92px'}} value=${it.valor_unit} onInput=${e=>upItem(i,'valor_unit',e.target.value)}/>
+          <span class="b" style=${{minWidth:'74px',textAlign:'right'}}>${BRL(sub(it))}</span>
+          <button class="btn sm ghost" type="button" title="Remover" onClick=${()=>rmItem(i)}>×</button>
+        </div>`)}
+      </div>`}
+    <button class="btn sm" type="button" style=${{marginTop:'8px'}} onClick=${addItem}>+ Adicionar serviço</button>
+    ${err.itens&&html`<div class="ferr">${err.itens}</div>`}
+    <div class="f3" style=${{marginTop:'10px'}}>
+      <div><label>Desconto (R$)</label><input type="number" step="0.01" min="0" value=${f.desconto||''} onInput=${e=>set('desconto',e.target.value)} placeholder="0,00"/></div>
+      <div><label>Sinal / valor pago (R$)</label><input type="number" step="0.01" min="0" value=${f.valor_pago||''} onInput=${e=>set('valor_pago',e.target.value)} placeholder="0,00"/></div>
+    </div>
+    <div style=${{marginTop:'10px',background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'12px',padding:'12px 14px'}}>
+      <div style=${{display:'flex',justifyContent:'space-between',fontSize:'.88rem'}}><span class="muted">Subtotal dos serviços</span><span>${BRL(total)}</span></div>
+      ${descV>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontSize:'.88rem',marginTop:'3px'}}><span class="muted">Desconto</span><span>− ${BRL(descV)}</span></div>`}
+      <div style=${{display:'flex',justifyContent:'space-between',fontWeight:700,fontSize:'1.1rem',marginTop:'5px',paddingTop:'5px',borderTop:'1px solid var(--line,#e7ddd0)'}}><span>Total a pagar</span><span>${BRL(netV)}</span></div>
+      ${pagoV>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontSize:'.88rem',marginTop:'5px'}}><span class="muted">Pago</span><span>${BRL(pagoV)}</span></div>`}
+      ${pagoV>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontWeight:700,marginTop:'2px',color:saldoV>0.009?'#b3452f':'#2f6b43'}}><span>${saldoV>0.009?'Saldo a receber':'Quitado'}</span><span>${saldoV>0.009?BRL(saldoV):'✓'}</span></div>`}
+    </div>
+    <div class="f3" style=${{marginTop:'8px'}}>
       <div><label>Entrada</label><input type="date" value=${f.data_entrada} onInput=${e=>set('data_entrada',e.target.value)}/></div>
       <div><label>Prazo</label><input type="date" value=${f.prazo||''} onInput=${e=>set('prazo',e.target.value)}/></div>
+      <div><label>Prazo em dias</label><input type="number" min="1" value=${f.dias_previstos||''} onInput=${e=>set('dias_previstos',e.target.value)} placeholder="Ex.: 7"/></div>
     </div>
-    <label>Prazo em dias (opcional — define a entrega e o alerta de atraso)</label>
-    <input type="number" min="1" value=${f.dias_previstos||''} onInput=${e=>set('dias_previstos',e.target.value)} placeholder="Ex.: 7"/>
     <label>Status</label>
     <select value=${f.status} onInput=${e=>set('status',e.target.value)}>${STATUS_ORDER.map(s=>html`<option key=${s} value=${s}>${STATUS[s].l}</option>`)}</select>
     <label>Observações</label><textarea value=${f.observacoes||''} onInput=${e=>set('observacoes',e.target.value)}/>
@@ -864,24 +929,59 @@ function Ordens(){
 }
 function OrdemDetail({id}){
   const {tenantId,tenant,settings}=useApp();
-  const [o,setO]=useState(null),[cli,setCli]=useState(null),[hist,setHist]=useState([]),[clientes]=useRows('clientes',{order:'nome',asc:true}),[servicos]=useRows('servicos',{order:'nome',asc:true}),[usuarios]=useRows('profiles',{order:'nome',asc:true}),[edit,setEdit]=useState(false),[del,setDel]=useState(false);
+  const [o,setO]=useState(null),[cli,setCli]=useState(null),[hist,setHist]=useState([]),[itens,setItens]=useState([]),[clientes]=useRows('clientes',{order:'nome',asc:true}),[servicos]=useRows('servicos',{order:'nome',asc:true}),[usuarios]=useRows('profiles',{order:'nome',asc:true}),[edit,setEdit]=useState(false),[del,setDel]=useState(false),[pagInput,setPagInput]=useState(''),[fotos,setFotos]=useState([]),[upBusy,setUpBusy]=useState(false);
   const load=useCallback(async()=>{
     const {data}=await db.from('ordens').select('*').eq('id',id).maybeSingle(); setO(data);
     if(data?.cliente_id){ const {data:c}=await db.from('clientes').select('*').eq('id',data.cliente_id).maybeSingle(); setCli(c); } else setCli(null);
     const {data:h}=await db.from('ordem_status_history').select('*').eq('ordem_id',id).order('criado_em',{ascending:false}); setHist(h||[]);
+    const {data:its}=await db.from('ordem_itens').select('*').eq('ordem_id',id).order('created_at',{ascending:true}); setItens(its||[]);
+    const {data:fs}=await db.from('ordem_fotos').select('*').eq('ordem_id',id).order('created_at',{ascending:false});
+    if(fs&&fs.length){ const {data:signed}=await db.storage.from('os-fotos').createSignedUrls(fs.map(x=>x.path),3600);
+      const byPath=Object.fromEntries((signed||[]).map(s=>[s.path,s.signedUrl])); setFotos(fs.map(f=>({...f,url:byPath[f.path]}))); }
+    else setFotos([]);
   },[id]);
+  const itSub=it=>it.subtotal!=null?Number(it.subtotal):(Number(it.quantidade)||0)*(Number(it.valor_unit)||0);
   useEffect(()=>{load();},[id]);
   async function setStatus(s){ const patch={status:s}; if(s==='entregue') patch.entregue_em=new Date().toISOString();
     const {error}=await db.from('ordens').update(patch).eq('id',id); if(error)toast('Erro: '+error.message,'err'); else {toast('Status atualizado.','ok');load();} }
+  async function registrarPag(modo){ const info=pagInfo(o);
+    const novo = modo==='quitar' ? info.net : Math.min(info.net, info.pago + (Number(pagInput)||0));
+    if(modo!=='quitar' && !(Number(pagInput)>0)){ toast('Informe um valor.','err'); return; }
+    const {error}=await db.from('ordens').update({valor_pago:novo}).eq('id',id);
+    if(error) toast('Erro: '+error.message,'err'); else { toast('Pagamento registrado.','ok'); setPagInput(''); load(); } }
+  async function uploadFoto(e){ const file=e.target.files&&e.target.files[0]; if(e.target) e.target.value=''; if(!file) return;
+    if(!/^image\//.test(file.type)){ toast('Selecione uma imagem.','err'); return; }
+    setUpBusy(true);
+    try{ const blob=await resizeImage(file);
+      const path=tenantId+'/'+id+'/'+uuid()+'.jpg';
+      const up=await db.storage.from('os-fotos').upload(path,blob,{contentType:'image/jpeg',upsert:false}); if(up.error) throw up.error;
+      const ins=await db.from('ordem_fotos').insert({tenant_id:tenantId,ordem_id:id,path}); if(ins.error) throw ins.error;
+      toast('Foto adicionada.','ok'); load();
+    }catch(err){ toast('Erro ao enviar foto: '+(err.message||err),'err'); }
+    finally{ setUpBusy(false); } }
+  async function delFoto(f){ try{ await db.storage.from('os-fotos').remove([f.path]); }catch(_){}
+    const {error}=await db.from('ordem_fotos').delete().eq('id',f.id);
+    if(error) toast('Erro: '+error.message,'err'); else { toast('Foto removida.','ok'); load(); } }
   const osText=()=>'*Ateliê '+(tenant?.nome||'')+'* — Ordem de Serviço #'+o.numero+'\n'
-    +'Cliente: '+(cli?.nome||'—')+'\n'+'Serviço: '+(o.descricao||'—')+'\n'+'Valor: '+BRL(o.valor)+'\n'
+    +'Cliente: '+(cli?.nome||'—')+'\n'+'Serviço: '+(o.descricao||'—')+'\n'+'Total: '+BRL(o.valor)+'\n'
+    +(pagInfo(o).saldo>0.009?'Saldo a receber: '+BRL(pagInfo(o).saldo)+'\n':'')
     +'Entrada: '+fmtDate(o.data_entrada)+(o.prazo?'  •  Prazo: '+fmtDate(o.prazo):'')+'\n'
     +'Status: '+(STATUS[o.status]?.l||o.status)+(o.observacoes?'\nObs.: '+o.observacoes:'');
   function printOS(){
+    const temItens=itens&&itens.length>0;
+    const servicoLinha = temItens
+      ? '<tr><td style="color:#8a7e86;vertical-align:top">Serviços</td><td><table style="width:100%;border-collapse:collapse">'
+        +'<thead><tr><th style="text-align:left;border-bottom:1px solid #e7ddd0;padding:2px 0">Serviço</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Qtd</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Valor</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Subtotal</th></tr></thead><tbody>'
+        +itens.map(it=>'<tr><td style="padding:2px 0">'+esc(it.descricao||'—')+'</td><td style="text-align:right">'+(Number(it.quantidade)||1)+'</td><td style="text-align:right">'+BRL(it.valor_unit)+'</td><td style="text-align:right"><b>'+BRL(itSub(it))+'</b></td></tr>').join('')
+        +'</tbody></table></td></tr>'
+      : '<tr><td style="color:#8a7e86">Serviço</td><td>'+esc(o.descricao||'—')+'</td></tr>';
     const body='<h3>Ordem de Serviço #'+o.numero+'</h3><table><tbody>'
       +'<tr><td style="width:36%;color:#8a7e86">Cliente</td><td>'+esc(cli?.nome||'—')+'</td></tr>'
-      +'<tr><td style="color:#8a7e86">Serviço</td><td>'+esc(o.descricao||'—')+'</td></tr>'
-      +'<tr><td style="color:#8a7e86">Valor</td><td><b>'+BRL(o.valor)+'</b></td></tr>'
+      +servicoLinha
+      +(Number(o.desconto)>0?'<tr><td style="color:#8a7e86">Desconto</td><td>− '+BRL(o.desconto)+'</td></tr>':'')
+      +'<tr><td style="color:#8a7e86">Total a pagar</td><td><b>'+BRL(o.valor)+'</b></td></tr>'
+      +(Number(o.valor_pago)>0?'<tr><td style="color:#8a7e86">Pago</td><td>'+BRL(o.valor_pago)+'</td></tr>':'')
+      +(pagInfo(o).saldo>0.009?'<tr><td style="color:#8a7e86">Saldo a receber</td><td><b>'+BRL(pagInfo(o).saldo)+'</b></td></tr>':'')
       +'<tr><td style="color:#8a7e86">Entrada</td><td>'+fmtDate(o.data_entrada)+'</td></tr>'
       +'<tr><td style="color:#8a7e86">Prazo</td><td>'+fmtDate(o.prazo)+'</td></tr>'
       +'<tr><td style="color:#8a7e86">Status</td><td>'+esc(STATUS[o.status]?.l||o.status)+'</td></tr>'
@@ -899,7 +999,7 @@ function OrdemDetail({id}){
           href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent('Olá '+(cli.nome||'').split(' ')[0]+'! Seu serviço'+(o.descricao?' ("'+o.descricao+'")':'')+' está pronto para retirada. 🧵 — '+(tenant?.nome||''))}>
           <${Ic} d=${I.wa}/>Avisar pronto</a>`}
         <button class="btn sm" onClick=${printOS}><${Ic} d=${I.print}/>Imprimir OS</button>
-        <button class="btn sm" title="Cupom não fiscal (recibo)" onClick=${()=>printCupom(o,cli,tenant?.nome,settings)}><${Ic} d=${I.file}/>Cupom</button>
+        <button class="btn sm" title="Cupom não fiscal (recibo)" onClick=${()=>printCupom(o,cli,tenant?.nome,settings,itens)}><${Ic} d=${I.file}/>Cupom</button>
         ${cli?.whatsapp&&html`<a class="btn sm" target="_blank" title="Enviar a OS ao cliente" href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent(osText())}><${Ic} d=${I.wa}/>Enviar OS</a>`}
         <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
         <button class="btn sm ghost" onClick=${()=>setDel(true)}><${Ic} d=${I.trash}/></button>
@@ -917,6 +1017,29 @@ function OrdemDetail({id}){
           <div><div class="muted" style=${{fontSize:'.74rem'}}>Entregue</div><div class="b">${o.entregue_em?fmtDate(o.entregue_em.slice(0,10)):'—'}</div></div>
           <div><div class="muted" style=${{fontSize:'.74rem'}}>Responsável</div><div class="b">${(usuarios||[]).find(u=>u.id===o.responsavel_id)?.nome||'—'}</div></div>
         </div>
+        ${itens.length>0&&html`<div style=${{marginTop:'16px'}}>
+          <div class="muted" style=${{fontSize:'.74rem',marginBottom:'6px'}}>Serviços desta OS</div>
+          <div class="tblwrap"><table class="tbl"><thead><tr><th>Serviço</th><th class="r">Qtd</th><th class="r">Valor</th><th class="r">Subtotal</th></tr></thead>
+            <tbody>${itens.map(it=>html`<tr key=${it.id}><td>${it.descricao}</td><td class="r">${Number(it.quantidade)||1}</td><td class="r">${BRL(it.valor_unit)}</td><td class="r b">${BRL(itSub(it))}</td></tr>`)}</tbody>
+            <tfoot><tr><td colspan="3" class="r b">Total</td><td class="r b">${BRL(o.valor)}</td></tr></tfoot>
+          </table></div>
+        </div>`}
+        ${(()=>{ const p=pagInfo(o); const bruto=(itens.length?itens.reduce((a,it)=>a+itSub(it),0):(Number(o.valor)+(Number(o.desconto)||0)));
+          return html`<div style=${{marginTop:'16px',background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'12px',padding:'12px 14px'}}>
+          <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
+            <div class="muted" style=${{fontSize:'.74rem'}}>Pagamento</div>
+            <span class="tag" style=${{color:PAG[p.st].c,background:PAG[p.st].bg,fontWeight:700}}>${PAG[p.st].l}</span></div>
+          ${Number(o.desconto)>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontSize:'.86rem'}}><span class="muted">Subtotal</span><span>${BRL(bruto)}</span></div>`}
+          ${Number(o.desconto)>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontSize:'.86rem',marginTop:'2px'}}><span class="muted">Desconto</span><span>− ${BRL(o.desconto)}</span></div>`}
+          <div style=${{display:'flex',justifyContent:'space-between',fontWeight:700,marginTop:'3px'}}><span>Total a pagar</span><span>${BRL(p.net)}</span></div>
+          <div style=${{display:'flex',justifyContent:'space-between',fontSize:'.86rem',marginTop:'3px'}}><span class="muted">Pago</span><span>${BRL(p.pago)}</span></div>
+          <div style=${{display:'flex',justifyContent:'space-between',fontWeight:700,marginTop:'2px',color:p.saldo>0.009?'#b3452f':'#2f6b43'}}><span>${p.saldo>0.009?'Saldo a receber':'Quitado'}</span><span>${p.saldo>0.009?BRL(p.saldo):'✓'}</span></div>
+          ${p.saldo>0.009&&html`<div style=${{display:'flex',gap:'6px',marginTop:'10px',flexWrap:'wrap',alignItems:'center'}}>
+            <input type="number" step="0.01" min="0" placeholder="Valor recebido" value=${pagInput} onInput=${e=>setPagInput(e.target.value)} style=${{flex:'1 1 120px',maxWidth:'160px'}}/>
+            <button class="btn sm" onClick=${()=>registrarPag('add')}>Registrar</button>
+            <button class="btn sm pri" onClick=${()=>registrarPag('quitar')}>Quitar tudo</button>
+          </div>`}
+        </div>`; })()}
         ${o.observacoes&&html`<div class="notice" style=${{marginTop:'14px'}}>${o.observacoes}</div>`}
         <label style=${{marginTop:'16px'}}>Avançar status</label>
         <div style=${{display:'flex',flexWrap:'wrap',gap:'6px'}}>
@@ -929,6 +1052,24 @@ function OrdemDetail({id}){
           : html`<div class="stat-list">${hist.map(h=>html`<div class="it" key=${h.id}>
             <span>${h.de?STATUS[h.de]?.l+' → ':''}<b>${STATUS[h.para]?.l||h.para}</b></span>
             <span class="muted" style=${{fontSize:'.76rem'}}>${new Date(h.criado_em).toLocaleDateString('pt-BR')}</span></div>`)}</div>`}
+      </div>
+      <div class="glass panel">
+        <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px'}}>
+          <h3>Fotos da peça</h3>
+          <label class=${'btn sm pri'+(upBusy?' disabled':'')} style=${{cursor:upBusy?'default':'pointer'}}>
+            ${upBusy?'Enviando…':'+ Foto'}
+            <input type="file" accept="image/*" capture="environment" style=${{display:'none'}} disabled=${upBusy} onChange=${uploadFoto}/>
+          </label>
+        </div>
+        <p class="desc">Registre a peça, o molde ou a referência da cliente.</p>
+        ${fotos.length===0? html`<div class="muted" style=${{fontSize:'.85rem'}}>Nenhuma foto ainda.</div>`
+          : html`<div style=${{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
+            ${fotos.map(f=>html`<div key=${f.id} style=${{position:'relative'}}>
+              <a href=${f.url} target="_blank" rel="noopener">
+                <img src=${f.url} alt="Foto da peça" loading="lazy" style=${{width:'100%',aspectRatio:'1',objectFit:'cover',borderRadius:'10px',border:'1px solid var(--line,#e7ddd0)'}}/></a>
+              <button title="Remover foto" onClick=${()=>delFoto(f)} style=${{position:'absolute',top:'4px',right:'4px',background:'rgba(0,0,0,.55)',color:'#fff',border:'none',padding:'1px 7px',borderRadius:'8px',cursor:'pointer',fontSize:'.9rem'}}>×</button>
+            </div>`)}
+          </div>`}
       </div>
     </div>
     ${edit&&html`<${OrdemForm} row=${o} tenantId=${tenantId} clientes=${clientes||[]} servicos=${servicos||[]} usuarios=${usuarios||[]} onClose=${()=>setEdit(false)} onSaved=${()=>{setEdit(false);load();}}/>`}
@@ -1671,7 +1812,7 @@ function NovidadeModal({onClose}){
   useEffect(()=>{ (async()=>{
     try{
       const pub=(typeof db.schema==='function')?db.schema('public'):db;
-      const {data}=await pub.from('plataforma_versoes').select('titulo,descricao,tipo,versao,lancado_em')
+      const {data}=await pub.from('plataforma_versoes').select('titulo,descricao,tipo,versao,lancado_em,data,instrucoes')
         .eq('sistema','atelie').eq('status','lancado').not('lancado_em','is',null).order('lancado_em',{ascending:false});
       const vistoEm=profile&&profile.novidades_vistas_em;
       if(!vistoEm){ try{ await db.from('profiles').update({novidades_vistas_em:new Date().toISOString()}).eq('id',profile.id); }catch(_){}
@@ -1685,14 +1826,33 @@ function NovidadeModal({onClose}){
     onClose(); if(ir) go('/novidades'); }
   if(!items||items.length===0) return null;
   const tag={novidade:'Novidade',melhoria:'Melhoria',correcao:'Correção'};
-  return html`<${Modal} title="✨ Novidade no seu sistema!" onClose=${()=>fechar(false)} footer=${html`<${Fragment}>
-    <button class="btn" onClick=${()=>fechar(false)}>Agora não</button>
-    <button class="btn pri" onClick=${()=>fechar(true)}>Ver novidades</button></${Fragment}>`}>
-    <p style=${{marginTop:0,color:'#5a525c'}}>Preparamos melhorias novinhas pra você 💜</p>
-    <div class="stat-list">${items.map((r,i)=>html`<div class="it" key=${i} style=${{alignItems:'flex-start',flexDirection:'column',gap:'3px',padding:'10px 4px'}}>
-      <div style=${{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}><span class="tag">${tag[r.tipo]||r.tipo}</span><b>${r.titulo}</b>${r.versao?html`<span class="muted" style=${{fontSize:'.72rem'}}>v${r.versao}</span>`:''}</div>
-      ${r.descricao&&html`<span class="muted" style=${{fontSize:'.86rem'}}>${r.descricao}</span>`}
+  const tagBg={novidade:'var(--violet,#8e2cb0)',melhoria:'#2f8f8f',correcao:'#3f7d52'};
+  const topo=items[0];
+  const dataFmt=topo.data?fmtDate(topo.data):(topo.lancado_em?fmtDateTime(topo.lancado_em):'');
+  const instrucoes=items.filter(r=>r.instrucoes&&String(r.instrucoes).trim());
+  return html`<${Modal} wide=${true} onClose=${()=>fechar(false)} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${()=>fechar(true)}>Ver todas as novidades</button>
+    <button class="btn pri" onClick=${()=>fechar(false)}>Entendi, vamos lá! ✨</button></${Fragment}>`}>
+    <div style=${{margin:'-4px -4px 4px',padding:'20px 22px',borderRadius:'16px',color:'#fff',background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 10px 30px -12px rgba(0,0,0,.35)'}}>
+      <div style=${{fontSize:'1.7rem',lineHeight:1}}>✨</div>
+      <div class="serif" style=${{fontSize:'1.5rem',fontWeight:700,marginTop:'8px'}}>Seu sistema acaba de melhorar!</div>
+      <div style=${{opacity:.92,marginTop:'6px',display:'flex',gap:'10px',flexWrap:'wrap',alignItems:'center',fontSize:'.9rem'}}>
+        ${topo.versao&&html`<span style=${{background:'rgba(255,255,255,.22)',padding:'2px 10px',borderRadius:'999px',fontWeight:600}}>Versão ${topo.versao}</span>`}
+        ${dataFmt&&html`<span style=${{opacity:.9}}>${dataFmt}</span>`}
+      </div>
+    </div>
+    <p style=${{margin:'14px 4px 8px',color:'var(--muted,#5a525c)'}}>Preparamos com carinho estas melhorias pra você 💜</p>
+    <div style=${{display:'grid',gap:'10px'}}>${items.map((r,i)=>html`<div key=${i} style=${{background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'12px',padding:'12px 14px'}}>
+      <div style=${{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}>
+        <span style=${{fontSize:'.68rem',fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:'#fff',background:tagBg[r.tipo]||'#8a7e86',padding:'2px 8px',borderRadius:'999px'}}>${tag[r.tipo]||r.tipo}</span>
+        <b>${r.titulo}</b>${r.versao&&r.versao!==topo.versao?html`<span class="muted" style=${{fontSize:'.72rem'}}>v${r.versao}</span>`:''}
+      </div>
+      ${r.descricao&&html`<div style=${{marginTop:'6px',fontSize:'.9rem',color:'var(--ink,#3a343c)',lineHeight:1.45}}>${r.descricao}</div>`}
     </div>`)}</div>
+    ${instrucoes.length>0&&html`<div style=${{marginTop:'14px',borderRadius:'12px',padding:'14px 16px',background:'color-mix(in srgb,var(--violet,#8e2cb0) 8%,transparent)',border:'1px solid color-mix(in srgb,var(--violet,#8e2cb0) 25%,transparent)'}}>
+      <div style=${{fontWeight:700,display:'flex',alignItems:'center',gap:'6px',marginBottom:'6px'}}>💡 Como usar</div>
+      ${instrucoes.map((r,i)=>html`<div key=${i} style=${{fontSize:'.9rem',lineHeight:1.5,marginTop:i?'8px':0,whiteSpace:'pre-wrap'}}>${instrucoes.length>1?html`<b>${r.titulo}: </b>`:''}${r.instrucoes}</div>`)}
+    </div>`}
   </${Modal}>`;
 }
 
