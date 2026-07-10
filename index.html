@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.17.0';
+const APP_VERSION = '1.18.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -690,7 +690,7 @@ function Dashboard(){
   useEffect(()=>{ (async()=>{
     const [cli,ord,rec] = await Promise.all([
       db.from('clientes').select('id,nome,nascimento,whatsapp'),
-      db.from('ordens').select('id,status,valor,prazo,data_entrada,dias_previstos,entregue_em,descricao,cliente_id,numero'),
+      db.from('ordens').select('id,status,valor,prazo,data_entrada,dias_previstos,entregue_em,descricao,cliente_id,numero,data_prova'),
       db.from('financeiro_lancamentos').select('valor,tipo,pago,pago_em'),
     ]);
     const clientesRows=cli.data||[];
@@ -707,7 +707,16 @@ function Dashboard(){
     const cm=[]; const now=new Date();
     for(let i=5;i>=0;i--){ const dd=new Date(now.getFullYear(),now.getMonth()-i,1); cm.push({key:dd.toISOString().slice(0,7),label:dd.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}); }
     const chart={labels:cm.map(m=>m.label), data:cm.map(m=>os.filter(o=>o.entregue_em&&o.entregue_em.slice(0,7)===m.key).reduce((a,o)=>a+Number(o.valor||0),0))};
-    setK({clientes:clientesRows.length, abertas:abertas.length, atrasadas:atrasadas.length, recMes, doneM:doneM.length, tempoMedio, topServ, aniversariantes, chart,
+    // Agenda dos próximos 7 dias: provas marcadas + entregas previstas (só OS ativas)
+    const cnome=Object.fromEntries(clientesRows.map(c=>[c.id,c.nome]));
+    const hoje=todayISO(), limite=addDays(hoje,7);
+    const agenda=[];
+    os.filter(o=>ACTIVE.includes(o.status)).forEach(o=>{
+      if(o.data_prova && o.data_prova>=hoje && o.data_prova<=limite) agenda.push({id:o.id,numero:o.numero,data:o.data_prova,tipo:'Prova',cliente:cnome[o.cliente_id]||'—',descricao:o.descricao});
+      if(o.prazo && o.prazo>=hoje && o.prazo<=limite) agenda.push({id:o.id,numero:o.numero,data:o.prazo,tipo:'Entrega',cliente:cnome[o.cliente_id]||'—',descricao:o.descricao});
+    });
+    agenda.sort((a,b)=> a.data<b.data?-1 : a.data>b.data?1 : 0);
+    setK({clientes:clientesRows.length, abertas:abertas.length, atrasadas:atrasadas.length, recMes, doneM:doneM.length, tempoMedio, topServ, aniversariantes, chart, agenda,
       recent:[...os].sort((a,b)=>(b.numero||0)-(a.numero||0)).slice(0,6)});
   })(); },[]);
   if(!k) return html`<div class="hint">Carregando indicadores…</div>`;
@@ -721,6 +730,20 @@ function Dashboard(){
       <button class="kpi" onClick=${()=>go('/clientes')}><div class="n">${k.clientes}</div><div class="l">Clientes</div></button>
       <button class="kpi ok" onClick=${()=>go('/financeiro')}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(k.recMes)}</div><div class="l">Recebido no mês</div></button>
     </div>
+    ${k.agenda.length>0&&html`<div class="glass panel" style=${{marginTop:'18px'}}>
+      <h3>Agenda dos próximos 7 dias</h3><p class="desc">Provas marcadas e entregas previstas.</p>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Quando</th><th>O quê</th><th>Cliente</th><th>Serviço</th><th class="r">OS</th></tr></thead>
+        <tbody>${k.agenda.map((a,i)=>{ const hj=a.data===todayISO();
+          return html`<tr key=${a.id+a.tipo+i} class="click" onClick=${()=>go('/ordens/'+a.id)}>
+            <td><span class="b" style=${hj?{color:'#b3452f'}:null}>${hj?'Hoje':fmtDate(a.data)}</span></td>
+            <td><span class="tag" style=${a.tipo==='Prova'?{color:'#2f8f8f',background:'rgba(47,143,143,.14)',fontWeight:700}:{color:'#5e3a56',background:'rgba(94,58,86,.12)',fontWeight:700}}>${a.tipo}</span></td>
+            <td>${a.cliente}</td>
+            <td class="muted" style=${{fontSize:'.85rem'}}>${(a.descricao||'—').slice(0,42)}</td>
+            <td class="r b">#${a.numero}</td>
+          </tr>`; })}</tbody>
+      </table></div>
+    </div>`}
     <div class="glass panel" style=${{marginTop:'18px'}}>
       <h3>Faturamento — últimos 6 meses</h3><p class="desc">Serviços entregues por mês.</p>
       <${MiniChart} labels=${k.chart.labels} data=${k.chart.data} fmt=${BRL}/>
@@ -925,7 +948,8 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
     const net=+(total-desc).toFixed(2);
     const pago=Math.max(Number(f.valor_pago)||0,0);
     const payload={ tenant_id:tenantId, cliente_id:f.cliente_id||null, descricao:resumo, valor:net, desconto:desc, valor_pago:pago,
-      status:f.status, data_entrada:f.data_entrada||todayISO(), prazo:prazoCalc, dias_previstos:dias, responsavel_id:f.responsavel_id||null, observacoes:f.observacoes||null };
+      status:f.status, data_entrada:f.data_entrada||todayISO(), prazo:prazoCalc, dias_previstos:dias, data_prova:f.data_prova||null,
+      responsavel_id:f.responsavel_id||null, observacoes:f.observacoes||null };
     let ordemId=row?.id, res;
     if(row?.id){ if(f.status==='entregue'&&row.status!=='entregue') payload.entregue_em=new Date().toISOString();
       res=await db.from('ordens').update(payload).eq('id',row.id); }
@@ -992,6 +1016,8 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
       <div><label>Prazo</label><input type="date" value=${f.prazo||''} onInput=${e=>set('prazo',e.target.value)}/></div>
       <div><label>Prazo em dias</label><input type="number" min="1" value=${f.dias_previstos||''} onInput=${e=>set('dias_previstos',e.target.value)} placeholder="Ex.: 7"/></div>
     </div>
+    <label>Data da prova (opcional)</label>
+    <input type="date" value=${f.data_prova||''} onInput=${e=>set('data_prova',e.target.value)}/>
     <label>Status</label>
     <select value=${f.status} onInput=${e=>set('status',e.target.value)}>${STATUS_ORDER.map(s=>html`<option key=${s} value=${s}>${STATUS[s].l}</option>`)}</select>
     <label>Observações</label><textarea value=${f.observacoes||''} onInput=${e=>set('observacoes',e.target.value)}/>
@@ -1140,6 +1166,7 @@ function OrdemDetail({id}){
           <div><div class="muted" style=${{fontSize:'.74rem'}}>Valor</div><div class="b">${BRL(o.valor)}</div></div>
           <div><div class="muted" style=${{fontSize:'.74rem'}}>Entrada</div><div class="b">${fmtDate(o.data_entrada)}</div></div>
           <div><div class="muted" style=${{fontSize:'.74rem'}}>Prazo</div><div class="b">${fmtDate(o.prazo)}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Prova</div><div class="b" style=${o.data_prova&&o.data_prova>=todayISO()?{color:'var(--violet,#8e2cb0)'}:null}>${fmtDate(o.data_prova)}</div></div>
           <div><div class="muted" style=${{fontSize:'.74rem'}}>Entregue</div><div class="b">${o.entregue_em?fmtDate(o.entregue_em.slice(0,10)):'—'}</div></div>
           <div><div class="muted" style=${{fontSize:'.74rem'}}>Responsável</div><div class="b">${(usuarios||[]).find(u=>u.id===o.responsavel_id)?.nome||'—'}</div></div>
         </div>
@@ -1335,7 +1362,7 @@ function LancForm({row,onClose,onSaved,tenantId,categorias}){
   </${Modal}>`;
 }
 function Financeiro(){
-  const {tenantId}=useApp();
+  const {tenantId,tenant}=useApp();
   const [rows,reload]=useRows('financeiro_lancamentos',{order:'vencimento',asc:false});
   const [categorias]=useRows('financeiro_categorias',{order:'nome',asc:true});
   const [filt,setFilt]=useState('todas'),[edit,setEdit]=useState(null),[del,setDel]=useState(null);
@@ -1351,12 +1378,52 @@ function Financeiro(){
     return rows.filter(l=> filt==='todas'||(filt==='receita'&&l.tipo==='receita')||(filt==='despesa'&&l.tipo==='despesa')||(filt==='aberto'&&!l.pago)); },[rows,filt]);
   async function togglePago(l){ const{error}=await db.from('financeiro_lancamentos').update({pago:!l.pago,pago_em:!l.pago?todayISO():null}).eq('id',l.id);
     if(error)toast('Erro: '+error.message,'err'); else reload(); }
+  const hoje=todayISO();
+  const caixa=useMemo(()=>{ const r=(rows||[]).filter(l=>l.pago&&l.pago_em===hoje);
+    const entrou=r.filter(l=>l.tipo==='receita').reduce((a,l)=>a+Number(l.valor||0),0);
+    const saiu=r.filter(l=>l.tipo==='despesa').reduce((a,l)=>a+Number(l.valor||0),0);
+    return {itens:r, entrou, saiu, saldo:entrou-saiu}; },[rows,hoje]);
+  function imprimirFechamento(){
+    const linhas=caixa.itens.length
+      ? caixa.itens.map(l=>'<tr><td>'+esc(l.descricao||(l.tipo==='receita'?'Receita':'Despesa'))+'</td>'
+          +'<td style="text-align:right;color:'+(l.tipo==='receita'?'#2f6b43':'#b3452f')+'">'+(l.tipo==='receita'?'+ ':'− ')+BRL(l.valor)+'</td></tr>').join('')
+      : '<tr><td colspan="2" style="color:#8a7e86">Nenhum movimento hoje.</td></tr>';
+    const body='<h3>Fechamento do dia — '+fmtDate(hoje)+'</h3>'
+      +'<table><tbody>'+linhas+'</tbody></table>'
+      +'<table style="margin-top:22px"><tbody>'
+      +'<tr><td style="width:60%;color:#8a7e86">Entradas</td><td style="text-align:right"><b>'+BRL(caixa.entrou)+'</b></td></tr>'
+      +'<tr><td style="color:#8a7e86">Saídas</td><td style="text-align:right"><b>'+BRL(caixa.saiu)+'</b></td></tr>'
+      +'<tr><td style="color:#8a7e86">Saldo do dia</td><td style="text-align:right"><b>'+BRL(caixa.saldo)+'</b></td></tr>'
+      +'</tbody></table>'
+      +'<div class="kv" style="margin-top:30px"><span>Conferido por: __________________________</span><span>Data: ____/____/______</span></div>';
+    printDoc('Fechamento do dia', body, tenant?.nome);
+  }
   return html`<${Shell} title="Financeiro">
     <div class="grid">
       <div class="glass kpi ok" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.rec)}</div><div class="l">Recebido no mês</div></div>
       <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:'var(--danger)'}}>${BRL(kpis.desp)}</div><div class="l">Pago no mês</div></div>
       <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:kpis.saldo>=0?'var(--ok)':'var(--danger)'}}>${BRL(kpis.saldo)}</div><div class="l">Saldo do mês</div></div>
       <div class="glass kpi warn" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.aReceber)}</div><div class="l">A receber (aberto)</div></div>
+    </div>
+    <div class="glass panel" style=${{marginTop:'18px'}}>
+      <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+        <div><h3>Fechamento do dia</h3><p class="desc">O que entrou e saiu hoje, ${fmtDate(hoje)}.</p></div>
+        <button class="btn sm" onClick=${imprimirFechamento}><${Ic} d=${I.print}/>Imprimir</button>
+      </div>
+      <div class="f3" style=${{gap:'12px',marginTop:'6px'}}>
+        <div><div class="muted" style=${{fontSize:'.74rem'}}>Entrou hoje</div><div class="b" style=${{fontSize:'1.15rem',color:'var(--ok)'}}>${BRL(caixa.entrou)}</div></div>
+        <div><div class="muted" style=${{fontSize:'.74rem'}}>Saiu hoje</div><div class="b" style=${{fontSize:'1.15rem',color:'var(--danger)'}}>${BRL(caixa.saiu)}</div></div>
+        <div><div class="muted" style=${{fontSize:'.74rem'}}>Saldo do dia</div><div class="b" style=${{fontSize:'1.15rem',color:caixa.saldo>=0?'var(--ok)':'var(--danger)'}}>${BRL(caixa.saldo)}</div></div>
+      </div>
+      ${caixa.itens.length===0
+        ? html`<div class="muted" style=${{fontSize:'.85rem',marginTop:'10px'}}>Nenhum movimento hoje.</div>`
+        : html`<div class="tblwrap" style=${{marginTop:'12px'}}><table class="tbl">
+            <thead><tr><th>Movimento</th><th class="r">Valor</th></tr></thead>
+            <tbody>${caixa.itens.map(l=>html`<tr key=${l.id}>
+              <td>${l.descricao||(l.tipo==='receita'?'Receita':'Despesa')}</td>
+              <td class="r b" style=${{color:l.tipo==='receita'?'var(--ok)':'var(--danger)'}}>${l.tipo==='receita'?'+ ':'− '}${BRL(l.valor)}</td>
+            </tr>`)}</tbody>
+          </table></div>`}
     </div>
     <div class="bar" style=${{marginTop:'18px'}}>
       <select value=${filt} onInput=${e=>setFilt(e.target.value)} style=${{maxWidth:'190px'}}>
