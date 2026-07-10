@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.18.0';
+const APP_VERSION = '1.18.1';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -439,6 +439,26 @@ function Toaster(){
 }
 const toast=(m,k)=>pushToast(m,k);
 
+/* ========== TRATAMENTO PADRÃO DE ERRO EM LEITURA ==========
+   Toda consulta avulsa passa por aqui. Erro nunca é silencioso: avisa a usuária,
+   registra no console e devolve null (distinto de [] = "consultou e não achou nada").
+   Foi exatamente o padrão `data||[]` sem checar `error` que escondeu o bug crítico da v1.12. */
+function qd(res, contexto){
+  if(!res) return null;
+  if(res.error){
+    console.error('[consulta: '+contexto+']', res.error);
+    toast('Não foi possível carregar '+contexto+'. '+(res.error.message||''),'err');
+    return null;
+  }
+  return res.data;
+}
+/* Rede de segurança: registra falhas não tratadas no console (sem alarmar a usuária
+   com falsos positivos de fetch abortado, gráficos, etc.). Serve para diagnóstico. */
+if(typeof window!=='undefined' && !window.__vzErrHook){
+  window.__vzErrHook=true;
+  window.addEventListener('unhandledrejection', ev=>console.error('[falha não tratada]', ev && ev.reason));
+}
+
 /* ---------- primitives ---------- */
 const Badge = ({status}) => { const s=STATUS[status]||{l:status,c:'#8a7e86',bg:'rgba(0,0,0,.06)'};
   return html`<span class="badge" style=${{color:s.c,background:s.bg}}><span class="dot"/>${s.l}</span>`; };
@@ -592,11 +612,12 @@ function AlertsBell(){
   const [open,setOpen]=useState(false);
   const [al,setAl]=useState({late:[],low:[]});
   useEffect(()=>{ (async()=>{
-    const [{data:os},{data:pr}]=await Promise.all([
+    const [rOs,rPr]=await Promise.all([
       db.from('ordens').select('id,numero,descricao,status,prazo,data_entrada,dias_previstos'),
       db.from('estoque_produtos').select('id,nome,quantidade,quantidade_minima,unidade'),
     ]);
-    setAl({ late:(os||[]).filter(isLate), low:(pr||[]).filter(p=>Number(p.quantidade)<=Number(p.quantidade_minima)) });
+    const os=qd(rOs,'os alertas de prazo')||[], pr=qd(rPr,'os alertas de estoque')||[];
+    setAl({ late:os.filter(isLate), low:pr.filter(p=>Number(p.quantidade)<=Number(p.quantidade_minima)) });
   })(); },[]);
   const n=al.late.length+al.low.length;
   return html`<div style=${{position:'relative'}}>
@@ -693,9 +714,10 @@ function Dashboard(){
       db.from('ordens').select('id,status,valor,prazo,data_entrada,dias_previstos,entregue_em,descricao,cliente_id,numero,data_prova'),
       db.from('financeiro_lancamentos').select('valor,tipo,pago,pago_em'),
     ]);
-    const clientesRows=cli.data||[];
+    const clientesRows=qd(cli,'as clientes')||[];
     const aniversariantes=clientesRows.filter(bdayThisMonth).sort((a,b)=>bdayDay(a)-bdayDay(b));
-    const os=ord.data||[];
+    const os=qd(ord,'as ordens de serviço')||[];
+    qd(rec,'os lançamentos financeiros'); // avisa se falhar; o cálculo abaixo já tolera vazio
     const abertas=os.filter(o=>ACTIVE.includes(o.status));
     const atrasadas=os.filter(isLate);
     const ms=monthStart();
@@ -861,8 +883,8 @@ function ClienteDetail({id}){
   const {tenantId}=useApp();
   const [c,setC]=useState(null),[os,setOs]=useState(null),[edit,setEdit]=useState(false);
   const load=useCallback(async()=>{
-    const {data:cli}=await db.from('clientes').select('*').eq('id',id).maybeSingle(); setC(cli);
-    const {data:ord}=await db.from('ordens').select('*').eq('cliente_id',id).order('numero',{ascending:false}); setOs(ord||[]);
+    setC(qd(await db.from('clientes').select('*').eq('id',id).maybeSingle(), 'a cliente'));
+    setOs(qd(await db.from('ordens').select('*').eq('cliente_id',id).order('numero',{ascending:false}), 'o histórico de serviços') || []);
   },[id]);
   useEffect(()=>{load();},[id]);
   if(c===null) return html`<${Shell} title="Cliente"><div class="hint">Carregando…</div></${Shell}>`;
@@ -921,8 +943,8 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
   const set=(k,v)=>setF(x=>({...x,[k]:v}));
   useEffect(()=>{ (async()=>{
     if(row?.id){
-      const {data,error}=await db.from('ordem_itens').select('*').eq('ordem_id',row.id).order('posicao',{ascending:true});
-      if(error){ toast('Não foi possível carregar os serviços desta OS: '+error.message,'err'); return; } // mantém itens=null: bloqueia salvar e evita perder dados
+      const data=qd(await db.from('ordem_itens').select('*').eq('ordem_id',row.id).order('posicao',{ascending:true}), 'os serviços desta OS');
+      if(data===null) return; // erro: mantém itens=null, bloqueia salvar e evita apagar os itens reais
       if(data&&data.length) setItens(data.map(i=>({servico_id:i.servico_id||'',descricao:i.descricao||'',quantidade:Number(i.quantidade)||1,valor_unit:i.valor_unit!=null?String(i.valor_unit):''})));
       else setItens([{servico_id:'',descricao:row.descricao||'',quantidade:1,valor_unit:row.valor!=null?String(row.valor):''}]);
     } else setItens([blank()]);
@@ -1075,14 +1097,12 @@ function OrdemDetail({id}){
   const {tenantId,tenant,settings}=useApp();
   const [o,setO]=useState(null),[cli,setCli]=useState(null),[hist,setHist]=useState([]),[itens,setItens]=useState([]),[clientes]=useRows('clientes',{order:'nome',asc:true}),[servicos]=useRows('servicos',{order:'nome',asc:true}),[usuarios]=useRows('profiles',{order:'nome',asc:true}),[edit,setEdit]=useState(false),[del,setDel]=useState(false),[pagInput,setPagInput]=useState(''),[fotos,setFotos]=useState([]),[upBusy,setUpBusy]=useState(false);
   const load=useCallback(async()=>{
-    const {data}=await db.from('ordens').select('*').eq('id',id).maybeSingle(); setO(data);
-    if(data?.cliente_id){ const {data:c}=await db.from('clientes').select('*').eq('id',data.cliente_id).maybeSingle(); setCli(c); } else setCli(null);
-    const {data:h}=await db.from('ordem_status_history').select('*').eq('ordem_id',id).order('criado_em',{ascending:false}); setHist(h||[]);
-    const {data:its,error:itsErr}=await db.from('ordem_itens').select('*').eq('ordem_id',id).order('posicao',{ascending:true});
-    if(itsErr) toast('Erro ao carregar serviços da OS: '+itsErr.message,'err');
-    setItens(its||[]);
-    const {data:fs}=await db.from('ordem_fotos').select('*').eq('ordem_id',id).order('created_at',{ascending:false});
-    if(fs&&fs.length){ const {data:signed}=await db.storage.from('os-fotos').createSignedUrls(fs.map(x=>x.path),3600);
+    const data=qd(await db.from('ordens').select('*').eq('id',id).maybeSingle(), 'a ordem de serviço'); setO(data);
+    if(data?.cliente_id){ setCli(qd(await db.from('clientes').select('*').eq('id',data.cliente_id).maybeSingle(), 'a cliente')); } else setCli(null);
+    setHist(qd(await db.from('ordem_status_history').select('*').eq('ordem_id',id).order('criado_em',{ascending:false}), 'o histórico de status') || []);
+    setItens(qd(await db.from('ordem_itens').select('*').eq('ordem_id',id).order('posicao',{ascending:true}), 'os serviços desta OS') || []);
+    const fs=qd(await db.from('ordem_fotos').select('*').eq('ordem_id',id).order('created_at',{ascending:false}), 'as fotos da peça');
+    if(fs&&fs.length){ const signed=qd(await db.storage.from('os-fotos').createSignedUrls(fs.map(x=>x.path),3600), 'as imagens');
       const byPath=Object.fromEntries((signed||[]).map(s=>[s.path,s.signedUrl])); setFotos(fs.map(f=>({...f,url:byPath[f.path]}))); }
     else setFotos([]);
   },[id]);
@@ -1457,11 +1477,12 @@ function Relatorios(){
   const [ini,setIni]=useState(monthStart()),[fim,setFim]=useState(todayISO());
   const load=useCallback(async()=>{
     setData(null);
-    const [{data:os},{data:cli},{data:fin}]=await Promise.all([
+    const [rOs,rCli,rFin]=await Promise.all([
       db.from('ordens').select('*'),
       db.from('clientes').select('id,nome'),
       db.from('financeiro_lancamentos').select('tipo,valor,pago,pago_em,descricao,vencimento'),
     ]);
+    const os=qd(rOs,'as ordens')||[], cli=qd(rCli,'as clientes')||[], fin=qd(rFin,'o financeiro')||[];
     const cn=Object.fromEntries((cli||[]).map(c=>[c.id,c.nome]));
     const inRange=o=>o.data_entrada>=ini&&o.data_entrada<=fim;
     const per=(os||[]).filter(inRange);
@@ -1544,10 +1565,10 @@ function Fiscal(){
   const portal=f.portal||'https://www.nfse.gov.br';
   const [rows,setRows]=useState(null),[emit,setEmit]=useState(null);
   const load=useCallback(async()=>{
-    const {data}=await db.from('ordens').select('id,numero,valor,status,descricao,cliente_id,nfse_emitida,nfse_numero,nfse_emitida_em').in('status',['finalizado','entregue']).order('numero',{ascending:false});
+    const data=qd(await db.from('ordens').select('id,numero,valor,status,descricao,cliente_id,nfse_emitida,nfse_numero,nfse_emitida_em').in('status',['finalizado','entregue']).order('numero',{ascending:false}), 'as ordens para emissão');
     const ids=[...new Set((data||[]).map(o=>o.cliente_id).filter(Boolean))];
     let cmap={};
-    if(ids.length){ const {data:cs}=await db.from('clientes').select('id,nome,cpf').in('id',ids); (cs||[]).forEach(c=>{cmap[c.id]=c;}); }
+    if(ids.length){ const cs=qd(await db.from('clientes').select('id,nome,cpf').in('id',ids), 'os dados das clientes'); (cs||[]).forEach(c=>{cmap[c.id]=c;}); }
     setRows((data||[]).map(o=>({...o, cliente:cmap[o.cliente_id]||null})));
   },[]);
   useEffect(()=>{load();},[]);
@@ -1647,7 +1668,7 @@ function AteliePanel({tenant,role}){
   const canEdit = role==='owner'||role==='gestor';
   const [nome,setNome]=useState(tenant?.nome||'');
   const [st,setSt]=useState(null),[busy,setBusy]=useState(false);
-  useEffect(()=>{ (async()=>{ const {data}=await db.from('tenant_settings').select('*').eq('tenant_id',tenant.id).maybeSingle(); setSt(data||{tenant_id:tenant.id}); })(); },[]);
+  useEffect(()=>{ (async()=>{ const data=qd(await db.from('tenant_settings').select('*').eq('tenant_id',tenant.id).maybeSingle(), 'os dados do ateliê'); setSt(data||{tenant_id:tenant.id}); })(); },[]);
   const set=(k,v)=>setSt(x=>({...x,[k]:v}));
   async function save(){ setBusy(true);
     const r1=await db.from('tenants').update({nome:nome.trim()}).eq('id',tenant.id);
@@ -1671,7 +1692,7 @@ function AteliePanel({tenant,role}){
 function PreferenciasPanel({tenant,role}){
   const canEdit = role==='owner'||role==='gestor';
   const [feat,setFeat]=useState(null),[busy,setBusy]=useState(false);
-  useEffect(()=>{ (async()=>{ const {data}=await db.from('tenant_settings').select('features').eq('tenant_id',tenant.id).maybeSingle();
+  useEffect(()=>{ (async()=>{ const data=qd(await db.from('tenant_settings').select('features').eq('tenant_id',tenant.id).maybeSingle(), 'as preferências');
     setFeat((data&&data.features)||{}); })(); },[]);
   async function alternar(v){
     if(!canEdit) return;
@@ -1717,10 +1738,11 @@ function Recuperacao(){
   const {tenant}=useApp();
   const [d,setD]=useState(null);
   useEffect(()=>{ (async()=>{
-    const [{data:cli},{data:os}]=await Promise.all([
+    const [rCli,rOs]=await Promise.all([
       db.from('clientes').select('id,nome,whatsapp'),
       db.from('ordens').select('cliente_id,valor,status,data_entrada'),
     ]);
+    const cli=qd(rCli,'as clientes')||[], os=qd(rOs,'as ordens')||[];
     const by={}; (os||[]).forEach(o=>{ if(!o.cliente_id)return; const b=by[o.cliente_id]||(by[o.cliente_id]={last:null,total:0,n:0}); b.n++; b.total+=Number(o.valor||0); if(!b.last||o.data_entrada>b.last)b.last=o.data_entrada; });
     const hoje=todayISO();
     const inativos=(cli||[]).map(c=>{ const b=by[c.id]; return {...c, dias:b&&b.last?daysBetween(b.last,hoje):null, total:b?b.total:0, n:b?b.n:0}; })
@@ -1755,7 +1777,7 @@ function Alavancagem(){
   const [servicos]=useRows('servicos',{order:'nome',asc:true});
   const [counts,setCounts]=useState({});
   const [seg,setSeg]=useState('todos'),[servId,setServId]=useState(''),[desc,setDesc]=useState(15);
-  useEffect(()=>{ (async()=>{ const {data:os}=await db.from('ordens').select('cliente_id'); const m={}; (os||[]).forEach(o=>{ if(o.cliente_id) m[o.cliente_id]=(m[o.cliente_id]||0)+1; }); setCounts(m); })(); },[]);
+  useEffect(()=>{ (async()=>{ const os=qd(await db.from('ordens').select('cliente_id'), 'as ordens das clientes'); const m={}; (os||[]).forEach(o=>{ if(o.cliente_id) m[o.cliente_id]=(m[o.cliente_id]||0)+1; }); setCounts(m); })(); },[]);
   const serv=(servicos||[]).find(s=>s.id===servId);
   const preco=serv?Number(serv.preco_base):0, precoDesc=preco*(1-Number(desc||0)/100);
   const alvo=useMemo(()=>{ let list=(clientes||[]).filter(c=>c.whatsapp);
@@ -1794,7 +1816,7 @@ function Novidades(){
   const [rows,setRows]=useState(null);
   useEffect(()=>{ (async()=>{
     const pub=(typeof db.schema==='function')?db.schema('public'):db;
-    const {data}=await pub.from('plataforma_versoes').select('*').eq('sistema','atelie').order('ordem',{ascending:true});
+    const data=qd(await pub.from('plataforma_versoes').select('*').eq('sistema','atelie').order('ordem',{ascending:true}), 'as novidades');
     setRows(data||[]);
   })(); },[]);
   const tipoMeta={novidade:'Novidade',melhoria:'Melhoria',correcao:'Correção'};
@@ -2144,8 +2166,8 @@ function App(){
       (typeof db.schema==='function'?db.schema('public'):db).from('fin_perfis').select('is_admin').maybeSingle(),
     ]);
     let tenant=null, settings={};
-    if(m?.tenant_id){ const {data:t}=await db.from('tenants').select('*').eq('id',m.tenant_id).maybeSingle(); tenant=t;
-      const {data:st}=await db.from('tenant_settings').select('cor_primaria,cor_secundaria,cnpj,endereco,telefone,whatsapp,email,subtitulo,fiscal,features').eq('tenant_id',m.tenant_id).maybeSingle();
+    if(m?.tenant_id){ tenant=qd(await db.from('tenants').select('*').eq('id',m.tenant_id).maybeSingle(), 'o ateliê');
+      const st=qd(await db.from('tenant_settings').select('cor_primaria,cor_secundaria,cnpj,endereco,telefone,whatsapp,email,subtitulo,fiscal,features').eq('tenant_id',m.tenant_id).maybeSingle(), 'as configurações do ateliê');
       settings=st||{};
       if(st?.cor_primaria) document.documentElement.style.setProperty('--plum',st.cor_primaria);
       if(st?.cor_secundaria) document.documentElement.style.setProperty('--violet',st.cor_secundaria);
