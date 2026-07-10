@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.16.0';
+const APP_VERSION = '1.17.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -312,6 +312,16 @@ function pagInfo(o){ const net=Number(o&&o.valor)||0; const pago=Number(o&&o.val
   const st = pago<=0 ? 'pendente' : (saldo>0.009 ? 'parcial' : 'pago');
   return {net,pago,saldo,st}; }
 const PAG={pendente:{l:'A receber',c:'#b3452f',bg:'rgba(179,69,47,.12)'},parcial:{l:'Sinal pago',c:'#b98325',bg:'rgba(185,131,37,.14)'},pago:{l:'Pago',c:'#2f6b43',bg:'rgba(47,107,67,.16)'}};
+/* Todo valor recebido numa OS vira automaticamente uma receita paga no Financeiro (vinculada à OS e à cliente). */
+async function lancarReceitaOS(tenantId, o, valorRecebido){
+  const v=+(Number(valorRecebido)||0).toFixed(2);
+  if(!(v>0) || !o || !o.id) return {error:null};
+  const hoje=todayISO();
+  const desc='OS #'+(o.numero??'')+(o.descricao?' — '+String(o.descricao).slice(0,60):'');
+  return await db.from('financeiro_lancamentos').insert({
+    tenant_id:tenantId, tipo:'receita', descricao:desc, valor:v,
+    vencimento:hoje, pago:true, pago_em:hoje, ordem_id:o.id, cliente_id:o.cliente_id||null });
+}
 function printCupom(o, cli, tenantName, st, itens){
   const w=window.open('','_blank','width=380,height=700');
   if(!w){ toast('Permita pop-ups para gerar o cupom.','err'); return; }
@@ -471,7 +481,8 @@ function Login(){
       if(!u){ setErr('Informe o e-mail ou usuário.'); setBusy(false); return; }
       let mail=u;
       if(u.indexOf('@')<0){
-        const { data:m, error:re } = await db.rpc('login_email',{ p_user:u });
+        // resolve usuário -> e-mail somente se a senha conferir (evita enumeração de usuários)
+        const { data:m, error:re } = await db.rpc('login_email',{ p_user:u, p_senha:senha });
         if(re || !m){ setBusy(false); setErr('E-mail/usuário ou senha incorretos.'); return; }
         mail=m;
       }
@@ -505,10 +516,10 @@ function Login(){
 function EsqueciSenha({onClose}){
   const [u,setU]=useState(''),[busy,setBusy]=useState(false),[ok,setOk]=useState(false);
   async function enviar(){
-    const val=(u||'').trim(); if(!val){ toast('Informe seu e-mail ou usuário.','err'); return; }
+    const val=(u||'').trim(); if(!val){ toast('Informe seu e-mail cadastrado.','err'); return; }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val)){ toast('Para recuperar a senha, informe o seu e-mail (não o nome de usuário).','err'); return; }
     setBusy(true);
-    let mail=val;
-    if(val.indexOf('@')<0){ try{ const {data:m}=await db.rpc('login_email',{p_user:val}); if(m) mail=m; }catch(_){} }
+    const mail=val;
     const redirect=location.origin+location.pathname;
     const {error}=await db.auth.resetPasswordForEmail(mail,{redirectTo:redirect});
     setBusy(false);
@@ -522,9 +533,9 @@ function EsqueciSenha({onClose}){
     ${ok
       ? html`<p style=${{marginTop:0,color:'#5a525c'}}>Se houver uma conta com esse e-mail, enviamos um <b>link para redefinir a senha</b>. Confira a caixa de entrada (e o spam). Ao abrir o link, você cria uma nova senha e já entra no sistema.</p>`
       : html`<${Fragment}>
-          <p style=${{marginTop:0,color:'#5a525c'}}>Informe o <b>e-mail cadastrado</b> (ou seu usuário) e enviaremos um link para você criar uma nova senha.</p>
-          <label>E-mail ou usuário</label>
-          <input type="text" autocapitalize="none" autocorrect="off" spellcheck="false" value=${u} onInput=${e=>setU(e.target.value)} placeholder="seu e-mail ou usuário"/>
+          <p style=${{marginTop:0,color:'#5a525c'}}>Informe o <b>e-mail cadastrado</b> e enviaremos um link para você criar uma nova senha.</p>
+          <label>E-mail</label>
+          <input type="email" autocapitalize="none" autocorrect="off" spellcheck="false" value=${u} onInput=${e=>setU(e.target.value)} placeholder="seu@email.com"/>
         </${Fragment}>`}
   </${Modal}>`;
 }
@@ -919,13 +930,23 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
     if(row?.id){ if(f.status==='entregue'&&row.status!=='entregue') payload.entregue_em=new Date().toISOString();
       res=await db.from('ordens').update(payload).eq('id',row.id); }
     else { if(f.status==='entregue') payload.entregue_em=new Date().toISOString();
-      const ins=await db.from('ordens').insert(payload).select('id').maybeSingle(); res=ins; ordemId=ins.data?.id; }
+      const ins=await db.from('ordens').insert(payload).select('id,numero').maybeSingle(); res=ins; ordemId=ins.data?.id; }
     if(res.error){ setBusy(false); toast('Erro: '+res.error.message,'err'); return; }
+    const numeroOS = row?.id ? row.numero : (res.data&&res.data.numero);
     if(ordemId){
       const itensPayload=validos.map((it,idx)=>({servico_id:it.servico_id||null,descricao:it.descricao.trim(),quantidade:Number(it.quantidade)||1,valor_unit:Number(it.valor_unit)||0,posicao:idx+1}));
       const {error:rpcErr}=await db.rpc('salvar_ordem_itens',{p_ordem:ordemId,p_itens:itensPayload});
       if(rpcErr){ setBusy(false); toast('Erro ao salvar itens: '+rpcErr.message,'err'); return; } }
-    setBusy(false); toast(row?.id?'OS atualizada.':'OS criada.','ok'); onSaved();
+    // sinal/valor recebido informado no formulário vira receita no Financeiro (apenas o que aumentou)
+    const pagoAntes = row?.id ? (Number(row.valor_pago)||0) : 0;
+    const recebido = +(pago - pagoAntes).toFixed(2);
+    let avisoFin='';
+    if(recebido>0 && ordemId){
+      const lr=await lancarReceitaOS(tenantId,{id:ordemId,numero:numeroOS,descricao:resumo,cliente_id:f.cliente_id||null},recebido);
+      if(lr&&lr.error) avisoFin=' (falhou o lançamento no Financeiro: '+lr.error.message+')';
+      else avisoFin=' Recebido '+BRL(recebido)+' lançado no Financeiro.';
+    }
+    setBusy(false); toast((row?.id?'OS atualizada.':'OS criada.')+avisoFin, avisoFin.includes('falhou')?'err':'ok'); onSaved();
   }
   return html`<${Modal} wide=${true} title=${row?.id?('OS #'+row.numero):'Nova ordem de serviço'} onClose=${onClose} footer=${html`<${Fragment}>
     <button class="btn" onClick=${onClose}>Cancelar</button>
@@ -987,21 +1008,30 @@ function Ordens(){
   useEffect(()=>{setFilt(initF);},[initF]);
   const cliName=useMemo(()=>Object.fromEntries((clientes||[]).map(c=>[c.id,c.nome])),[clientes]);
   const filtered=useMemo(()=>{ if(!rows) return null; const s=q.toLowerCase();
+    const especiais=['todas','ativas','atrasadas','saldo'];
     return rows.filter(o=>{
       if(filt==='ativas'&&!ACTIVE.includes(o.status)) return false;
       if(filt==='atrasadas'&&!(ACTIVE.includes(o.status)&&o.prazo&&o.prazo<todayISO())) return false;
-      if(filt!=='todas'&&filt!=='ativas'&&filt!=='atrasadas'&&o.status!==filt) return false;
+      if(filt==='saldo'&&!(o.status!=='cancelado'&&pagInfo(o).saldo>0.009)) return false;
+      if(!especiais.includes(filt)&&o.status!==filt) return false;
       if(s){ const nm=(cliName[o.cliente_id]||'').toLowerCase(); return (o.descricao||'').toLowerCase().includes(s)||nm.includes(s)||String(o.numero).includes(s); }
       return true; }); },[rows,q,filt,cliName]);
+  const totalSaldo=useMemo(()=>(rows||[]).filter(o=>o.status!=='cancelado').reduce((a,o)=>a+Math.max(0,pagInfo(o).saldo),0),[rows]);
   return html`<${Shell} title="Ordens de serviço">
     <div class="bar">
       <div class="search"><input placeholder="Buscar por #, cliente ou serviço…" value=${q} onInput=${e=>setQ(e.target.value)}/></div>
-      <select value=${filt} onInput=${e=>setFilt(e.target.value)} style=${{maxWidth:'190px'}}>
+      <select value=${filt} onInput=${e=>setFilt(e.target.value)} style=${{maxWidth:'210px'}}>
         <option value="todas">Todas</option><option value="ativas">Em aberto</option><option value="atrasadas">Atrasadas</option>
+        <option value="saldo">Com saldo a receber</option>
         <option disabled>──────</option>${STATUS_ORDER.map(s=>html`<option key=${s} value=${s}>${STATUS[s].l}</option>`)}
       </select>
       <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Nova OS</button>
     </div>
+    ${totalSaldo>0.009&&html`<button class="glass panel" onClick=${()=>setFilt('saldo')}
+      style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'10px',width:'100%',textAlign:'left',cursor:'pointer',border:'none',padding:'12px 16px',marginBottom:'12px'}}>
+      <span class="muted" style=${{fontSize:'.86rem'}}>Total a receber das ordens em aberto</span>
+      <span class="b" style=${{color:'#b3452f',fontSize:'1.1rem'}}>${BRL(totalSaldo)}</span>
+    </button>`}
     <div class="glass panel">
       ${!filtered? html`<div class="hint">Carregando…</div>`
         : filtered.length===0? html`<${Empty} icon=${I.scissors} title="Nenhuma OS">${q||filt!=='todas'?'Ajuste os filtros.':'Crie a primeira ordem de serviço.'}</${Empty}>`
@@ -1037,8 +1067,14 @@ function OrdemDetail({id}){
   async function registrarPag(modo){ const info=pagInfo(o);
     const novo = modo==='quitar' ? info.net : Math.min(info.net, info.pago + (Number(pagInput)||0));
     if(modo!=='quitar' && !(Number(pagInput)>0)){ toast('Informe um valor.','err'); return; }
+    const recebido=+(novo-info.pago).toFixed(2);
+    if(!(recebido>0)){ toast('Não há valor novo a registrar.','err'); return; }
     const {error}=await db.from('ordens').update({valor_pago:novo}).eq('id',id);
-    if(error) toast('Erro: '+error.message,'err'); else { toast('Pagamento registrado.','ok'); setPagInput(''); load(); } }
+    if(error){ toast('Erro: '+error.message,'err'); return; }
+    const lr=await lancarReceitaOS(tenantId,o,recebido);
+    setPagInput(''); load();
+    if(lr&&lr.error) toast('Pagamento salvo, mas o lançamento no Financeiro falhou: '+lr.error.message,'err');
+    else toast('Recebido '+BRL(recebido)+' — lançado no Financeiro.','ok'); }
   async function uploadFoto(e){ const file=e.target.files&&e.target.files[0]; if(e.target) e.target.value=''; if(!file) return;
     if(!/^image\//.test(file.type)){ toast('Selecione uma imagem.','err'); return; }
     setUpBusy(true);
