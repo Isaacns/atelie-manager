@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.15.1';
+const APP_VERSION = '1.16.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -647,6 +647,32 @@ function useRows(table, {order='created_at', asc=false, select='*', deps=[]}={})
 }
 
 /* ========== DASHBOARD ========== */
+/* ========== SAUDAÇÃO DIÁRIA (1x por dia, dispensável, ligável nas Configurações) ========== */
+function SaudacaoDiaria(){
+  const {profile,settings}=useApp();
+  const ligada = !(settings && settings.features && settings.features.saudacao_diaria===false); // padrão: ligada
+  const hoje = new Date().toISOString().slice(0,10);
+  const chave = 'vz_saud_'+(profile?.id||'u')+'_'+hoje;
+  const [visivel,setVisivel]=useState(()=>{ try{ return ligada && !localStorage.getItem(chave); }catch(_){ return ligada; } });
+  if(!visivel) return null;
+  const nome=(profile?.nome||'').split(' ')[0];
+  const frases=[
+    'Vamos à produção — que hoje renda bonito. Bom trabalho! 🧵',
+    'Linha na agulha e mãos à obra. Que o dia seja leve! 🧵',
+    'Seu ateliê está pronto. Capriche como sempre — bom trabalho! 💜',
+    'Hora de transformar tecido em sorriso. Ótimo dia de trabalho! ✨',
+  ];
+  const frase=frases[ new Date().getDate() % frases.length ];
+  const fechar=()=>{ try{ localStorage.setItem(chave,'1'); }catch(_){} setVisivel(false); };
+  return html`<div style=${{position:'relative',marginBottom:'16px',padding:'16px 44px 16px 18px',borderRadius:'14px',color:'#fff',
+      background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 10px 26px -14px rgba(0,0,0,.4)'}}>
+    <div class="serif" style=${{fontSize:'1.15rem',fontWeight:700}}>Bem-vinda a um novo dia${nome?', '+nome:''} ✨</div>
+    <div style=${{opacity:.93,marginTop:'4px',fontSize:'.92rem'}}>${frase}</div>
+    <button onClick=${fechar} title="Dispensar por hoje" aria-label="Dispensar"
+      style=${{position:'absolute',top:'10px',right:'12px',background:'rgba(255,255,255,.18)',color:'#fff',border:'none',
+        width:'26px',height:'26px',borderRadius:'50%',cursor:'pointer',fontSize:'.95rem',lineHeight:1}}>×</button>
+  </div>`;
+}
 function Dashboard(){
   const {tenant,profile}=useApp();
   const [k,setK]=useState(null);
@@ -675,6 +701,7 @@ function Dashboard(){
   })(); },[]);
   if(!k) return html`<div class="hint">Carregando indicadores…</div>`;
   return html`<${Shell} title="HOME">
+    <${SaudacaoDiaria}/>
     <h1 class="hi serif">Olá, ${(profile?.nome||'').split(' ')[0]}</h1>
     <div class="hint">Panorama do ${tenant?.nome||'ateliê'} — atualizado em tempo real.</div>
     <div class="grid">
@@ -1538,6 +1565,39 @@ function AteliePanel({tenant,role}){
       : html`<div class="notice" style=${{marginTop:'10px'}}>Somente a administradora pode editar estes dados.</div>`}
   </div>`;
 }
+function PreferenciasPanel({tenant,role}){
+  const canEdit = role==='owner'||role==='gestor';
+  const [feat,setFeat]=useState(null),[busy,setBusy]=useState(false);
+  useEffect(()=>{ (async()=>{ const {data}=await db.from('tenant_settings').select('features').eq('tenant_id',tenant.id).maybeSingle();
+    setFeat((data&&data.features)||{}); })(); },[]);
+  async function alternar(v){
+    if(!canEdit) return;
+    const novo={...(feat||{}), saudacao_diaria:v};
+    setFeat(novo); setBusy(true);
+    const {error}=await db.from('tenant_settings').update({features:novo}).eq('tenant_id',tenant.id);
+    setBusy(false);
+    if(error){ toast('Erro ao salvar: '+error.message,'err'); setFeat(f=>({...f,saudacao_diaria:!v})); return; }
+    toast(v?'Mensagem de boas-vindas ativada.':'Mensagem de boas-vindas desativada.','ok');
+  }
+  if(!feat) return html`<div class="glass panel"><h3>Preferências</h3><div class="hint">Carregando…</div></div>`;
+  const ligada = feat.saudacao_diaria!==false;
+  return html`<div class="glass panel"><h3>Preferências</h3><p class="desc">Pequenos ajustes de experiência do sistema.</p>
+    <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'12px',padding:'12px 0'}}>
+      <div>
+        <div class="b">Mensagem de boas-vindas</div>
+        <div class="muted" style=${{fontSize:'.84rem'}}>Exibe uma saudação no topo da HOME, uma vez por dia.</div>
+      </div>
+      <button type="button" disabled=${busy||!canEdit} onClick=${()=>alternar(!ligada)} aria-pressed=${ligada}
+        title=${ligada?'Desativar':'Ativar'}
+        style=${{position:'relative',width:'50px',height:'28px',borderRadius:'999px',border:'none',flex:'0 0 auto',
+          cursor:(busy||!canEdit)?'default':'pointer',opacity:(busy||!canEdit)?.6:1,
+          background:ligada?'var(--violet,#8e2cb0)':'#c9c2cb',transition:'background .2s'}}>
+        <span style=${{position:'absolute',top:'3px',left:ligada?'25px':'3px',width:'22px',height:'22px',borderRadius:'50%',background:'#fff',transition:'left .2s',boxShadow:'0 1px 3px rgba(0,0,0,.3)'}}></span>
+      </button>
+    </div>
+    ${!canEdit&&html`<div class="notice">Somente a administradora pode alterar as preferências.</div>`}
+  </div>`;
+}
 function Config(){
   const {tenant,role,profile}=useApp();
   return html`<${Shell} title="Configurações">
@@ -1545,6 +1605,7 @@ function Config(){
       <${AteliePanel} tenant=${tenant} role=${role}/>
       <${ContaPanel} profile=${profile} role=${role}/>
     </div>
+    <div style=${{marginTop:'16px'}}><${PreferenciasPanel} tenant=${tenant} role=${role}/></div>
   </${Shell}>`;
 }
 
@@ -1865,7 +1926,49 @@ function Master(){
         <p class="muted" style=${{fontSize:'.8rem'}}>Envie por WhatsApp ou e-mail. Ao abrir, ela cria usuário e senha e entra já com acesso liberado.</p>
       </div>`}
     </div>`}
+    ${isAdmin&&html`<${MonitorAcessos}/>`}
   </${Shell}>`;
+}
+
+/* ========== MONITORAMENTO DE ACESSO (exclusivo do admin master) ========== */
+function MonitorAcessos(){
+  const [rows,setRows]=useState(null),[err,setErr]=useState('');
+  const carregar=useCallback(async()=>{
+    const pub=(typeof db.schema==='function')?db.schema('public'):db;
+    const {data,error}=await pub.rpc('admin_monitor_acessos');
+    if(error){ setErr(error.message); setRows([]); return; }
+    setErr(''); setRows(data||[]);
+  },[]);
+  useEffect(()=>{carregar();},[]);
+  const quando=x=>{ if(!x) return null; const d=new Date(String(x).replace(' ','T').replace(/([+-]\d{2})$/,'$1:00')); return isNaN(d)?null:d; };
+  const fmt=x=>{ const d=quando(x); return d? d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'; };
+  const haQuanto=x=>{ const d=quando(x); if(!d) return 'nunca acessou';
+    const min=Math.floor((Date.now()-d.getTime())/60000);
+    if(min<1) return 'agora'; if(min<60) return 'há '+min+' min';
+    const h=Math.floor(min/60); if(h<24) return 'há '+h+'h';
+    const dias=Math.floor(h/24); return 'há '+dias+(dias===1?' dia':' dias'); };
+  return html`<div class="glass panel" style=${{marginTop:'18px'}}>
+    <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+      <div><h3>Monitoramento de acesso</h3><p class="desc">Quem entrou, quando e há quanto tempo. Visível apenas para você.</p></div>
+      <button class="btn sm" onClick=${carregar}>Atualizar</button>
+    </div>
+    ${err&&html`<div class="err">${err}</div>`}
+    ${rows===null? html`<div class="hint">Carregando…</div>`
+    : rows.length===0? html`<div class="muted" style=${{fontSize:'.85rem'}}>Nenhum usuário.</div>`
+    : html`<div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Usuário</th><th>Ateliê</th><th>Último acesso</th><th class="r">Sessões</th><th class="r">Acessos</th><th>Conta criada</th></tr></thead>
+        <tbody>${rows.map(r=>{ const nunca=!r.ultimo_login; return html`<tr key=${r.user_id}>
+          <td><div class="b">${r.nome||'—'}</div><div class="muted" style=${{fontSize:'.74rem'}}>${r.email}${r.papel?' · '+r.papel:''}${r.ativo===false?' · inativo':''}</div></td>
+          <td>${r.atelie||'—'}</td>
+          <td><div class=${nunca?'':'b'} style=${nunca?{color:'#b3452f',fontWeight:600}:null}>${haQuanto(r.ultimo_login)}</div>
+              <div class="muted" style=${{fontSize:'.74rem'}}>${fmt(r.ultimo_login)}</div></td>
+          <td class="r">${Number(r.sessoes_ativas)||0}</td>
+          <td class="r">${Number(r.acessos_registrados)||0}</td>
+          <td class="muted" style=${{fontSize:'.8rem'}}>${fmt(r.conta_criada)}</td>
+        </tr>`; })}</tbody>
+      </table></div>`}
+    <p class="muted" style=${{fontSize:'.76rem',marginTop:'10px'}}>“Acessos” conta as aberturas do sistema registradas a partir desta versão. “Sessões” são as sessões ativas agora.</p>
+  </div>`;
 }
 
 /* ========== NOVIDADE (aviso de nova versão liberada) ========== */
@@ -1945,6 +2048,11 @@ function App(){
       if(st?.cor_secundaria) document.documentElement.style.setProperty('--violet',st.cor_secundaria);
     }
     setCtx({ tenant, tenantId:m?.tenant_id, settings, role:m?.role||'atendente', isAdmin:!!(adm&&adm.data&&adm.data.is_admin), trocarSenha:!!(prof&&prof.trocar_senha), profile:prof||{nome:(session.user.email||'').split('@')[0]} });
+    // registro silencioso de acesso (1x por sessão do navegador) — invisível ao usuário
+    try{ if(!sessionStorage.getItem('vz_acesso')){ sessionStorage.setItem('vz_acesso','1');
+      const pubc=(typeof db.schema==='function')?db.schema('public'):db;
+      pubc.from('plataforma_acessos').insert({ sistema:'atelie', tenant_id:m?.tenant_id||null, user_agent:(navigator.userAgent||'').slice(0,300) }).then(()=>{},()=>{});
+    } }catch(_){}
   })(); },[session]);
   const onAtivar=(location.hash||'').replace(/^#\/?/,'').split('?')[0].split('/')[0]==='ativar';
   if(onAtivar) return html`<${Fragment}><${Toaster}/><${Ativar}/></${Fragment}>`;
