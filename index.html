@@ -265,7 +265,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.15.0';
+const APP_VERSION = '1.15.1';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -860,7 +860,8 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
   const set=(k,v)=>setF(x=>({...x,[k]:v}));
   useEffect(()=>{ (async()=>{
     if(row?.id){
-      const {data}=await db.from('ordem_itens').select('*').eq('ordem_id',row.id).order('created_at',{ascending:true});
+      const {data,error}=await db.from('ordem_itens').select('*').eq('ordem_id',row.id).order('posicao',{ascending:true});
+      if(error){ toast('Não foi possível carregar os serviços desta OS: '+error.message,'err'); return; } // mantém itens=null: bloqueia salvar e evita perder dados
       if(data&&data.length) setItens(data.map(i=>({servico_id:i.servico_id||'',descricao:i.descricao||'',quantidade:Number(i.quantidade)||1,valor_unit:i.valor_unit!=null?String(i.valor_unit):''})));
       else setItens([{servico_id:'',descricao:row.descricao||'',quantidade:1,valor_unit:row.valor!=null?String(row.valor):''}]);
     } else setItens([blank()]);
@@ -893,9 +894,10 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
     else { if(f.status==='entregue') payload.entregue_em=new Date().toISOString();
       const ins=await db.from('ordens').insert(payload).select('id').maybeSingle(); res=ins; ordemId=ins.data?.id; }
     if(res.error){ setBusy(false); toast('Erro: '+res.error.message,'err'); return; }
-    if(row?.id) await db.from('ordem_itens').delete().eq('ordem_id',ordemId);
-    if(ordemId){ const linhas=validos.map(it=>({tenant_id:tenantId,ordem_id:ordemId,servico_id:it.servico_id||null,descricao:it.descricao.trim(),quantidade:Number(it.quantidade)||1,valor_unit:Number(it.valor_unit)||0,subtotal:sub(it)}));
-      const ir=await db.from('ordem_itens').insert(linhas); if(ir.error){ setBusy(false); toast('Erro ao salvar itens: '+ir.error.message,'err'); return; } }
+    if(ordemId){
+      const itensPayload=validos.map((it,idx)=>({servico_id:it.servico_id||null,descricao:it.descricao.trim(),quantidade:Number(it.quantidade)||1,valor_unit:Number(it.valor_unit)||0,posicao:idx+1}));
+      const {error:rpcErr}=await db.rpc('salvar_ordem_itens',{p_ordem:ordemId,p_itens:itensPayload});
+      if(rpcErr){ setBusy(false); toast('Erro ao salvar itens: '+rpcErr.message,'err'); return; } }
     setBusy(false); toast(row?.id?'OS atualizada.':'OS criada.','ok'); onSaved();
   }
   return html`<${Modal} wide=${true} title=${row?.id?('OS #'+row.numero):'Nova ordem de serviço'} onClose=${onClose} footer=${html`<${Fragment}>
@@ -993,7 +995,9 @@ function OrdemDetail({id}){
     const {data}=await db.from('ordens').select('*').eq('id',id).maybeSingle(); setO(data);
     if(data?.cliente_id){ const {data:c}=await db.from('clientes').select('*').eq('id',data.cliente_id).maybeSingle(); setCli(c); } else setCli(null);
     const {data:h}=await db.from('ordem_status_history').select('*').eq('ordem_id',id).order('criado_em',{ascending:false}); setHist(h||[]);
-    const {data:its}=await db.from('ordem_itens').select('*').eq('ordem_id',id).order('created_at',{ascending:true}); setItens(its||[]);
+    const {data:its,error:itsErr}=await db.from('ordem_itens').select('*').eq('ordem_id',id).order('posicao',{ascending:true});
+    if(itsErr) toast('Erro ao carregar serviços da OS: '+itsErr.message,'err');
+    setItens(its||[]);
     const {data:fs}=await db.from('ordem_fotos').select('*').eq('ordem_id',id).order('created_at',{ascending:false});
     if(fs&&fs.length){ const {data:signed}=await db.storage.from('os-fotos').createSignedUrls(fs.map(x=>x.path),3600);
       const byPath=Object.fromEntries((signed||[]).map(s=>[s.path,s.signedUrl])); setFotos(fs.map(f=>({...f,url:byPath[f.path]}))); }
