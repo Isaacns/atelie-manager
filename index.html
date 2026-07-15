@@ -268,7 +268,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.19.1';
+const APP_VERSION = '1.19.2';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -480,7 +480,7 @@ function VersionGate(){
       }catch(_){ /* offline: silencioso, tenta de novo depois */ }
       checando=false;
     }
-    const t=setTimeout(checar, 20000);              // primeira checagem 20s após abrir
+    const t=setTimeout(checar, 8000);               // primeira checagem 8s após abrir
     const iv=setInterval(checar, 10*60*1000);       // depois, a cada 10 min
     const onFoco=()=>{ if(!document.hidden) checar(); };
     document.addEventListener('visibilitychange', onFoco);
@@ -2221,7 +2221,7 @@ function App(){
   if(onAtivar) return html`<${Fragment}><${Toaster}/><${Ativar}/></${Fragment}>`;
   if(recovery) return html`<${Fragment}><${Toaster}/><${ResetSenha} onDone=${()=>setRecovery(false)}/></${Fragment}>`;
   if(session===undefined) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Carregando…</div></div></${Fragment}>`;
-  if(!session) return html`<${Fragment}><${Toaster}/><${Login}/></${Fragment}>`;
+  if(!session) return html`<${Fragment}><${Toaster}/><${VersionGate}/><${Login}/></${Fragment}>`;
   if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
   const showFirst=ctx.trocarSenha&&!firstDone;
   return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${VersionGate}/><${BillingGate} user=${session.user}/>${showFirst?html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`:(!novidDone&&html`<${NovidadeModal} onClose=${()=>setNovidDone(true)}/>`)}<${Router}/></${Ctx.Provider}>`;
