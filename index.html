@@ -268,7 +268,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.19.2';
+const APP_VERSION = '1.19.3';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -470,8 +470,10 @@ function VersionGate(){
   const [nova,setNova]=useState(null);
   useEffect(()=>{
     let vivo=true, checando=false;
+    // Não bloquear por document.hidden: uma aba aberta em segundo plano é justamente
+    // o caso que precisamos pegar (foi assim que a cliente ficou presa na versão antiga).
     async function checar(){
-      if(checando||!vivo||document.hidden) return; checando=true;
+      if(checando||!vivo) return; checando=true;
       try{
         const base=location.href.replace(/[#?].*$/,'');
         const r=await fetch(base+'index.html?_v='+Date.now(),{cache:'no-store'});
