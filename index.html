@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Evita que o navegador sirva uma versão antiga do app (ver VersionGate). -->
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
 <title>Ateliê Manager — Costureira Salvador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -265,7 +268,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.18.1';
+const APP_VERSION = '1.19.0';
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -457,6 +460,41 @@ function qd(res, contexto){
 if(typeof window!=='undefined' && !window.__vzErrHook){
   window.__vzErrHook=true;
   window.addEventListener('unhandledrejection', ev=>console.error('[falha não tratada]', ev && ev.reason));
+}
+
+/* ========== DETECÇÃO DE VERSÃO NOVA ==========
+   A cliente deixa a aba aberta por horas: sem isto, ela continua rodando código antigo
+   mesmo depois do deploy (foi a causa do erro de "subtotal" persistir após a correção).
+   Compara o APP_VERSION publicado com o que está rodando e oferece atualizar. */
+function VersionGate(){
+  const [nova,setNova]=useState(null);
+  useEffect(()=>{
+    let vivo=true, checando=false;
+    async function checar(){
+      if(checando||!vivo||document.hidden) return; checando=true;
+      try{
+        const base=location.href.replace(/[#?].*$/,'');
+        const r=await fetch(base+'index.html?_v='+Date.now(),{cache:'no-store'});
+        if(r.ok){ const t=await r.text(); const m=t.match(/APP_VERSION\s*=\s*'([^']+)'/);
+          if(vivo && m && m[1] && m[1]!==APP_VERSION) setNova(m[1]); }
+      }catch(_){ /* offline: silencioso, tenta de novo depois */ }
+      checando=false;
+    }
+    const t=setTimeout(checar, 20000);              // primeira checagem 20s após abrir
+    const iv=setInterval(checar, 10*60*1000);       // depois, a cada 10 min
+    const onFoco=()=>{ if(!document.hidden) checar(); };
+    document.addEventListener('visibilitychange', onFoco);
+    return ()=>{ vivo=false; clearTimeout(t); clearInterval(iv); document.removeEventListener('visibilitychange', onFoco); };
+  },[]);
+  if(!nova) return null;
+  const atualizar=()=>{ try{ sessionStorage.clear(); }catch(_){} location.replace(location.pathname+'?v='+nova+location.hash); };
+  return html`<div style=${{position:'fixed',left:'50%',transform:'translateX(-50%)',bottom:'18px',zIndex:9999,
+      display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',borderRadius:'14px',color:'#fff',
+      background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 12px 30px -10px rgba(0,0,0,.5)',maxWidth:'92vw'}}>
+    <span style=${{fontSize:'.9rem'}}>✨ Uma versão novinha do seu sistema está pronta.</span>
+    <button onClick=${atualizar} style=${{background:'#fff',color:'var(--plum,#5e3a56)',border:'none',borderRadius:'9px',
+      padding:'8px 14px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap'}}>Atualizar agora</button>
+  </div>`;
 }
 
 /* ---------- primitives ---------- */
@@ -2186,7 +2224,7 @@ function App(){
   if(!session) return html`<${Fragment}><${Toaster}/><${Login}/></${Fragment}>`;
   if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
   const showFirst=ctx.trocarSenha&&!firstDone;
-  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${BillingGate} user=${session.user}/>${showFirst?html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`:(!novidDone&&html`<${NovidadeModal} onClose=${()=>setNovidDone(true)}/>`)}<${Router}/></${Ctx.Provider}>`;
+  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${VersionGate}/><${BillingGate} user=${session.user}/>${showFirst?html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`:(!novidDone&&html`<${NovidadeModal} onClose=${()=>setNovidDone(true)}/>`)}<${Router}/></${Ctx.Provider}>`;
 }
 ReactDOM.createRoot(document.getElementById('root')).render(createElement(App));
 </script>
