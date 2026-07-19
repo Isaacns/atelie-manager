@@ -7,6 +7,12 @@
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <title>Ateliê Manager — Costureira Salvador</title>
+<!-- Ícone da aba (favicon) + atalho de celular. Hoje aponta para a logo do tenant
+     (mesma imagem usada na sidebar). White-label: quando a logo passar a vir das
+     configurações do tenant, este href deve acompanhar (setar via JS ao carregar). -->
+<link rel="icon" type="image/jpeg" href="costureira-logo.jpg" />
+<link rel="apple-touch-icon" href="costureira-logo.jpg" />
+<meta name="theme-color" content="#5e3a56" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -114,6 +120,9 @@
   .btn.pri:hover{background:var(--plum-2)}
   .btn.sm{height:34px;padding:0 12px;font-size:.82rem}
   .btn.ghost{background:transparent;border-color:transparent}
+  /* §12 dos Padrões INPERSON/VIZIO — botão de WhatsApp é sempre verde, em todo sistema */
+  .btn.wa{background:linear-gradient(180deg,#25D366,#12A150);border-color:#12A150;color:#fff}
+  .btn.wa:hover{background:linear-gradient(180deg,#20bd5c,#0f8e46)}
   .btn svg{width:16px;height:16px}
   .link{background:none;border:0;color:var(--plum);cursor:pointer;font-weight:600;font-size:.85rem;padding:0;font-family:inherit;text-decoration:underline;text-underline-offset:2px}
   /* table */
@@ -268,7 +277,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.19.3';
+window.APP_VERSION = '1.19.5'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -835,7 +844,7 @@ function Dashboard(){
           <h3>Aniversariantes do mês</h3><p class="desc">Um carinho que fideliza.</p>
           <div class="stat-list">${k.aniversariantes.map(c=>html`<div class="it" key=${c.id}>
             <span>${isBdayToday(c)?'🎉 ':''}<b>${c.nome}</b> <span class="muted">· dia ${String(bdayDay(c)).padStart(2,'0')}</span></span>
-            ${c.whatsapp?html`<a class="btn sm" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+encodeURIComponent('Feliz aniversário, '+(c.nome||'').split(' ')[0]+'! Desejamos tudo de bom. Com carinho, '+(tenant?.nome||''))} title="Enviar felicitação"><${Ic} d=${I.wa}/></a>`:html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}
+            ${c.whatsapp?html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+encodeURIComponent('Feliz aniversário, '+(c.nome||'').split(' ')[0]+'! Desejamos tudo de bom. Com carinho, '+(tenant?.nome||''))} title="Enviar felicitação"><${Ic} d=${I.wa}/></a>`:html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}
           </div>`)}</div>
         </div>`}
       </div>
@@ -909,7 +918,7 @@ function Clientes(){
           <tbody>${filtered.map(c=>html`<tr key=${c.id} class="click" onClick=${()=>go('/clientes/'+c.id)}>
             <td class="b">${c.nome}</td><td>${c.telefone||'—'}</td><td>${c.cidade||'—'}</td>
             <td class="r" onClick=${e=>e.stopPropagation()}>
-              ${c.whatsapp&&html`<a class="btn sm ghost" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank" title="WhatsApp"><${Ic} d=${I.wa}/></a>`}
+              ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank" title="WhatsApp"><${Ic} d=${I.wa}/></a>`}
               <button class="btn sm ghost" onClick=${()=>setEdit(c)} title="Editar"><${Ic} d=${I.edit}/></button>
               <button class="btn sm ghost" onClick=${()=>setDel(c)} title="Excluir"><${Ic} d=${I.trash}/></button>
             </td></tr>`)}</tbody></table></div>`}
@@ -939,7 +948,7 @@ function ClienteDetail({id}){
           <div><h1 class="hi serif" style=${{fontSize:'1.7rem'}}>${c.nome}</h1>
             <div class="hint" style=${{margin:'2px 0 0'}}>${[c.bairro,c.cidade].filter(Boolean).join(', ')||'—'}</div></div>
           <div style=${{display:'flex',gap:'6px'}}>
-            ${c.whatsapp&&html`<a class="btn sm" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank"><${Ic} d=${I.wa}/>WhatsApp</a>`}
+            ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank"><${Ic} d=${I.wa}/>WhatsApp</a>`}
             <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
           </div>
         </div>
@@ -1207,12 +1216,12 @@ function OrdemDetail({id}){
     <div style=${{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
       <button class="btn ghost sm" onClick=${()=>go('/ordens')}><${Ic} d=${I.back}/>Ordens</button>
       <div style=${{display:'flex',gap:'6px',flexWrap:'wrap'}}>
-        ${cli?.whatsapp&&html`<a class="btn sm pri" target="_blank" title="Avisar cliente pelo WhatsApp"
+        ${cli?.whatsapp&&html`<a class="btn sm wa" target="_blank" title="Avisar cliente pelo WhatsApp"
           href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent('Olá '+(cli.nome||'').split(' ')[0]+'! Seu serviço'+(o.descricao?' ("'+o.descricao+'")':'')+' está pronto para retirada. 🧵 — '+(tenant?.nome||''))}>
           <${Ic} d=${I.wa}/>Avisar pronto</a>`}
         <button class="btn sm" onClick=${printOS}><${Ic} d=${I.print}/>Imprimir OS</button>
         <button class="btn sm" title="Cupom não fiscal (recibo)" onClick=${()=>printCupom(o,cli,tenant?.nome,settings,itens)}><${Ic} d=${I.file}/>Cupom</button>
-        ${cli?.whatsapp&&html`<a class="btn sm" target="_blank" title="Enviar a OS ao cliente" href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent(osText())}><${Ic} d=${I.wa}/>Enviar OS</a>`}
+        ${cli?.whatsapp&&html`<a class="btn sm wa" target="_blank" title="Enviar a OS ao cliente" href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent(osText())}><${Ic} d=${I.wa}/>Enviar OS</a>`}
         <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
         <button class="btn sm ghost" onClick=${()=>setDel(true)}><${Ic} d=${I.trash}/></button>
       </div>
@@ -1804,7 +1813,7 @@ function Recuperacao(){
         ${d.inativos.length===0? html`<${Empty} icon=${I.refresh} title="Ninguém parado">Seus clientes estão ativos.</${Empty}>`
           : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Sem voltar</th><th class="r">Serviços</th><th class="r">Total gasto</th><th class="r">Ação</th></tr></thead>
             <tbody>${d.inativos.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${c.dias} dias</td><td class="r">${c.n}</td><td class="r b">${BRL(c.total)}</td>
-              <td class="r">${c.whatsapp? html`<a class="btn sm pri" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Reconquistar</a>`: html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}</td></tr>`)}</tbody></table></div>`}
+              <td class="r">${c.whatsapp? html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Reconquistar</a>`: html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}</td></tr>`)}</tbody></table></div>`}
       </div>
     </${Fragment}>`}
   </${Shell}>`;
@@ -1845,7 +1854,7 @@ function Alavancagem(){
       ${alvo.length===0? html`<${Empty} icon=${I.rocket} title="Nenhum cliente">Ajuste o público ou cadastre WhatsApp nos clientes.</${Empty}>`
         : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Serviços feitos</th><th class="r">Enviar oferta</th></tr></thead>
           <tbody>${alvo.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${counts[c.id]||0}</td>
-            <td class="r"><a class="btn sm pri" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Oferecer</a></td></tr>`)}</tbody></table></div>`}
+            <td class="r"><a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Oferecer</a></td></tr>`)}</tbody></table></div>`}
     </div>
   </${Shell}>`;
 }
@@ -1871,7 +1880,8 @@ function Novidades(){
         : html`<div class="stat-list">${lancados.map(r=>html`<div class="it" key=${r.id} style=${{alignItems:'flex-start',flexDirection:'column',gap:'3px',padding:'11px 4px'}}>
             <div style=${{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}>
               <span class="tag">${tipoMeta[r.tipo]||r.tipo}</span><b>${r.titulo}</b>
-              ${r.versao?html`<span class="muted" style=${{fontSize:'.72rem'}}>v${r.versao}</span>`:''}</div>
+              ${r.versao?html`<span class="muted" style=${{fontSize:'.72rem'}}>v${r.versao}</span>`:''}
+              ${r.lancado_em?html`<span class="muted" style=${{fontSize:'.72rem',marginLeft:'auto'}}>${fmtDate(String(r.lancado_em).slice(0,10))}</span>`:''}</div>
             ${r.descricao&&html`<span class="muted" style=${{fontSize:'.86rem'}}>${r.descricao}</span>`}
           </div>`)}</div>`}
     </div>
