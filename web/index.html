@@ -1,0 +1,2237 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Evita que o navegador sirva uma versão antiga do app (ver VersionGate). -->
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<title>Ateliê Manager — Costureira Salvador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4efe8; --card:#fbf8f3; --ink:#2e2b31; --fg:#2e2b31; --muted:#8a7e86;
+    --plum:#5e3a56; --plum-2:#4c2e46; --violet:#8e2cb0; --charcoal:#2e2b31;
+    --gold:#c8a96a; --border:#e7ddd0; --danger:#b3452f; --ok:#3f7d52; --warn:#b98325;
+    --radius:1rem; --shadow:0 8px 32px rgba(70,40,80,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow-x:hidden;max-width:100%}
+  body{
+    font-family:Inter,system-ui,sans-serif;color:var(--fg);background:var(--bg);
+    background-image:
+      radial-gradient(60rem 60rem at 110% -10%, rgba(142,44,176,.10), transparent 60%),
+      radial-gradient(50rem 50rem at -10% 10%, rgba(200,169,106,.16), transparent 55%);
+    background-attachment:fixed;-webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:"Cormorant Garamond",Georgia,serif}
+  a{color:inherit}
+  .center{min-height:100dvh;display:grid;place-items:center;padding:24px}
+  .glass{background:rgba(251,248,243,.72);backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.5);box-shadow:var(--shadow);border-radius:1.25rem}
+  /* logo */
+  .mark{width:44px;height:28px;color:var(--charcoal)}
+  @media (prefers-reduced-motion:no-preference){.breathe{animation:br 4.5s ease-in-out infinite;transform-origin:center}}
+  @keyframes br{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.045);opacity:.92}}
+  .logo-badge{width:96px;height:96px;border-radius:999px;background:
+    radial-gradient(120% 120% at 30% 20%, #3a363f, #2b282e 70%);
+    display:grid;place-items:center;box-shadow:0 10px 30px rgba(46,43,49,.35);margin:0 auto}
+  .logo-badge .mark{width:60px;height:38px;color:#fff}
+  /* login */
+  .card{width:100%;max-width:420px;padding:32px}
+  h1.title{font-family:"Cormorant Garamond",serif;font-size:2rem;margin:.4rem 0 .1rem;text-align:center}
+  .sub{color:var(--muted);text-align:center;font-size:.9rem;margin-bottom:20px}
+  label{display:block;font-size:.82rem;font-weight:600;margin:14px 0 6px;color:#5a525c}
+  .field{position:relative}
+  input,select,textarea{width:100%;height:44px;border:1px solid var(--border);background:rgba(255,255,255,.75);
+    border-radius:.6rem;padding:0 14px;font-size:.95rem;color:var(--fg);outline:none;font-family:inherit}
+  textarea{height:auto;padding:10px 14px;resize:vertical;min-height:72px}
+  input:focus,select:focus,textarea:focus{border-color:var(--plum);box-shadow:0 0 0 3px rgba(94,58,86,.15)}
+  .toggle{position:absolute;right:6px;top:6px;height:32px;width:auto;padding:0 10px;border:0;background:transparent;
+    color:var(--muted);cursor:pointer;font-size:.78rem}
+  button.primary{width:100%;height:46px;margin-top:8px;border:0;border-radius:.6rem;
+    background:var(--plum);color:#fff;font-weight:600;font-size:.95rem;cursor:pointer;transition:.15s}
+  button.primary:hover{background:var(--plum-2)}
+  button.primary:disabled{opacity:.6;cursor:default}
+  .err{background:rgba(179,69,47,.1);border:1px solid rgba(179,69,47,.3);color:var(--danger);
+    border-radius:.5rem;padding:10px 12px;font-size:.85rem;margin-bottom:8px}
+  .foot{color:var(--muted);text-align:center;font-size:.72rem;margin-top:18px;letter-spacing:.02em}
+  /* app shell */
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:100dvh}
+  .side{position:sticky;top:0;z-index:20;height:100dvh;padding:20px 14px;border-right:1px solid var(--border);
+    background:rgba(248,244,238,.75);backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:4px}
+  .side .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
+  .side .brand .nm{font-family:"Cormorant Garamond",serif;font-size:1.15rem;line-height:1;font-weight:600}
+  .side .brand .tg{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .nav{display:flex;flex-direction:column;gap:2px;overflow:visible}
+  .nav a{position:relative;display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:.6rem;
+    font-size:.9rem;font-weight:500;color:#5a525c;text-decoration:none;cursor:pointer;transition:.12s}
+  .nav a:hover{background:rgba(142,44,176,.07);color:var(--plum)}
+  .nav a.on{background:var(--plum);color:#fff}
+  .nav a.on svg{color:#fff}
+  .nav a svg{width:18px;height:18px;color:var(--muted);flex:0 0 auto}
+  .nav a:hover svg{color:var(--plum)}
+  .nav .sep{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:#b6a9b1;padding:14px 12px 4px}
+  .side .who{margin-top:auto;padding-top:12px;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)}
+  .side .who b{color:var(--fg);display:block;font-size:.85rem}
+  .side .who button{margin-top:8px;width:100%;height:34px;border:1px solid var(--border);background:rgba(255,255,255,.6);
+    border-radius:.5rem;cursor:pointer;color:var(--fg);font-size:.82rem}
+  .side .who button:hover{border-color:var(--plum);color:var(--plum)}
+  /* content */
+  .main{min-width:0}
+  .topbar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:12px;height:62px;padding:0 24px;
+    background:rgba(244,239,232,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+  .topbar h2{font-family:"Cormorant Garamond",serif;font-size:1.5rem;margin:0;font-weight:600}
+  .topbar .plan{margin-left:6px;font-size:.68rem;padding:3px 9px;border-radius:999px;background:rgba(142,44,176,.1);color:var(--violet);font-weight:600}
+  .topbar .spacer{margin-left:auto}
+  .wrap{max-width:1120px;margin:0 auto;padding:26px 24px 60px}
+  .hi{font-family:"Cormorant Garamond",serif;font-size:2rem;margin:0}
+  .hint{color:var(--muted);font-size:.92rem;margin:2px 0 20px}
+  /* kpis */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(min-width:820px){.grid{grid-template-columns:repeat(4,1fr)}}
+  .kpi{padding:18px 20px;border-radius:1.1rem;text-align:left;cursor:pointer;border:0;background:rgba(251,248,243,.72);
+    backdrop-filter:blur(18px);box-shadow:var(--shadow);transition:.15s;font-family:inherit}
+  .kpi:hover{transform:translateY(-2px);box-shadow:0 14px 38px rgba(70,40,80,.14)}
+  .kpi .n{font-family:"Cormorant Garamond",serif;font-size:2.1rem;line-height:1;color:var(--plum)}
+  .kpi .l{color:var(--muted);font-size:.82rem;margin-top:6px}
+  .kpi.warn .n{color:var(--warn)} .kpi.ok .n{color:var(--ok)}
+  /* cards / sections */
+  .row{display:grid;gap:16px;margin-top:18px}
+  @media(min-width:820px){.row.two{grid-template-columns:1fr 1fr}.row.side{grid-template-columns:1.6fr 1fr}}
+  .panel{padding:20px;border-radius:1.1rem}
+  .panel h3{margin:0 0 2px;font-size:1rem;font-weight:600}
+  .panel .desc{color:var(--muted);font-size:.82rem;margin:0 0 14px}
+  /* toolbar */
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  .bar .search{flex:1;min-width:200px}
+  .bar input,.bar select{height:42px}
+  .btn{height:42px;padding:0 16px;border-radius:.6rem;border:1px solid var(--border);background:rgba(255,255,255,.65);
+    color:var(--fg);font-weight:600;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:inherit;white-space:nowrap}
+  .btn:hover{border-color:var(--plum);color:var(--plum)}
+  .btn.pri{background:var(--plum);border-color:var(--plum);color:#fff}
+  .btn.pri:hover{background:var(--plum-2)}
+  .btn.sm{height:34px;padding:0 12px;font-size:.82rem}
+  .btn.ghost{background:transparent;border-color:transparent}
+  /* §12 dos Padrões INPERSON/VIZIO — botão de WhatsApp é sempre verde, em todo sistema */
+  .btn.wa{background:linear-gradient(180deg,#25D366,#12A150);border-color:#12A150;color:#fff}
+  .btn.wa:hover{background:linear-gradient(180deg,#20bd5c,#0f8e46)}
+  .btn svg{width:16px;height:16px}
+  .link{background:none;border:0;color:var(--plum);cursor:pointer;font-weight:600;font-size:.85rem;padding:0;font-family:inherit;text-decoration:underline;text-underline-offset:2px}
+  /* table */
+  .tbl{width:100%;border-collapse:collapse;font-size:.88rem}
+  .tbl th{text-align:left;font-weight:600;color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;
+    padding:0 12px 10px;border-bottom:1px solid var(--border)}
+  .tbl td{padding:12px;border-bottom:1px solid rgba(231,221,208,.6);vertical-align:middle}
+  .tbl tr:last-child td{border-bottom:0}
+  .tbl tr.click{cursor:pointer}
+  .tbl tr.click:hover td{background:rgba(142,44,176,.05)}
+  .tbl .r{text-align:right}
+  .tbl .low td{background:rgba(185,131,37,.07)}
+  .tblwrap{overflow-x:auto}
+  /* badge */
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:.74rem;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:999px;background:currentColor;opacity:.9}
+  /* modal */
+  .ov{position:fixed;inset:0;background:rgba(46,43,49,.42);backdrop-filter:blur(3px);display:grid;place-items:center;padding:20px;z-index:20}
+  .modal{width:100%;max-width:560px;max-height:90dvh;overflow:auto;background:var(--card);border-radius:1.1rem;
+    box-shadow:0 24px 70px rgba(46,43,49,.3);border:1px solid rgba(255,255,255,.6)}
+  .modal .mh{position:sticky;top:0;background:var(--card);display:flex;align-items:center;justify-content:space-between;
+    padding:20px 22px 12px;border-bottom:1px solid var(--border)}
+  .modal .mh h3{margin:0;font-family:"Cormorant Garamond",serif;font-size:1.35rem;font-weight:600}
+  .modal .mb{padding:18px 22px}
+  .modal .mf{position:sticky;bottom:0;background:var(--card);display:flex;gap:10px;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--border)}
+  .x{border:0;background:transparent;font-size:1.3rem;color:var(--muted);cursor:pointer;line-height:1}
+  .f2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  .f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px}
+  @media(max-width:560px){.f2,.f3{grid-template-columns:1fr}}
+  .ferr{color:var(--danger);font-size:.78rem;margin-top:4px}
+  /* empty */
+  .empty{text-align:center;padding:44px 20px;color:var(--muted)}
+  .empty .em{width:44px;height:44px;margin:0 auto 10px;color:#c9bcc3}
+  .empty h4{margin:0 0 4px;color:var(--fg);font-weight:600}
+  /* toast */
+  .toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:40}
+  .toast{background:var(--ink);color:#fff;padding:12px 16px;border-radius:.6rem;font-size:.86rem;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:320px}
+  .toast.ok{background:var(--ok)} .toast.err{background:var(--danger)}
+  /* misc */
+  .stat-list{display:flex;flex-direction:column;gap:2px}
+  .stat-list .it{display:flex;align-items:center;justify-content:space-between;padding:9px 4px;border-bottom:1px solid rgba(231,221,208,.6);font-size:.88rem}
+  .stat-list .it:last-child{border-bottom:0}
+  .stat-list .it .v{font-weight:600;color:var(--plum)}
+  .muted{color:var(--muted)} .b{font-weight:600}
+  .tag{display:inline-block;font-size:.72rem;padding:3px 8px;border-radius:.4rem;background:rgba(94,58,86,.08);color:var(--plum);font-weight:600}
+  .notice{background:rgba(142,44,176,.06);border:1px solid rgba(142,44,176,.18);border-radius:.7rem;padding:14px 16px;font-size:.85rem;color:#5a525c}
+  .notice b{color:var(--plum)}
+  .chk{display:flex;gap:9px;align-items:flex-start;padding:7px 0;font-size:.88rem}
+  .chk .m{width:18px;height:18px;flex:0 0 auto;color:var(--muted)}
+  /* living background — padrão VIZIO (adaptado à paleta Costureira) */
+  .living{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .living .orb{position:absolute;border-radius:50%;filter:blur(64px)}
+  .living .orb.a{width:540px;height:540px;left:-150px;top:-110px;background:radial-gradient(circle,rgba(142,44,176,.72),transparent 66%)}
+  .living .orb.b{width:470px;height:470px;right:-130px;top:22%;background:radial-gradient(circle,rgba(142,44,176,.56),transparent 68%)}
+  .living .orb.c{width:620px;height:620px;left:22%;bottom:-250px;background:radial-gradient(circle,rgba(142,44,176,.64),transparent 68%)}
+  @media (prefers-reduced-motion:no-preference){
+    .living .orb.a{animation:orbB 8s ease-in-out infinite}
+    .living .orb.b{animation:orbB 8s ease-in-out infinite -2.5s}
+    .living .orb.c{animation:orbB 8s ease-in-out infinite -5s}
+    @keyframes orbB{0%,100%{transform:scale(1) translate(0,0);opacity:.58}50%{transform:scale(1.17) translate(14px,-20px);opacity:.82}}
+  }
+  .center,.app{position:relative;z-index:1}
+  .app{background:transparent}
+  /* brand logos */
+  .brandmark{border-radius:50%;object-fit:cover;display:block;box-shadow:0 0 0 2px var(--cream),0 0 0 4px rgba(142,44,176,.5),0 8px 22px rgba(46,43,49,.28)}
+  .story-ring{display:inline-grid;place-items:center;border-radius:50%;padding:3px;background:conic-gradient(from 210deg,#8e2cb0,#c86ee0 25%,#8e2cb0 55%,#5e3a56 80%,#8e2cb0);box-shadow:0 6px 18px rgba(142,44,176,.28)}
+  .story-ring .brandmark{box-shadow:none;border:2.5px solid var(--cream)}
+  @media (prefers-reduced-motion:no-preference){.breathe-img{animation:imgBr 4.6s ease-in-out infinite;transform-origin:center}}
+  @keyframes imgBr{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
+  .byvizio{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.72rem}
+  .byvizio img{height:15px;width:auto}
+  .byvizio b{font-weight:600}
+  @media (prefers-reduced-motion:no-preference){.vzfloat{animation:vzF 5s ease-in-out infinite}}
+  @keyframes vzF{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+  /* chart */
+  .chartbox{height:158px;position:relative}
+  /* measures + segments */
+  .measure-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px}
+  @media(max-width:560px){.measure-grid{grid-template-columns:1fr 1fr}}
+  .seg{display:inline-flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--border);background:rgba(255,255,255,.6);border-radius:999px;padding:7px 13px;font-size:.82rem;cursor:pointer;font-family:inherit;color:var(--fg);font-weight:500}
+  .chip.on{background:var(--plum);border-color:var(--plum);color:#fff}
+  /* alerts balloon */
+  .bell-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:.62rem;font-weight:700;min-width:16px;height:16px;border-radius:999px;display:grid;place-items:center;padding:0 3px}
+  .pop{position:absolute;right:0;top:46px;width:310px;max-height:66vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:.8rem;box-shadow:0 18px 50px rgba(46,43,49,.25);z-index:30}
+  .pop-h{padding:12px 14px;font-weight:600;border-bottom:1px solid var(--border)}
+  .pop-empty{padding:22px 14px;color:var(--muted);font-size:.86rem;text-align:center}
+  .pop-it{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:11px 14px;border:0;border-bottom:1px solid rgba(231,221,208,.6);background:transparent;cursor:pointer;font-family:inherit;font-size:.83rem;line-height:1.35}
+  .pop-it:last-child{border-bottom:0} .pop-it:hover{background:rgba(142,44,176,.05)}
+  .pi-ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:0 0 auto}
+  .pi-ic svg{width:15px;height:15px} .pi-ic.warn{background:rgba(185,131,37,.15);color:var(--warn)} .pi-ic.low{background:rgba(142,44,176,.12);color:var(--violet)}
+  /* billing gate */
+  .gate-bar{position:sticky;top:0;z-index:8;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 16px;font-size:.85rem;font-weight:600;color:#5a3d16;background:linear-gradient(90deg,#fbf1dc,#fce9c0,#fbf1dc);border-bottom:1px solid #f0d69a}
+  .gate-bar.info{color:#4c2e46;background:linear-gradient(90deg,#f2e9f4,#ecdcf0,#f2e9f4);border-bottom:1px solid rgba(142,44,176,.25)}
+  .gate-bar .gd{width:8px;height:8px;border-radius:50%;background:#b98325}
+  .gate-bar.info .gd{background:var(--violet)}
+  .gate-bar .gb{cursor:pointer;border:0;background:var(--ink);color:#fff;font-weight:700;font-size:.8rem;padding:6px 14px;border-radius:8px;font-family:inherit}
+  .gate-bar.info .gb{background:var(--plum)}
+  .gate-ov{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;padding:24px;background:radial-gradient(120% 120% at 50% -10%,rgba(142,44,176,.24),rgba(46,43,49,.6) 60%);backdrop-filter:blur(7px)}
+  .gate-card{position:relative;max-width:430px;width:100%;background:var(--card);border-radius:20px;padding:34px 30px 26px;text-align:center;border:1px solid rgba(255,255,255,.6);box-shadow:0 24px 70px rgba(46,43,49,.35)}
+  .gate-ring{width:60px;height:60px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--violet),var(--plum))}
+  .gate-ring svg{width:26px;height:26px}
+  .gate-price{font-size:.74rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--violet);margin-bottom:10px}
+  .gate-card h3{margin:0 0 6px;font-family:"Cormorant Garamond",serif;font-size:1.5rem;font-weight:600;color:var(--ink)}
+  .gate-card p{margin:0 auto 18px;font-size:.9rem;color:#5f5760;max-width:330px}
+  .gate-btn{border:0;cursor:pointer;background:var(--plum);color:#fff;font-weight:700;font-size:.96rem;padding:13px 26px;border-radius:11px;font-family:inherit;box-shadow:0 10px 26px rgba(94,58,86,.34)}
+  .gate-btn:hover{background:var(--plum-2)}
+  .gate-exit{display:block;margin:14px auto 0;background:0;border:0;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:inherit}
+  /* mobile nav */
+  .menu-btn{display:none}
+  @media(max-width:820px){
+    .app{grid-template-columns:1fr}
+    .side{position:fixed;left:0;top:0;height:100dvh;overflow:auto;z-index:30;width:264px;transform:translateX(-100%);transition:.2s}
+    .side.open{transform:none}
+    .menu-btn{display:inline-flex}
+    .backdrop{position:fixed;inset:0;background:rgba(46,43,49,.4);z-index:25}
+    .wrap{padding:20px 14px 64px}
+    .topbar{padding:0 12px;gap:8px}
+    .topbar h2{font-size:1.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+    .row.side,.row.two{grid-template-columns:1fr}
+  }
+  @media(max-width:560px){
+    .grid{gap:10px}
+    .kpi{padding:14px 15px}
+    .kpi .n{font-size:1.7rem}
+    .hi{font-size:1.55rem}
+    .panel{padding:16px}
+    .glass.kpi .n[style]{font-size:1.25rem!important}
+    .tbl{font-size:.82rem}
+    .tbl th,.tbl td{padding:9px 7px}
+    .modal .mh,.modal .mf{padding-left:16px;padding-right:16px}
+    .modal .mb{padding:16px}
+    .bar{gap:8px}
+    .bar .btn.pri{flex:1;justify-content:center}
+    .measure-grid{grid-template-columns:1fr 1fr}
+    .topbar h2{font-size:1.05rem}
+  }
+</style>
+</head>
+<body>
+<div id="root" class="center"><div class="sub">Carregando…</div></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script type="module">
+import htm from 'https://esm.sh/htm@3.1.1';
+const { createElement, useState, useEffect, useMemo, useCallback, useRef, Fragment } = React;
+const html = htm.bind(createElement);
+
+const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
+const APP_VERSION = '1.19.4';
+
+/* ---------- helpers ---------- */
+const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const onlyDigits = s => (s||'').replace(/\D/g,'');
+const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('pt-BR') : '—';
+const fmtDateTime = x => { if(!x) return '—'; const d=new Date(String(x).replace(' ','T').replace(/([+-]\d{2})$/,'$1:00')); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); };
+const todayISO = () => new Date().toISOString().slice(0,10);
+const monthStart = () => { const d=new Date(); return new Date(d.getFullYear(),d.getMonth(),1).toISOString().slice(0,10); };
+const daysBetween = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
+const addDays = (iso,n) => { const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+Number(n||0)); return d.toISOString().slice(0,10); };
+const esc = s => String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function printDoc(title, bodyHtml, tenantName){
+  const w=window.open('','_blank','width=900,height=760');
+  if(!w){ toast('Permita pop-ups para gerar a impressão.','err'); return; }
+  const base=location.href.replace(/[#?].*$/,'').replace(/[^/]*$/,'');
+  const css='@page{margin:0}*{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;color:#2e2b31;margin:0;padding:18mm 16mm}'
+    +'.brand{display:flex;align-items:center;gap:12px;border-bottom:2px solid #5e3a56;padding-bottom:12px;margin-bottom:18px}'
+    +'.brand img{width:52px;height:52px;border-radius:50%;object-fit:cover}'
+    +'.brand h1{font-family:Georgia,serif;color:#2e2b31;font-size:20px;margin:0}.brand .s{color:#8a7e86;font-size:12px}'
+    +'.brand .meta{margin-left:auto;text-align:right;color:#8a7e86;font-size:11px}'
+    +'table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}th{text-align:left;color:#8a7e86;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid #e7ddd0;padding:6px 8px}'
+    +'td{padding:7px 8px;border-bottom:1px solid #f0e9df}.r{text-align:right}tfoot td{font-weight:700;border-top:2px solid #5e3a56;color:#5e3a56}h3{color:#5e3a56;font-size:14px;margin:16px 0 4px}'
+    +'.kv{display:flex;gap:22px;margin:8px 0 4px;font-size:12px}.kv b{color:#5e3a56}.ft{margin-top:26px;color:#b6a9b1;font-size:10px;text-align:center}';
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>'+css+'</style></head><body>'
+    +'<div class="brand"><img src="'+base+'costureira-logo.jpg" alt=""><div><h1>'+esc(tenantName||'Ateliê')+'</h1><div class="s">Ateliê de costura · Salvador</div></div>'
+    +'<div class="meta">'+esc(title)+'<br>Emitido em '+new Date().toLocaleString('pt-BR')+'</div></div>'
+    +bodyHtml+'<div class="ft">Ateliê Manager By Vizio</div>'
+    +'<'+'script>window.onload=function(){setTimeout(function(){window.print()},150)}<'+'/script></body></html>');
+  w.document.close();
+}
+function resizeImage(file, max=1600, quality=0.82){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file); const img=new Image();
+    img.onload=()=>{ URL.revokeObjectURL(url);
+      let w=img.width,h=img.height; if(w>max||h>max){ if(w>=h){ h=Math.round(h*max/w); w=max; } else { w=Math.round(w*max/h); h=max; } }
+      const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+      c.toBlob(b=> b?resolve(b):reject(new Error('Falha ao processar a imagem')), 'image/jpeg', quality); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
+    img.src=url;
+  });
+}
+const uuid=()=> (window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
+function pagInfo(o){ const net=Number(o&&o.valor)||0; const pago=Number(o&&o.valor_pago)||0; const saldo=+(net-pago).toFixed(2);
+  const st = pago<=0 ? 'pendente' : (saldo>0.009 ? 'parcial' : 'pago');
+  return {net,pago,saldo,st}; }
+const PAG={pendente:{l:'A receber',c:'#b3452f',bg:'rgba(179,69,47,.12)'},parcial:{l:'Sinal pago',c:'#b98325',bg:'rgba(185,131,37,.14)'},pago:{l:'Pago',c:'#2f6b43',bg:'rgba(47,107,67,.16)'}};
+/* Todo valor recebido numa OS vira automaticamente uma receita paga no Financeiro (vinculada à OS e à cliente). */
+async function lancarReceitaOS(tenantId, o, valorRecebido){
+  const v=+(Number(valorRecebido)||0).toFixed(2);
+  if(!(v>0) || !o || !o.id) return {error:null};
+  const hoje=todayISO();
+  const desc='OS #'+(o.numero??'')+(o.descricao?' — '+String(o.descricao).slice(0,60):'');
+  return await db.from('financeiro_lancamentos').insert({
+    tenant_id:tenantId, tipo:'receita', descricao:desc, valor:v,
+    vencimento:hoje, pago:true, pago_em:hoje, ordem_id:o.id, cliente_id:o.cliente_id||null });
+}
+function printCupom(o, cli, tenantName, st, itens){
+  const w=window.open('','_blank','width=380,height=700');
+  if(!w){ toast('Permita pop-ups para gerar o cupom.','err'); return; }
+  const base=location.href.replace(/[#?].*$/,'').replace(/[^/]*$/,'');
+  const s=st||{};
+  const end=(typeof s.endereco==='string')?s.endereco:'';
+  const info=[].concat(s.cnpj?['CNPJ '+esc(s.cnpj)]:[])
+    .concat(end?[esc(end)]:[])
+    .concat((s.telefone||s.whatsapp)?[esc(s.telefone||s.whatsapp)]:[]).join('<br>');
+  const linha='<div style="border-top:1px dashed #999;margin:7px 0"></div>';
+  const css='@page{size:80mm auto;margin:0}*{box-sizing:border-box}'
+    +'body{font-family:"Courier New",monospace;color:#111;margin:0;padding:9px 11px;width:80mm;font-size:12px;line-height:1.35}'
+    +'.c{text-align:center}.b{font-weight:700}.nm{font-size:15px;font-weight:700}.mut{color:#555;font-size:10.5px}'
+    +'.row{display:flex;justify-content:space-between;gap:8px}.tot{font-size:14px;font-weight:700}'
+    +'.tag{font-size:11px;font-weight:700;letter-spacing:.08em}.disc{font-size:10px;color:#333;text-align:center;margin-top:6px}';
+  const body='<div class="c"><img src="'+base+'costureira-logo.jpg" style="width:44px;height:44px;border-radius:50%;object-fit:cover" alt="">'
+    +'<div class="nm">'+esc(tenantName||'Ateliê')+'</div><div class="mut">'+esc(s.subtitulo||'Ateliê de Costura')+'</div>'
+    +(info?'<div class="mut" style="margin-top:3px">'+info+'</div>':'')+'</div>'+linha
+    +'<div class="c tag">CUPOM NÃO FISCAL</div>'
+    +'<div class="mut c">OS #'+esc(String(o.numero))+' · '+new Date().toLocaleString('pt-BR')+'</div>'
+    +'<div style="margin-top:4px">Cliente: <b>'+esc(cli&&cli.nome?cli.nome:'Consumidor')+'</b></div>'+linha
+    +((itens&&itens.length>0)
+        ? itens.map(function(it){ var q=Number(it.quantidade)||1; var stv=(it.subtotal!=null?Number(it.subtotal):q*(Number(it.valor_unit)||0));
+            return '<div class="row"><span>'+(q>1?q+'x ':'')+esc(it.descricao||'Serviço')+'</span><span class="b">'+BRL(stv)+'</span></div>'; }).join('')
+        : '<div class="row"><span>'+esc(o.descricao||'Serviço')+'</span><span class="b">'+BRL(o.valor)+'</span></div>')
+    +linha
+    +(Number(o.desconto)>0?'<div class="row"><span>Desconto</span><span>− '+BRL(o.desconto)+'</span></div>':'')
+    +'<div class="row tot"><span>TOTAL</span><span>'+BRL(o.valor)+'</span></div>'
+    +(Number(o.valor_pago)>0?'<div class="row" style="margin-top:3px"><span>Pago</span><span>'+BRL(o.valor_pago)+'</span></div>':'')
+    +(pagInfo(o).saldo>0.009?'<div class="row b"><span>Saldo a receber</span><span>'+BRL(pagInfo(o).saldo)+'</span></div>':'')
+    +'<div class="mut" style="margin-top:5px">Forma de pagamento: ________________</div>'+linha
+    +'<div class="disc">Obrigado pela preferência!</div>'
+    +'<div class="disc b">ESTE DOCUMENTO NÃO POSSUI VALOR FISCAL</div>'
+    +'<div class="disc" style="margin-top:9px;color:#999">Ateliê Manager By Vizio</div>';
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Cupom não fiscal — OS '+esc(String(o.numero))+'</title><style>'+css+'</style></head><body>'+body
+    +'<'+'script>window.onload=function(){setTimeout(function(){window.print()},150)}<'+'/script></body></html>');
+  w.document.close();
+}
+const maskPhone = v => { const d=onlyDigits(v).slice(0,11); if(d.length<=10) return d.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3').replace(/[-\s()]+$/,''); return d.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'); };
+const maskCPF = v => { const d=onlyDigits(v).slice(0,11); return d.replace(/(\d{3})(\d{0,3})/,'$1.$2').replace(/(\d{3})\.(\d{3})(\d{0,3})/,'$1.$2.$3').replace(/(\d{3})\.(\d{3})\.(\d{3})(\d{0,2})/,'$1.$2.$3-$4').replace(/[.\-]+$/,''); };
+
+const STATUS = {
+  orcamento:{l:'Orçamento',c:'#8a7e86',bg:'rgba(138,126,134,.12)'},
+  aberto:{l:'Aberto',c:'#4c6fb3',bg:'rgba(76,111,179,.12)'},
+  em_andamento:{l:'Em andamento',c:'#b98325',bg:'rgba(185,131,37,.14)'},
+  costurando:{l:'Costurando',c:'#8e2cb0',bg:'rgba(142,44,176,.12)'},
+  aguardando_prova:{l:'Aguardando prova',c:'#2f8f8f',bg:'rgba(47,143,143,.14)'},
+  aguardando_retirada:{l:'Aguardando retirada',c:'#5e3a56',bg:'rgba(94,58,86,.14)'},
+  finalizado:{l:'Finalizado',c:'#3f7d52',bg:'rgba(63,125,82,.14)'},
+  entregue:{l:'Entregue',c:'#2f6b43',bg:'rgba(47,107,67,.16)'},
+  cancelado:{l:'Cancelado',c:'#b3452f',bg:'rgba(179,69,47,.12)'},
+};
+const STATUS_ORDER = Object.keys(STATUS);
+const ACTIVE = ['orcamento','aberto','em_andamento','costurando','aguardando_prova','aguardando_retirada'];
+const isClosed = s => s==='entregue'||s==='cancelado';
+const dueDate = o => o.prazo || (o.dias_previstos&&o.data_entrada ? addDays(o.data_entrada,o.dias_previstos) : null);
+const isLate = o => ACTIVE.includes(o.status) && (()=>{ const d=dueDate(o); return !!d && d<todayISO(); })();
+const bdayThisMonth = c => !!c.nascimento && Number(c.nascimento.slice(5,7))===(new Date().getMonth()+1);
+const bdayDay = c => Number((c.nascimento||'0000-00-00').slice(8,10));
+const isBdayToday = c => c.nascimento && c.nascimento.slice(5,10)===todayISO().slice(5,10);
+
+/* ---------- icons ---------- */
+const I = {
+  home:'M3 11.5 12 4l9 7.5M5 10v10h5v-6h4v6h5V10',
+  users:'M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M17 11a3 3 0 1 0 0-6M21 20v-1a3.6 3.6 0 0 0-3-3.5',
+  scissors:'M6 6l12 12M6 18L18 6M9 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+  box:'M21 8 12 3 3 8m18 0-9 5-9-5m18 0v8l-9 5-9-5V8',
+  money:'M3 6h18v12H3zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M6 9h.01M18 15h.01',
+  chart:'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  file:'M14 3v5h5M14 3H6v18h12V8zM9 13h6M9 17h4',
+  tag:'M20.6 13.4 13 21l-9-9V4h8l8.6 8.6a2 2 0 0 1 0 2.8ZM7.5 7.5h.01',
+  gear:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9 2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 2.9-1.2 2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9Z',
+  plus:'M12 5v14M5 12h14', menu:'M4 6h16M4 12h16M4 18h16', back:'M15 18l-6-6 6-6',
+  wa:'M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2Zm0 18a8 8 0 0 1-4-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 20Z',
+  print:'M6 9V3h12v6M6 18H4v-6h16v6h-2M8 14h8v7H8z', alert:'M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z',
+  edit:'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z', trash:'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6', check:'M20 6 9 17l-5-5',
+  bell:'M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0',
+  refresh:'M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5',
+  rocket:'M5 15c-1.6 1.6-2 5.5-2 5.5s3.9-.4 5.5-2M9 11a5 5 0 0 0 4 4l6-6a6 6 0 0 0 1.5-5.5A6 6 0 0 0 15 5l-6 6ZM15.5 8.5h.01',
+  ruler:'M3 8l5-5 13 13-5 5zM7 7l2 2M11 5l2 2M9 11l2 2M13 9l2 2',
+  spark:'M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3ZM19 14l.9 2.3L22 17l-2.1.7L19 20l-.9-2.3L16 17l2.1-.7L19 14Z',
+};
+const Ic = ({d,cls,style}) => html`<svg class=${cls} style=${style} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d=${d}/></svg>`;
+
+const Mark = ({cls='mark breathe'}) => html`<svg class=${cls} viewBox="0 0 104 60" fill="none" aria-hidden="true">
+  <circle cx="24" cy="27" r="10" stroke="currentColor" stroke-width="4"/>
+  <path d="M32 34 C40 40 43 42 47 45" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"/>
+  <path d="M48 45 L96 20 L99 26 L52 48 Z" fill="var(--violet)"/>
+  <circle cx="48" cy="45" r="3.6" fill="currentColor"/>
+  <circle cx="48" cy="45" r="1.3" fill="var(--card)"/>
+</svg>`;
+
+const LivingBg = () => html`<div class="living" aria-hidden="true"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>`;
+const BrandLogo = ({size=40,cls=''}) => html`<img class=${'brandmark breathe-img '+cls} src="costureira-logo.jpg" width=${size} height=${size} alt="Costureira Salvador"/>`;
+const ByVizio = ({dark=true}) => html`<span class="byvizio">Ateliê Manager <b>By</b> <img class="vzfloat" src=${dark?'vizio-dark.svg':'vizio-light.svg'} alt="Vizio"/></span>`;
+const MiniChart = ({labels,data,fmt}) => {
+  const ref=useRef(null), inst=useRef(null);
+  useEffect(()=>{ if(!window.Chart||!ref.current) return;
+    if(inst.current) inst.current.destroy();
+    inst.current=new window.Chart(ref.current,{type:'bar',
+      data:{labels,datasets:[{data,backgroundColor:'#8e2cb0',hoverBackgroundColor:'#5e3a56',borderRadius:6,maxBarThickness:36}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(fmt?fmt(c.raw):c.raw)}}},
+      scales:{y:{beginAtZero:true,ticks:{maxTicksLimit:4,font:{size:10},callback:v=>'R$ '+v},grid:{color:'rgba(94,58,86,.08)'}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+    return ()=>{ if(inst.current){inst.current.destroy();inst.current=null;} };
+  },[labels.join(),data.join()]);
+  return html`<div class="chartbox"><canvas ref=${ref}></canvas></div>`;
+};
+
+/* ---------- toasts ---------- */
+let pushToast=()=>{};
+function Toaster(){
+  const [ts,setTs]=useState([]);
+  useEffect(()=>{ pushToast=(msg,kind='')=>{ const id=Math.random(); setTs(x=>[...x,{id,msg,kind}]); setTimeout(()=>setTs(x=>x.filter(t=>t.id!==id)),3400); }; },[]);
+  return html`<div class="toasts">${ts.map(t=>html`<div key=${t.id} class=${'toast '+t.kind}>${t.msg}</div>`)}</div>`;
+}
+const toast=(m,k)=>pushToast(m,k);
+
+/* ========== TRATAMENTO PADRÃO DE ERRO EM LEITURA ==========
+   Toda consulta avulsa passa por aqui. Erro nunca é silencioso: avisa a usuária,
+   registra no console e devolve null (distinto de [] = "consultou e não achou nada").
+   Foi exatamente o padrão `data||[]` sem checar `error` que escondeu o bug crítico da v1.12. */
+function qd(res, contexto){
+  if(!res) return null;
+  if(res.error){
+    console.error('[consulta: '+contexto+']', res.error);
+    toast('Não foi possível carregar '+contexto+'. '+(res.error.message||''),'err');
+    return null;
+  }
+  return res.data;
+}
+/* Rede de segurança: registra falhas não tratadas no console (sem alarmar a usuária
+   com falsos positivos de fetch abortado, gráficos, etc.). Serve para diagnóstico. */
+if(typeof window!=='undefined' && !window.__vzErrHook){
+  window.__vzErrHook=true;
+  window.addEventListener('unhandledrejection', ev=>console.error('[falha não tratada]', ev && ev.reason));
+}
+
+/* ========== DETECÇÃO DE VERSÃO NOVA ==========
+   A cliente deixa a aba aberta por horas: sem isto, ela continua rodando código antigo
+   mesmo depois do deploy (foi a causa do erro de "subtotal" persistir após a correção).
+   Compara o APP_VERSION publicado com o que está rodando e oferece atualizar. */
+function VersionGate(){
+  const [nova,setNova]=useState(null);
+  useEffect(()=>{
+    let vivo=true, checando=false;
+    // Não bloquear por document.hidden: uma aba aberta em segundo plano é justamente
+    // o caso que precisamos pegar (foi assim que a cliente ficou presa na versão antiga).
+    async function checar(){
+      if(checando||!vivo) return; checando=true;
+      try{
+        const base=location.href.replace(/[#?].*$/,'');
+        const r=await fetch(base+'index.html?_v='+Date.now(),{cache:'no-store'});
+        if(r.ok){ const t=await r.text(); const m=t.match(/APP_VERSION\s*=\s*'([^']+)'/);
+          if(vivo && m && m[1] && m[1]!==APP_VERSION) setNova(m[1]); }
+      }catch(_){ /* offline: silencioso, tenta de novo depois */ }
+      checando=false;
+    }
+    const t=setTimeout(checar, 8000);               // primeira checagem 8s após abrir
+    const iv=setInterval(checar, 10*60*1000);       // depois, a cada 10 min
+    const onFoco=()=>{ if(!document.hidden) checar(); };
+    document.addEventListener('visibilitychange', onFoco);
+    return ()=>{ vivo=false; clearTimeout(t); clearInterval(iv); document.removeEventListener('visibilitychange', onFoco); };
+  },[]);
+  if(!nova) return null;
+  const atualizar=()=>{ try{ sessionStorage.clear(); }catch(_){} location.replace(location.pathname+'?v='+nova+location.hash); };
+  return html`<div style=${{position:'fixed',left:'50%',transform:'translateX(-50%)',bottom:'18px',zIndex:9999,
+      display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',borderRadius:'14px',color:'#fff',
+      background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 12px 30px -10px rgba(0,0,0,.5)',maxWidth:'92vw'}}>
+    <span style=${{fontSize:'.9rem'}}>✨ Uma versão novinha do seu sistema está pronta.</span>
+    <button onClick=${atualizar} style=${{background:'#fff',color:'var(--plum,#5e3a56)',border:'none',borderRadius:'9px',
+      padding:'8px 14px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap'}}>Atualizar agora</button>
+  </div>`;
+}
+
+/* ---------- primitives ---------- */
+const Badge = ({status}) => { const s=STATUS[status]||{l:status,c:'#8a7e86',bg:'rgba(0,0,0,.06)'};
+  return html`<span class="badge" style=${{color:s.c,background:s.bg}}><span class="dot"/>${s.l}</span>`; };
+
+function Modal({title,onClose,children,footer,wide}){
+  useEffect(()=>{ const h=e=>e.key==='Escape'&&onClose(); window.addEventListener('keydown',h); return ()=>window.removeEventListener('keydown',h); },[]);
+  return html`<div class="ov" onMouseDown=${e=>e.target===e.currentTarget&&onClose()}>
+    <div class="modal" style=${wide?{maxWidth:'720px'}:null}>
+      <div class="mh"><h3>${title}</h3><button class="x" onClick=${onClose}>×</button></div>
+      <div class="mb">${children}</div>
+      ${footer&&html`<div class="mf">${footer}</div>`}
+    </div></div>`;
+}
+const Empty = ({icon=I.box,title,children}) => html`<div class="empty"><${Ic} d=${icon} cls="em"/><h4>${title}</h4><div>${children}</div></div>`;
+function Confirm({text,onYes,onClose,danger}){
+  const [busy,setBusy]=useState(false);
+  return html`<${Modal} title="Confirmar" onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button>
+    <button class=${'btn '+(danger?'':'pri')} style=${danger?{background:'var(--danger)',borderColor:'var(--danger)',color:'#fff'}:null}
+      disabled=${busy} onClick=${async()=>{ setBusy(true); await onYes(); setBusy(false); onClose(); }}>${busy?'…':'Confirmar'}</button></${Fragment}>`}>
+    <div style=${{fontSize:'.92rem',color:'#5a525c'}}>${text}</div></${Modal}>`;
+}
+
+/* ---------- app context ---------- */
+const Ctx = React.createContext(null);
+const useApp = () => React.useContext(Ctx);
+const useHash = () => {
+  const [h,setH]=useState(location.hash.replace(/^#/,'')||'/');
+  useEffect(()=>{ const f=()=>setH(location.hash.replace(/^#/,'')||'/'); window.addEventListener('hashchange',f); return ()=>window.removeEventListener('hashchange',f); },[]);
+  return h;
+};
+const go = p => { location.hash = p; };
+
+/* ---------- login ---------- */
+function Login(){
+  const [usuario,setUsuario]=useState(''),[senha,setSenha]=useState(''),[show,setShow]=useState(false),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[recuperar,setRecuperar]=useState(false);
+  async function submit(e){ e.preventDefault(); setErr(''); setBusy(true);
+    try{
+      const u=usuario.trim();
+      if(!u){ setErr('Informe o e-mail ou usuário.'); setBusy(false); return; }
+      let mail=u;
+      if(u.indexOf('@')<0){
+        // resolve usuário -> e-mail somente se a senha conferir (evita enumeração de usuários)
+        const { data:m, error:re } = await db.rpc('login_email',{ p_user:u, p_senha:senha });
+        if(re || !m){ setBusy(false); setErr('E-mail/usuário ou senha incorretos.'); return; }
+        mail=m;
+      }
+      const { error } = await db.auth.signInWithPassword({ email:mail, password:senha });
+      setBusy(false); if(error) setErr('E-mail/usuário ou senha incorretos.');
+    }catch(_){ setBusy(false); setErr('Não foi possível entrar. Tente novamente.'); }
+  }
+  return html`<${Fragment}><${LivingBg}/><div class="center"><div class="glass card">
+    <div style=${{display:'grid',placeItems:'center',marginBottom:'10px'}}><${BrandLogo} size=${120}/></div>
+    <h1 class="title">Bem-vinda de volta</h1>
+    <div class="sub">Acesse o painel do seu ateliê.</div>
+    <form onSubmit=${submit}>
+      ${err&&html`<div class="err">${err}</div>`}
+      <label>E-mail ou usuário</label>
+      <input type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="seu e-mail ou usuário" value=${usuario} onInput=${e=>setUsuario(e.target.value)} required/>
+      <label>Senha</label>
+      <div class="field">
+        <input type=${show?'text':'password'} autocomplete="current-password" placeholder="••••••••" value=${senha} onInput=${e=>setSenha(e.target.value)} required/>
+        <button type="button" class="toggle" onClick=${()=>setShow(s=>!s)}>${show?'ocultar':'mostrar'}</button>
+      </div>
+      <button class="primary" disabled=${busy}>${busy?'Entrando…':'Entrar'}</button>
+    </form>
+    <div style=${{textAlign:'center',marginTop:'12px'}}>
+      <button type="button" class="link" style=${{fontSize:'.88rem',opacity:.9}} onClick=${()=>setRecuperar(true)}>Esqueci minha senha</button>
+    </div>
+    <div class="foot"><${ByVizio} dark=${true}/></div>
+  </div></div>
+  ${recuperar&&html`<${EsqueciSenha} onClose=${()=>setRecuperar(false)}/>`}
+  </${Fragment}>`;
+}
+function EsqueciSenha({onClose}){
+  const [u,setU]=useState(''),[busy,setBusy]=useState(false),[ok,setOk]=useState(false);
+  async function enviar(){
+    const val=(u||'').trim(); if(!val){ toast('Informe seu e-mail cadastrado.','err'); return; }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val)){ toast('Para recuperar a senha, informe o seu e-mail (não o nome de usuário).','err'); return; }
+    setBusy(true);
+    const mail=val;
+    const redirect=location.origin+location.pathname;
+    const {error}=await db.auth.resetPasswordForEmail(mail,{redirectTo:redirect});
+    setBusy(false);
+    if(error){ toast('Não foi possível enviar agora. Tente novamente em instantes.','err'); return; }
+    setOk(true);
+  }
+  return html`<${Modal} title="Recuperar acesso" onClose=${onClose} footer=${ok
+    ? html`<button class="btn pri" onClick=${onClose}>Entendi</button>`
+    : html`<${Fragment}><button class="btn" onClick=${onClose}>Cancelar</button>
+        <button class="btn pri" disabled=${busy} onClick=${enviar}>${busy?'Enviando…':'Enviar link'}</button></${Fragment}>`}>
+    ${ok
+      ? html`<p style=${{marginTop:0,color:'#5a525c'}}>Se houver uma conta com esse e-mail, enviamos um <b>link para redefinir a senha</b>. Confira a caixa de entrada (e o spam). Ao abrir o link, você cria uma nova senha e já entra no sistema.</p>`
+      : html`<${Fragment}>
+          <p style=${{marginTop:0,color:'#5a525c'}}>Informe o <b>e-mail cadastrado</b> e enviaremos um link para você criar uma nova senha.</p>
+          <label>E-mail</label>
+          <input type="email" autocapitalize="none" autocorrect="off" spellcheck="false" value=${u} onInput=${e=>setU(e.target.value)} placeholder="seu@email.com"/>
+        </${Fragment}>`}
+  </${Modal}>`;
+}
+function ResetSenha({onDone}){
+  const [s1,setS1]=useState(''),[s2,setS2]=useState(''),[show,setShow]=useState(false),[busy,setBusy]=useState(false);
+  async function salvar(e){ if(e) e.preventDefault();
+    if((s1||'').length<6){ toast('A senha deve ter ao menos 6 caracteres.','err'); return; }
+    if(s1!==s2){ toast('As senhas não coincidem.','err'); return; }
+    setBusy(true);
+    const {error}=await db.auth.updateUser({password:s1});
+    if(error){ setBusy(false); toast('Erro ao salvar: '+error.message,'err'); return; }
+    try{ const {data}=await db.auth.getUser(); if(data&&data.user) await db.from('profiles').update({trocar_senha:false}).eq('id',data.user.id); }catch(_){}
+    setBusy(false); toast('Senha redefinida! Você já está no sistema.','ok');
+    try{ history.replaceState(null,'',location.pathname); }catch(_){}
+    onDone();
+  }
+  return html`<${Fragment}><${LivingBg}/><div class="center"><div class="glass card">
+    <div style=${{display:'grid',placeItems:'center',marginBottom:'10px'}}><${BrandLogo} size=${100}/></div>
+    <h1 class="title">Criar nova senha</h1>
+    <div class="sub">Defina a senha que você usará para entrar.</div>
+    <form onSubmit=${salvar}>
+      <label>Nova senha</label>
+      <div class="field"><input type=${show?'text':'password'} autocomplete="new-password" value=${s1} onInput=${e=>setS1(e.target.value)} placeholder="mín. 6 caracteres"/>
+        <button type="button" class="toggle" onClick=${()=>setShow(v=>!v)}>${show?'ocultar':'mostrar'}</button></div>
+      <label>Confirmar nova senha</label>
+      <input type=${show?'text':'password'} autocomplete="new-password" value=${s2} onInput=${e=>setS2(e.target.value)} placeholder="repita a senha"/>
+      <button class="primary" disabled=${busy}>${busy?'Salvando…':'Salvar nova senha'}</button>
+    </form>
+    <div class="foot"><${ByVizio} dark=${true}/></div>
+  </div></div></${Fragment}>`;
+}
+
+/* ---------- shell ---------- */
+const NAV = [
+  {g:'Gestão'},
+  {p:'/', l:'HOME', i:I.home, d:'Visão geral do ateliê'},
+  {p:'/clientes', l:'Clientes', i:I.users, d:'Cadastro, medidas e histórico'},
+  {p:'/ordens', l:'Ordens de serviço', i:I.scissors, d:'Do orçamento à entrega'},
+  {p:'/servicos', l:'Serviços', i:I.tag, d:'Catálogo de serviços e preços'},
+  {g:'Operação'},
+  {p:'/estoque', l:'Estoque', i:I.box, d:'Insumos, saldo e movimentações'},
+  {p:'/financeiro', l:'Financeiro', i:I.money, roles:['owner','gestor','financeiro'], d:'Receitas, despesas e saldo'},
+  {p:'/relatorios', l:'Relatórios', i:I.chart, d:'Faturamento e desempenho'},
+  {p:'/fiscal', l:'Fiscal (NFS-e)', i:I.file, roles:['owner','gestor','financeiro'], d:'Emissão de nota de serviço'},
+  {g:'Crescimento'},
+  {p:'/recuperacao', l:'Recuperação', i:I.refresh, d:'Reative clientes parados'},
+  {p:'/alavancagem', l:'Alavancagem', i:I.rocket, d:'Ofertas para vender mais'},
+  {g:'Ateliê'},
+  {p:'/novidades', l:'Novidades', i:I.spark, d:'O que há de novo no sistema'},
+  {p:'/config', l:'Configurações', i:I.gear, roles:['owner','gestor'], d:'Ateliê, conta e preferências'},
+  {p:'/master', l:'Ativação de cliente', i:I.file, admin:true, d:'Gerar link de acesso pós-pagamento'},
+];
+function AlertsBell(){
+  const [open,setOpen]=useState(false);
+  const [al,setAl]=useState({late:[],low:[]});
+  useEffect(()=>{ (async()=>{
+    const [rOs,rPr]=await Promise.all([
+      db.from('ordens').select('id,numero,descricao,status,prazo,data_entrada,dias_previstos'),
+      db.from('estoque_produtos').select('id,nome,quantidade,quantidade_minima,unidade'),
+    ]);
+    const os=qd(rOs,'os alertas de prazo')||[], pr=qd(rPr,'os alertas de estoque')||[];
+    setAl({ late:os.filter(isLate), low:pr.filter(p=>Number(p.quantidade)<=Number(p.quantidade_minima)) });
+  })(); },[]);
+  const n=al.late.length+al.low.length;
+  return html`<div style=${{position:'relative'}}>
+    <button class="btn ghost sm" style=${{position:'relative'}} title="Avisos" onClick=${()=>setOpen(o=>!o)}><${Ic} d=${I.bell}/>${n>0&&html`<span class="bell-badge">${n}</span>`}</button>
+    ${open&&html`<div class="pop">
+      <div class="pop-h">Avisos ${n>0?'('+n+')':''}</div>
+      ${n===0&&html`<div class="pop-empty">Tudo em dia ✓</div>`}
+      ${al.late.map(o=>html`<button class="pop-it" key=${'l'+o.id} onClick=${()=>{setOpen(false);go('/ordens/'+o.id);}}>
+        <span class="pi-ic warn"><${Ic} d=${I.alert}/></span><span><b>OS #${o.numero}</b> atrasada<br/><span class="muted">${o.descricao||'serviço'} · venc. ${fmtDate(dueDate(o))}</span></span></button>`)}
+      ${al.low.map(p=>html`<button class="pop-it" key=${'e'+p.id} onClick=${()=>{setOpen(false);go('/estoque');}}>
+        <span class="pi-ic low"><${Ic} d=${I.box}/></span><span><b>${p.nome}</b> em baixa<br/><span class="muted">${p.quantidade} ${p.unidade} (mín. ${p.quantidade_minima})</span></span></button>`)}
+    </div>`}
+  </div>`;
+}
+function Shell({title,children}){
+  const {tenant,role,profile,isAdmin}=useApp();
+  const hash=useHash(); const base='/'+((hash.split('?')[0]).split('/')[1]||'');
+  const [open,setOpen]=useState(false);
+  const can = it => it.admin ? !!isAdmin : (!it.roles || it.roles.includes(role));
+  useEffect(()=>{ setOpen(false); },[hash]);
+  return html`<div class="app">
+    <${LivingBg}/>
+    ${open&&html`<div class="backdrop" onClick=${()=>setOpen(false)}/>`}
+    <aside class=${'side'+(open?' open':'')}>
+      <div class="brand"><span class="story-ring"><${BrandLogo} size=${64}/></span><div><div class="nm">${tenant?.nome||'Ateliê'}</div><div class="tg">Ateliê Manager</div></div></div>
+      <nav class="nav">
+        ${NAV.filter(can).map((it,k)=> it.g
+          ? html`<div class="sep" key=${'g'+k}>${it.g}</div>`
+          : html`<a key=${it.p} class=${base===it.p?'on':''} onClick=${()=>go(it.p)}><${Ic} d=${it.i}/>${it.l}</a>`)}
+      </nav>
+      <div class="who"><b>${profile?.nome||'Você'}</b><span>${({owner:'Administradora',gestor:'Gestora',financeiro:'Financeiro',atendente:'Atendente',costureira:'Costureira',estoque:'Estoque'})[role]||role}</span>
+        <div style=${{margin:'9px 0 4px'}}><${ByVizio} dark=${true}/></div>
+        <div class="muted" style=${{fontSize:'.66rem',marginBottom:'6px'}}>v${APP_VERSION}</div>
+        <button onClick=${()=>db.auth.signOut()}>Sair</button></div>
+    </aside>
+    <div class="main">
+      <div class="topbar">
+        <button class="btn ghost menu-btn sm" onClick=${()=>setOpen(true)}><${Ic} d=${I.menu}/></button>
+        <button class="btn ghost sm" title="Voltar" onClick=${()=>history.back()}><${Ic} d=${I.back}/></button>
+        <h2>${title}</h2>
+        <div class="spacer"></div>
+        <${AlertsBell}/>
+      </div>
+      <div class="wrap">${children}</div>
+    </div></div>`;
+}
+
+/* ---------- data hook ---------- */
+function useRows(table, {order='created_at', asc=false, select='*', deps=[]}={}){
+  const [rows,setRows]=useState(null); const [n,setN]=useState(0);
+  const reload=useCallback(()=>setN(x=>x+1),[]);
+  useEffect(()=>{ let live=true; (async()=>{
+    setRows(null);
+    let q=db.from(table).select(select); if(order) q=q.order(order,{ascending:asc});
+    const {data,error}=await q; if(!live) return;
+    if(error){ toast('Erro ao carregar: '+error.message,'err'); setRows([]); } else setRows(data||[]);
+  })(); return ()=>{live=false;}; },[table,n,...deps]);
+  return [rows,reload];
+}
+
+/* ========== DASHBOARD ========== */
+/* ========== SAUDAÇÃO DIÁRIA (1x por dia, dispensável, ligável nas Configurações) ========== */
+function SaudacaoDiaria(){
+  const {profile,settings}=useApp();
+  const ligada = !(settings && settings.features && settings.features.saudacao_diaria===false); // padrão: ligada
+  const hoje = new Date().toISOString().slice(0,10);
+  const chave = 'vz_saud_'+(profile?.id||'u')+'_'+hoje;
+  const [visivel,setVisivel]=useState(()=>{ try{ return ligada && !localStorage.getItem(chave); }catch(_){ return ligada; } });
+  if(!visivel) return null;
+  const nome=(profile?.nome||'').split(' ')[0];
+  const frases=[
+    'Vamos à produção — que hoje renda bonito. Bom trabalho! 🧵',
+    'Linha na agulha e mãos à obra. Que o dia seja leve! 🧵',
+    'Seu ateliê está pronto. Capriche como sempre — bom trabalho! 💜',
+    'Hora de transformar tecido em sorriso. Ótimo dia de trabalho! ✨',
+  ];
+  const frase=frases[ new Date().getDate() % frases.length ];
+  const fechar=()=>{ try{ localStorage.setItem(chave,'1'); }catch(_){} setVisivel(false); };
+  return html`<div style=${{position:'relative',marginBottom:'16px',padding:'16px 44px 16px 18px',borderRadius:'14px',color:'#fff',
+      background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 10px 26px -14px rgba(0,0,0,.4)'}}>
+    <div class="serif" style=${{fontSize:'1.15rem',fontWeight:700}}>Bem-vinda a um novo dia${nome?', '+nome:''} ✨</div>
+    <div style=${{opacity:.93,marginTop:'4px',fontSize:'.92rem'}}>${frase}</div>
+    <button onClick=${fechar} title="Dispensar por hoje" aria-label="Dispensar"
+      style=${{position:'absolute',top:'10px',right:'12px',background:'rgba(255,255,255,.18)',color:'#fff',border:'none',
+        width:'26px',height:'26px',borderRadius:'50%',cursor:'pointer',fontSize:'.95rem',lineHeight:1}}>×</button>
+  </div>`;
+}
+function Dashboard(){
+  const {tenant,profile}=useApp();
+  const [k,setK]=useState(null);
+  useEffect(()=>{ (async()=>{
+    const [cli,ord,rec] = await Promise.all([
+      db.from('clientes').select('id,nome,nascimento,whatsapp'),
+      db.from('ordens').select('id,status,valor,prazo,data_entrada,dias_previstos,entregue_em,descricao,cliente_id,numero,data_prova'),
+      db.from('financeiro_lancamentos').select('valor,tipo,pago,pago_em'),
+    ]);
+    const clientesRows=qd(cli,'as clientes')||[];
+    const aniversariantes=clientesRows.filter(bdayThisMonth).sort((a,b)=>bdayDay(a)-bdayDay(b));
+    const os=qd(ord,'as ordens de serviço')||[];
+    qd(rec,'os lançamentos financeiros'); // avisa se falhar; o cálculo abaixo já tolera vazio
+    const abertas=os.filter(o=>ACTIVE.includes(o.status));
+    const atrasadas=os.filter(isLate);
+    const ms=monthStart();
+    const recMes=(rec.data||[]).filter(l=>l.tipo==='receita'&&l.pago&&l.pago_em>=ms).reduce((a,l)=>a+Number(l.valor||0),0);
+    const doneM=os.filter(o=>o.entregue_em&&o.entregue_em.slice(0,10)>=ms);
+    const durs=os.filter(o=>o.entregue_em&&o.data_entrada).map(o=>daysBetween(o.data_entrada,o.entregue_em.slice(0,10))).filter(d=>d>=0);
+    const tempoMedio=durs.length?Math.round(durs.reduce((a,b)=>a+b,0)/durs.length):null;
+    const topServ=Object.entries(os.reduce((m,o)=>{ const key=(o.descricao||'Sem descrição').trim(); m[key]=(m[key]||0)+1; return m; },{})).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const cm=[]; const now=new Date();
+    for(let i=5;i>=0;i--){ const dd=new Date(now.getFullYear(),now.getMonth()-i,1); cm.push({key:dd.toISOString().slice(0,7),label:dd.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}); }
+    const chart={labels:cm.map(m=>m.label), data:cm.map(m=>os.filter(o=>o.entregue_em&&o.entregue_em.slice(0,7)===m.key).reduce((a,o)=>a+Number(o.valor||0),0))};
+    // Agenda dos próximos 7 dias: provas marcadas + entregas previstas (só OS ativas)
+    const cnome=Object.fromEntries(clientesRows.map(c=>[c.id,c.nome]));
+    const hoje=todayISO(), limite=addDays(hoje,7);
+    const agenda=[];
+    os.filter(o=>ACTIVE.includes(o.status)).forEach(o=>{
+      if(o.data_prova && o.data_prova>=hoje && o.data_prova<=limite) agenda.push({id:o.id,numero:o.numero,data:o.data_prova,tipo:'Prova',cliente:cnome[o.cliente_id]||'—',descricao:o.descricao});
+      if(o.prazo && o.prazo>=hoje && o.prazo<=limite) agenda.push({id:o.id,numero:o.numero,data:o.prazo,tipo:'Entrega',cliente:cnome[o.cliente_id]||'—',descricao:o.descricao});
+    });
+    agenda.sort((a,b)=> a.data<b.data?-1 : a.data>b.data?1 : 0);
+    setK({clientes:clientesRows.length, abertas:abertas.length, atrasadas:atrasadas.length, recMes, doneM:doneM.length, tempoMedio, topServ, aniversariantes, chart, agenda,
+      recent:[...os].sort((a,b)=>(b.numero||0)-(a.numero||0)).slice(0,6)});
+  })(); },[]);
+  if(!k) return html`<div class="hint">Carregando indicadores…</div>`;
+  return html`<${Shell} title="HOME">
+    <${SaudacaoDiaria}/>
+    <h1 class="hi serif">Olá, ${(profile?.nome||'').split(' ')[0]}</h1>
+    <div class="hint">Panorama do ${tenant?.nome||'ateliê'} — atualizado em tempo real.</div>
+    <div class="grid">
+      <button class="kpi" onClick=${()=>go('/ordens?f=ativas')}><div class="n">${k.abertas}</div><div class="l">Ordens em aberto</div></button>
+      <button class="kpi warn" onClick=${()=>go('/ordens?f=atrasadas')}><div class="n">${k.atrasadas}</div><div class="l">Atrasadas</div></button>
+      <button class="kpi" onClick=${()=>go('/clientes')}><div class="n">${k.clientes}</div><div class="l">Clientes</div></button>
+      <button class="kpi ok" onClick=${()=>go('/financeiro')}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(k.recMes)}</div><div class="l">Recebido no mês</div></button>
+    </div>
+    ${k.agenda.length>0&&html`<div class="glass panel" style=${{marginTop:'18px'}}>
+      <h3>Agenda dos próximos 7 dias</h3><p class="desc">Provas marcadas e entregas previstas.</p>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Quando</th><th>O quê</th><th>Cliente</th><th>Serviço</th><th class="r">OS</th></tr></thead>
+        <tbody>${k.agenda.map((a,i)=>{ const hj=a.data===todayISO();
+          return html`<tr key=${a.id+a.tipo+i} class="click" onClick=${()=>go('/ordens/'+a.id)}>
+            <td><span class="b" style=${hj?{color:'#b3452f'}:null}>${hj?'Hoje':fmtDate(a.data)}</span></td>
+            <td><span class="tag" style=${a.tipo==='Prova'?{color:'#2f8f8f',background:'rgba(47,143,143,.14)',fontWeight:700}:{color:'#5e3a56',background:'rgba(94,58,86,.12)',fontWeight:700}}>${a.tipo}</span></td>
+            <td>${a.cliente}</td>
+            <td class="muted" style=${{fontSize:'.85rem'}}>${(a.descricao||'—').slice(0,42)}</td>
+            <td class="r b">#${a.numero}</td>
+          </tr>`; })}</tbody>
+      </table></div>
+    </div>`}
+    <div class="glass panel" style=${{marginTop:'18px'}}>
+      <h3>Faturamento — últimos 6 meses</h3><p class="desc">Serviços entregues por mês.</p>
+      <${MiniChart} labels=${k.chart.labels} data=${k.chart.data} fmt=${BRL}/>
+    </div>
+    <div class="row side">
+      <div class="glass panel">
+        <h3>Ordens recentes</h3><p class="desc">As últimas OS registradas.</p>
+        ${k.recent.length? html`<div class="tblwrap"><table class="tbl"><thead><tr><th>#</th><th>Descrição</th><th>Status</th><th class="r">Valor</th></tr></thead>
+          <tbody>${k.recent.map(o=>html`<tr key=${o.id} class="click" onClick=${()=>go('/ordens/'+o.id)}>
+            <td class="b">${o.numero??'—'}</td><td>${o.descricao||'—'}</td><td><${Badge} status=${o.status}/></td><td class="r b">${BRL(o.valor)}</td></tr>`)}</tbody></table></div>`
+          : html`<${Empty} icon=${I.scissors} title="Nenhuma OS ainda">Crie a primeira ordem de serviço.</${Empty}>`}
+      </div>
+      <div style=${{display:'grid',gap:'16px',alignContent:'start'}}>
+        <div class="glass panel">
+          <h3>Serviços mais solicitados</h3><p class="desc">No histórico do ateliê.</p>
+          ${k.topServ.length? html`<div class="stat-list">${k.topServ.map(([s,c])=>html`<div class="it" key=${s}><span>${s}</span><span class="v">${c}×</span></div>`)}</div>`
+            : html`<div class="muted" style=${{fontSize:'.85rem'}}>Sem dados ainda.</div>`}
+        </div>
+        <div class="glass panel">
+          <h3>Produtividade</h3>
+          <div class="stat-list">
+            <div class="it"><span>Concluídas no mês</span><span class="v">${k.doneM}</span></div>
+            <div class="it"><span>Tempo médio de execução</span><span class="v">${k.tempoMedio!=null?k.tempoMedio+' dias':'—'}</span></div>
+          </div>
+        </div>
+        ${k.aniversariantes.length>0&&html`<div class="glass panel">
+          <h3>Aniversariantes do mês</h3><p class="desc">Um carinho que fideliza.</p>
+          <div class="stat-list">${k.aniversariantes.map(c=>html`<div class="it" key=${c.id}>
+            <span>${isBdayToday(c)?'🎉 ':''}<b>${c.nome}</b> <span class="muted">· dia ${String(bdayDay(c)).padStart(2,'0')}</span></span>
+            ${c.whatsapp?html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+encodeURIComponent('Feliz aniversário, '+(c.nome||'').split(' ')[0]+'! Desejamos tudo de bom. Com carinho, '+(tenant?.nome||''))} title="Enviar felicitação"><${Ic} d=${I.wa}/></a>`:html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}
+          </div>`)}</div>
+        </div>`}
+      </div>
+    </div>
+  </${Shell}>`;
+}
+
+/* ========== CLIENTES ========== */
+function ClienteForm({row,onClose,onSaved,tenantId}){
+  const [f,setF]=useState(()=>{ const b={nome:'',telefone:'',whatsapp:'',cpf:'',nascimento:'',cep:'',endereco:'',bairro:'',cidade:'',observacoes:'',...(row||{})}; b.medidas=b.medidas||{}; return b; });
+  const [err,setErr]=useState({}),[busy,setBusy]=useState(false);
+  const set=(k,v)=>setF(x=>({...x,[k]:v}));
+  const setMed=(k,v)=>setF(x=>({...x,medidas:{...(x.medidas||{}),[k]:v}}));
+  async function save(){ const e={}; if(!f.nome||f.nome.trim().length<2) e.nome='Informe o nome.'; setErr(e); if(Object.keys(e).length) return;
+    setBusy(true);
+    const payload={ tenant_id:tenantId, nome:f.nome.trim(), telefone:f.telefone||null, whatsapp:f.whatsapp||null,
+      cpf:f.cpf?onlyDigits(f.cpf):null, nascimento:f.nascimento||null, cep:f.cep||null, endereco:f.endereco||null,
+      bairro:f.bairro||null, cidade:f.cidade||null,
+      medidas:(f.medidas&&Object.values(f.medidas).some(v=>v!==''&&v!=null))?f.medidas:null,
+      observacoes:f.observacoes||null };
+    const res = row?.id ? await db.from('clientes').update(payload).eq('id',row.id) : await db.from('clientes').insert(payload);
+    setBusy(false);
+    if(res.error){ toast('Erro: '+res.error.message,'err'); return; }
+    toast(row?.id?'Cliente atualizado.':'Cliente cadastrado.','ok'); onSaved();
+  }
+  return html`<${Modal} title=${row?.id?'Editar cliente':'Novo cliente'} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button>
+    <button class="btn pri" disabled=${busy} onClick=${save}>${busy?'Salvando…':'Salvar'}</button></${Fragment}>`}>
+    <label>Nome completo</label><input value=${f.nome} onInput=${e=>set('nome',e.target.value)} placeholder="Ex.: Maria Souza"/>
+    ${err.nome&&html`<div class="ferr">${err.nome}</div>`}
+    <div class="f2">
+      <div><label>Telefone</label><input value=${f.telefone} onInput=${e=>set('telefone',maskPhone(e.target.value))} placeholder="(71) 90000-0000"/></div>
+      <div><label>WhatsApp</label><input value=${f.whatsapp} onInput=${e=>set('whatsapp',maskPhone(e.target.value))} placeholder="(71) 90000-0000"/></div>
+    </div>
+    <div class="f2">
+      <div><label>CPF</label><input value=${f.cpf?maskCPF(f.cpf):''} onInput=${e=>set('cpf',e.target.value)} placeholder="000.000.000-00"/></div>
+      <div><label>Nascimento</label><input type="date" value=${f.nascimento||''} onInput=${e=>set('nascimento',e.target.value)}/></div>
+    </div>
+    <div class="f2">
+      <div><label>CEP</label><input value=${f.cep||''} onInput=${e=>set('cep',e.target.value)} placeholder="40000-000"/></div>
+      <div><label>Bairro</label><input value=${f.bairro||''} onInput=${e=>set('bairro',e.target.value)}/></div>
+    </div>
+    <div class="f2">
+      <div><label>Endereço</label><input value=${f.endereco||''} onInput=${e=>set('endereco',e.target.value)}/></div>
+      <div><label>Cidade</label><input value=${f.cidade||''} onInput=${e=>set('cidade',e.target.value)} placeholder="Salvador"/></div>
+    </div>
+    <label style=${{marginTop:'10px'}}>Medidas (cm)</label>
+    <div class="measure-grid">
+      ${[['altura','Altura'],['busto','Busto'],['cintura','Cintura'],['quadril','Quadril'],['ombro','Ombro'],['manga','Manga'],['comprimento','Comprim.'],['largura','Largura'],['gancho','Gancho']].map(([k,l])=>html`<div key=${k}><label style=${{fontWeight:500,fontSize:'.74rem',margin:'8px 0 4px'}}>${l}</label><input value=${(f.medidas&&f.medidas[k])||''} onInput=${e=>setMed(k,e.target.value)} placeholder="—"/></div>`)}
+    </div>
+    <label>Observações</label><textarea value=${f.observacoes||''} onInput=${e=>set('observacoes',e.target.value)} placeholder="Preferências, notas…"/>
+    <div class="notice" style=${{marginTop:'12px'}}><b>LGPD:</b> colete apenas o necessário. O RG não é solicitado por padrão.</div>
+  </${Modal}>`;
+}
+function Clientes(){
+  const {tenantId}=useApp();
+  const [rows,reload]=useRows('clientes',{order:'nome',asc:true});
+  const [q,setQ]=useState(''),[edit,setEdit]=useState(null),[del,setDel]=useState(null);
+  const filtered=useMemo(()=>{ if(!rows) return null; const s=q.toLowerCase();
+    const dq=onlyDigits(q);
+    return rows.filter(c=>{ if(!s) return true; return (c.nome||'').toLowerCase().includes(s) || (!!dq&&onlyDigits(c.telefone).includes(dq)) || (!!dq&&onlyDigits(c.cpf).includes(dq)); }); },[rows,q]);
+  return html`<${Shell} title="Clientes">
+    <div class="bar">
+      <div class="search"><input placeholder="Buscar por nome, telefone ou CPF…" value=${q} onInput=${e=>setQ(e.target.value)}/></div>
+      <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Novo cliente</button>
+    </div>
+    <div class="glass panel">
+      ${!filtered? html`<div class="hint">Carregando…</div>`
+        : filtered.length===0? html`<${Empty} icon=${I.users} title=${q?'Nada encontrado':'Nenhum cliente'}>${q?'Ajuste a busca.':'Cadastre seu primeiro cliente.'}</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Nome</th><th>Telefone</th><th>Cidade</th><th class="r">Ações</th></tr></thead>
+          <tbody>${filtered.map(c=>html`<tr key=${c.id} class="click" onClick=${()=>go('/clientes/'+c.id)}>
+            <td class="b">${c.nome}</td><td>${c.telefone||'—'}</td><td>${c.cidade||'—'}</td>
+            <td class="r" onClick=${e=>e.stopPropagation()}>
+              ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank" title="WhatsApp"><${Ic} d=${I.wa}/></a>`}
+              <button class="btn sm ghost" onClick=${()=>setEdit(c)} title="Editar"><${Ic} d=${I.edit}/></button>
+              <button class="btn sm ghost" onClick=${()=>setDel(c)} title="Excluir"><${Ic} d=${I.trash}/></button>
+            </td></tr>`)}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${ClienteForm} row=${edit.id?edit:null} tenantId=${tenantId} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
+    ${del&&html`<${Confirm} danger text=${'Excluir '+del.nome+'? As OS vinculadas perderão o vínculo.'} onClose=${()=>setDel(null)}
+      onYes=${async()=>{ const{error}=await db.from('clientes').delete().eq('id',del.id); if(error)toast('Erro: '+error.message,'err'); else {toast('Cliente excluído.','ok');reload();} }}/>`}
+  </${Shell}>`;
+}
+function ClienteDetail({id}){
+  const {tenantId}=useApp();
+  const [c,setC]=useState(null),[os,setOs]=useState(null),[edit,setEdit]=useState(false);
+  const load=useCallback(async()=>{
+    setC(qd(await db.from('clientes').select('*').eq('id',id).maybeSingle(), 'a cliente'));
+    setOs(qd(await db.from('ordens').select('*').eq('cliente_id',id).order('numero',{ascending:false}), 'o histórico de serviços') || []);
+  },[id]);
+  useEffect(()=>{load();},[id]);
+  if(c===null) return html`<${Shell} title="Cliente"><div class="hint">Carregando…</div></${Shell}>`;
+  if(!c) return html`<${Shell} title="Cliente"><${Empty} title="Cliente não encontrado"><button class="link" onClick=${()=>go('/clientes')}>Voltar</button></${Empty}></${Shell}>`;
+  const total=(os||[]).reduce((a,o)=>a+Number(o.valor||0),0);
+  const done=(os||[]).filter(o=>o.status==='entregue'||o.status==='finalizado').length;
+  return html`<${Shell} title="Cliente">
+    <button class="btn ghost sm" onClick=${()=>go('/clientes')}><${Ic} d=${I.back}/>Clientes</button>
+    <div class="row side" style=${{marginTop:'12px'}}>
+      <div class="glass panel">
+        <div style=${{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'10px'}}>
+          <div><h1 class="hi serif" style=${{fontSize:'1.7rem'}}>${c.nome}</h1>
+            <div class="hint" style=${{margin:'2px 0 0'}}>${[c.bairro,c.cidade].filter(Boolean).join(', ')||'—'}</div></div>
+          <div style=${{display:'flex',gap:'6px'}}>
+            ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank"><${Ic} d=${I.wa}/>WhatsApp</a>`}
+            <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
+          </div>
+        </div>
+        <div class="f3" style=${{marginTop:'14px',gap:'12px'}}>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Telefone</div><div class="b">${c.telefone||'—'}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>CPF</div><div class="b">${c.cpf?maskCPF(c.cpf):'—'}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Nascimento</div><div class="b">${fmtDate(c.nascimento)}</div></div>
+        </div>
+        ${c.medidas&&Object.values(c.medidas).some(v=>v)&&html`<div style=${{marginTop:'14px'}}>
+          <div class="muted" style=${{fontSize:'.74rem',marginBottom:'6px'}}>Medidas (cm)</div>
+          <div class="seg">${Object.entries(c.medidas).filter(([,v])=>v).map(([k,v])=>html`<span class="tag" key=${k}>${k}: ${v}</span>`)}</div>
+        </div>`}
+        ${c.observacoes&&html`<div class="notice" style=${{marginTop:'14px'}}>${c.observacoes}</div>`}
+      </div>
+      <div style=${{display:'grid',gap:'12px',alignContent:'start'}}>
+        <div class="glass panel"><h3>Resumo</h3><div class="stat-list">
+          <div class="it"><span>Serviços solicitados</span><span class="v">${os?.length||0}</span></div>
+          <div class="it"><span>Concluídos</span><span class="v">${done}</span></div>
+          <div class="it"><span>Total gasto em serviços</span><span class="v">${BRL(total)}</span></div>
+        </div></div>
+      </div>
+    </div>
+    <div class="glass panel" style=${{marginTop:'16px'}}>
+      <h3>Histórico de serviços</h3><p class="desc">Todas as vezes que esta cliente veio ao ateliê.</p>
+      ${!os? html`<div class="hint">Carregando…</div>`
+        : os.length===0? html`<${Empty} icon=${I.scissors} title="Sem serviços">Nenhuma OS vinculada.</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>#</th><th>Serviço</th><th>Entrada</th><th>Status</th><th class="r">Valor</th></tr></thead>
+          <tbody>${os.map(o=>html`<tr key=${o.id} class="click" onClick=${()=>go('/ordens/'+o.id)}>
+            <td class="b">${o.numero}</td><td>${o.descricao||'—'}</td><td>${fmtDate(o.data_entrada)}</td><td><${Badge} status=${o.status}/></td><td class="r b">${BRL(o.valor)}</td></tr>`)}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${ClienteForm} row=${c} tenantId=${tenantId} onClose=${()=>setEdit(false)} onSaved=${()=>{setEdit(false);load();}}/>`}
+  </${Shell}>`;
+}
+
+/* ========== ORDENS ========== */
+function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]}){
+  const blank=()=>({servico_id:'',descricao:'',quantidade:1,valor_unit:''});
+  const [f,setF]=useState(()=>({cliente_id:'',status:'aberto',data_entrada:todayISO(),prazo:'',dias_previstos:'',responsavel_id:'',observacoes:'',...(row||{})}));
+  const [itens,setItens]=useState(null);
+  const [err,setErr]=useState({}),[busy,setBusy]=useState(false);
+  const set=(k,v)=>setF(x=>({...x,[k]:v}));
+  useEffect(()=>{ (async()=>{
+    if(row?.id){
+      const data=qd(await db.from('ordem_itens').select('*').eq('ordem_id',row.id).order('posicao',{ascending:true}), 'os serviços desta OS');
+      if(data===null) return; // erro: mantém itens=null, bloqueia salvar e evita apagar os itens reais
+      if(data&&data.length) setItens(data.map(i=>({servico_id:i.servico_id||'',descricao:i.descricao||'',quantidade:Number(i.quantidade)||1,valor_unit:i.valor_unit!=null?String(i.valor_unit):''})));
+      else setItens([{servico_id:'',descricao:row.descricao||'',quantidade:1,valor_unit:row.valor!=null?String(row.valor):''}]);
+    } else setItens([blank()]);
+  })(); },[]);
+  const upItem=(i,k,v)=>setItens(arr=>arr.map((it,idx)=>idx===i?{...it,[k]:v}:it));
+  const pickServ=(i,sid)=>{ const s=servicos.find(x=>x.id===sid); setItens(arr=>arr.map((it,idx)=>idx===i?{...it,servico_id:sid,descricao:it.descricao||(s?s.nome:''),valor_unit:(it.valor_unit!==''&&it.valor_unit!=null)?it.valor_unit:(s?String(s.preco_base):'')}:it)); };
+  const addItem=()=>setItens(arr=>[...(arr||[]),blank()]);
+  const rmItem=(i)=>setItens(arr=>arr.length>1?arr.filter((_,idx)=>idx!==i):arr);
+  const sub=(it)=>(Number(it.quantidade)||0)*(Number(it.valor_unit)||0);
+  const total=(itens||[]).reduce((a,it)=>a+sub(it),0);
+  const descV=Math.min(Math.max(Number(f.desconto)||0,0), total||0);
+  const netV=+((total||0)-descV).toFixed(2);
+  const pagoV=Math.max(Number(f.valor_pago)||0,0);
+  const saldoV=+(netV-pagoV).toFixed(2);
+  async function save(){
+    const validos=(itens||[]).filter(it=>(it.descricao||'').trim() && it.valor_unit!=='' && !isNaN(Number(it.valor_unit)));
+    if(validos.length===0){ setErr({itens:'Adicione ao menos um serviço com descrição e valor.'}); toast('Adicione ao menos um serviço com descrição e valor.','err'); return; }
+    setErr({}); setBusy(true);
+    const dias=f.dias_previstos?Number(f.dias_previstos):null;
+    const prazoCalc=f.prazo || (dias?addDays(f.data_entrada||todayISO(),dias):null);
+    const resumo=validos.map(it=>it.descricao.trim()).join(' + ');
+    const desc=Math.min(Math.max(Number(f.desconto)||0,0), total);
+    const net=+(total-desc).toFixed(2);
+    const pago=Math.max(Number(f.valor_pago)||0,0);
+    const payload={ tenant_id:tenantId, cliente_id:f.cliente_id||null, descricao:resumo, valor:net, desconto:desc, valor_pago:pago,
+      status:f.status, data_entrada:f.data_entrada||todayISO(), prazo:prazoCalc, dias_previstos:dias, data_prova:f.data_prova||null,
+      responsavel_id:f.responsavel_id||null, observacoes:f.observacoes||null };
+    let ordemId=row?.id, res;
+    if(row?.id){ if(f.status==='entregue'&&row.status!=='entregue') payload.entregue_em=new Date().toISOString();
+      res=await db.from('ordens').update(payload).eq('id',row.id); }
+    else { if(f.status==='entregue') payload.entregue_em=new Date().toISOString();
+      const ins=await db.from('ordens').insert(payload).select('id,numero').maybeSingle(); res=ins; ordemId=ins.data?.id; }
+    if(res.error){ setBusy(false); toast('Erro: '+res.error.message,'err'); return; }
+    const numeroOS = row?.id ? row.numero : (res.data&&res.data.numero);
+    if(ordemId){
+      const itensPayload=validos.map((it,idx)=>({servico_id:it.servico_id||null,descricao:it.descricao.trim(),quantidade:Number(it.quantidade)||1,valor_unit:Number(it.valor_unit)||0,posicao:idx+1}));
+      const {error:rpcErr}=await db.rpc('salvar_ordem_itens',{p_ordem:ordemId,p_itens:itensPayload});
+      if(rpcErr){ setBusy(false); toast('Erro ao salvar itens: '+rpcErr.message,'err'); return; } }
+    // sinal/valor recebido informado no formulário vira receita no Financeiro (apenas o que aumentou)
+    const pagoAntes = row?.id ? (Number(row.valor_pago)||0) : 0;
+    const recebido = +(pago - pagoAntes).toFixed(2);
+    let avisoFin='';
+    if(recebido>0 && ordemId){
+      const lr=await lancarReceitaOS(tenantId,{id:ordemId,numero:numeroOS,descricao:resumo,cliente_id:f.cliente_id||null},recebido);
+      if(lr&&lr.error) avisoFin=' (falhou o lançamento no Financeiro: '+lr.error.message+')';
+      else avisoFin=' Recebido '+BRL(recebido)+' lançado no Financeiro.';
+    }
+    setBusy(false); toast((row?.id?'OS atualizada.':'OS criada.')+avisoFin, avisoFin.includes('falhou')?'err':'ok'); onSaved();
+  }
+  return html`<${Modal} wide=${true} title=${row?.id?('OS #'+row.numero):'Nova ordem de serviço'} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button>
+    <button class="btn pri" disabled=${busy} onClick=${save}>${busy?'Salvando…':'Salvar'}</button></${Fragment}>`}>
+    <label>Cliente</label>
+    <select value=${f.cliente_id||''} onInput=${e=>set('cliente_id',e.target.value)}>
+      <option value="">— Sem cliente vinculado —</option>
+      ${clientes.map(c=>html`<option key=${c.id} value=${c.id}>${c.nome}</option>`)}
+    </select>
+    ${usuarios.length>0&&html`<${Fragment}><label>Responsável (usuário)</label>
+      <select value=${f.responsavel_id||''} onInput=${e=>set('responsavel_id',e.target.value)}>
+        <option value="">— Não atribuído —</option>
+        ${usuarios.map(u=>html`<option key=${u.id} value=${u.id}>${u.nome}</option>`)}
+      </select></${Fragment}>`}
+    <label style=${{marginTop:'12px'}}>Serviços da OS</label>
+    ${itens===null? html`<div class="hint">Carregando…</div>`
+    : html`<div style=${{display:'grid',gap:'8px'}}>
+        ${itens.map((it,i)=>html`<div key=${i} style=${{display:'flex',gap:'6px',flexWrap:'wrap',alignItems:'center',background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'10px',padding:'8px'}}>
+          <select style=${{flex:'1 1 150px'}} value=${it.servico_id||''} onInput=${e=>pickServ(i,e.target.value)}>
+            <option value="">— avulso —</option>${servicos.map(s=>html`<option key=${s.id} value=${s.id}>${s.nome} · ${BRL(s.preco_base)}</option>`)}</select>
+          <input style=${{flex:'2 1 160px'}} placeholder="Descrição" value=${it.descricao} onInput=${e=>upItem(i,'descricao',e.target.value)}/>
+          <input type="number" min="1" step="1" title="Qtd" style=${{width:'56px'}} value=${it.quantidade} onInput=${e=>upItem(i,'quantidade',e.target.value)}/>
+          <input type="number" step="0.01" placeholder="Valor" title="Valor unitário" style=${{width:'92px'}} value=${it.valor_unit} onInput=${e=>upItem(i,'valor_unit',e.target.value)}/>
+          <span class="b" style=${{minWidth:'74px',textAlign:'right'}}>${BRL(sub(it))}</span>
+          <button class="btn sm ghost" type="button" title="Remover" onClick=${()=>rmItem(i)}>×</button>
+        </div>`)}
+      </div>`}
+    <button class="btn sm" type="button" style=${{marginTop:'8px'}} onClick=${addItem}>+ Adicionar serviço</button>
+    ${err.itens&&html`<div class="ferr">${err.itens}</div>`}
+    <div class="f3" style=${{marginTop:'10px'}}>
+      <div><label>Desconto (R$)</label><input type="number" step="0.01" min="0" value=${f.desconto||''} onInput=${e=>set('desconto',e.target.value)} placeholder="0,00"/></div>
+      <div><label>Sinal / valor pago (R$)</label><input type="number" step="0.01" min="0" value=${f.valor_pago||''} onInput=${e=>set('valor_pago',e.target.value)} placeholder="0,00"/></div>
+    </div>
+    <div style=${{marginTop:'10px',background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'12px',padding:'12px 14px'}}>
+      <div style=${{display:'flex',justifyContent:'space-between',fontSize:'.88rem'}}><span class="muted">Subtotal dos serviços</span><span>${BRL(total)}</span></div>
+      ${descV>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontSize:'.88rem',marginTop:'3px'}}><span class="muted">Desconto</span><span>− ${BRL(descV)}</span></div>`}
+      <div style=${{display:'flex',justifyContent:'space-between',fontWeight:700,fontSize:'1.1rem',marginTop:'5px',paddingTop:'5px',borderTop:'1px solid var(--line,#e7ddd0)'}}><span>Total a pagar</span><span>${BRL(netV)}</span></div>
+      ${pagoV>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontSize:'.88rem',marginTop:'5px'}}><span class="muted">Pago</span><span>${BRL(pagoV)}</span></div>`}
+      ${pagoV>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontWeight:700,marginTop:'2px',color:saldoV>0.009?'#b3452f':'#2f6b43'}}><span>${saldoV>0.009?'Saldo a receber':'Quitado'}</span><span>${saldoV>0.009?BRL(saldoV):'✓'}</span></div>`}
+    </div>
+    <div class="f3" style=${{marginTop:'8px'}}>
+      <div><label>Entrada</label><input type="date" value=${f.data_entrada} onInput=${e=>set('data_entrada',e.target.value)}/></div>
+      <div><label>Prazo</label><input type="date" value=${f.prazo||''} onInput=${e=>set('prazo',e.target.value)}/></div>
+      <div><label>Prazo em dias</label><input type="number" min="1" value=${f.dias_previstos||''} onInput=${e=>set('dias_previstos',e.target.value)} placeholder="Ex.: 7"/></div>
+    </div>
+    <label>Data da prova (opcional)</label>
+    <input type="date" value=${f.data_prova||''} onInput=${e=>set('data_prova',e.target.value)}/>
+    <label>Status</label>
+    <select value=${f.status} onInput=${e=>set('status',e.target.value)}>${STATUS_ORDER.map(s=>html`<option key=${s} value=${s}>${STATUS[s].l}</option>`)}</select>
+    <label>Observações</label><textarea value=${f.observacoes||''} onInput=${e=>set('observacoes',e.target.value)}/>
+  </${Modal}>`;
+}
+function Ordens(){
+  const {tenantId}=useApp();
+  const hash=useHash(); const initF=new URLSearchParams((hash.split('?')[1]||'')).get('f')||'todas';
+  const [rows,reload]=useRows('ordens',{order:'numero',asc:false});
+  const [clientes]=useRows('clientes',{order:'nome',asc:true});
+  const [servicos]=useRows('servicos',{order:'nome',asc:true});
+  const [usuarios]=useRows('profiles',{order:'nome',asc:true});
+  const [q,setQ]=useState(''),[filt,setFilt]=useState(initF),[edit,setEdit]=useState(null);
+  useEffect(()=>{setFilt(initF);},[initF]);
+  const cliName=useMemo(()=>Object.fromEntries((clientes||[]).map(c=>[c.id,c.nome])),[clientes]);
+  const filtered=useMemo(()=>{ if(!rows) return null; const s=q.toLowerCase();
+    const especiais=['todas','ativas','atrasadas','saldo'];
+    return rows.filter(o=>{
+      if(filt==='ativas'&&!ACTIVE.includes(o.status)) return false;
+      if(filt==='atrasadas'&&!(ACTIVE.includes(o.status)&&o.prazo&&o.prazo<todayISO())) return false;
+      if(filt==='saldo'&&!(o.status!=='cancelado'&&pagInfo(o).saldo>0.009)) return false;
+      if(!especiais.includes(filt)&&o.status!==filt) return false;
+      if(s){ const nm=(cliName[o.cliente_id]||'').toLowerCase(); return (o.descricao||'').toLowerCase().includes(s)||nm.includes(s)||String(o.numero).includes(s); }
+      return true; }); },[rows,q,filt,cliName]);
+  const totalSaldo=useMemo(()=>(rows||[]).filter(o=>o.status!=='cancelado').reduce((a,o)=>a+Math.max(0,pagInfo(o).saldo),0),[rows]);
+  return html`<${Shell} title="Ordens de serviço">
+    <div class="bar">
+      <div class="search"><input placeholder="Buscar por #, cliente ou serviço…" value=${q} onInput=${e=>setQ(e.target.value)}/></div>
+      <select value=${filt} onInput=${e=>setFilt(e.target.value)} style=${{maxWidth:'210px'}}>
+        <option value="todas">Todas</option><option value="ativas">Em aberto</option><option value="atrasadas">Atrasadas</option>
+        <option value="saldo">Com saldo a receber</option>
+        <option disabled>──────</option>${STATUS_ORDER.map(s=>html`<option key=${s} value=${s}>${STATUS[s].l}</option>`)}
+      </select>
+      <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Nova OS</button>
+    </div>
+    ${totalSaldo>0.009&&html`<button class="glass panel" onClick=${()=>setFilt('saldo')}
+      style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'10px',width:'100%',textAlign:'left',cursor:'pointer',border:'none',padding:'12px 16px',marginBottom:'12px'}}>
+      <span class="muted" style=${{fontSize:'.86rem'}}>Total a receber das ordens em aberto</span>
+      <span class="b" style=${{color:'#b3452f',fontSize:'1.1rem'}}>${BRL(totalSaldo)}</span>
+    </button>`}
+    <div class="glass panel">
+      ${!filtered? html`<div class="hint">Carregando…</div>`
+        : filtered.length===0? html`<${Empty} icon=${I.scissors} title="Nenhuma OS">${q||filt!=='todas'?'Ajuste os filtros.':'Crie a primeira ordem de serviço.'}</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrada</th><th>Prazo</th><th>Status</th><th class="r">Valor</th></tr></thead>
+          <tbody>${filtered.map(o=>{ const late=ACTIVE.includes(o.status)&&o.prazo&&o.prazo<todayISO();
+            return html`<tr key=${o.id} class="click" onClick=${()=>go('/ordens/'+o.id)}>
+              <td class="b">${o.numero}</td><td>${cliName[o.cliente_id]||html`<span class="muted">—</span>`}</td><td>${o.descricao||'—'}</td>
+              <td>${fmtDate(o.data_entrada)}</td><td style=${late?{color:'var(--danger)',fontWeight:600}:null}>${fmtDate(o.prazo)}${late?' ⚠':''}</td>
+              <td><${Badge} status=${o.status}/></td><td class="r b">${BRL(o.valor)}</td></tr>`; })}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${OrdemForm} row=${edit.id?edit:null} tenantId=${tenantId} clientes=${clientes||[]} servicos=${servicos||[]} usuarios=${usuarios||[]} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
+  </${Shell}>`;
+}
+function OrdemDetail({id}){
+  const {tenantId,tenant,settings}=useApp();
+  const [o,setO]=useState(null),[cli,setCli]=useState(null),[hist,setHist]=useState([]),[itens,setItens]=useState([]),[clientes]=useRows('clientes',{order:'nome',asc:true}),[servicos]=useRows('servicos',{order:'nome',asc:true}),[usuarios]=useRows('profiles',{order:'nome',asc:true}),[edit,setEdit]=useState(false),[del,setDel]=useState(false),[pagInput,setPagInput]=useState(''),[fotos,setFotos]=useState([]),[upBusy,setUpBusy]=useState(false);
+  const load=useCallback(async()=>{
+    const data=qd(await db.from('ordens').select('*').eq('id',id).maybeSingle(), 'a ordem de serviço'); setO(data);
+    if(data?.cliente_id){ setCli(qd(await db.from('clientes').select('*').eq('id',data.cliente_id).maybeSingle(), 'a cliente')); } else setCli(null);
+    setHist(qd(await db.from('ordem_status_history').select('*').eq('ordem_id',id).order('criado_em',{ascending:false}), 'o histórico de status') || []);
+    setItens(qd(await db.from('ordem_itens').select('*').eq('ordem_id',id).order('posicao',{ascending:true}), 'os serviços desta OS') || []);
+    const fs=qd(await db.from('ordem_fotos').select('*').eq('ordem_id',id).order('created_at',{ascending:false}), 'as fotos da peça');
+    if(fs&&fs.length){ const signed=qd(await db.storage.from('os-fotos').createSignedUrls(fs.map(x=>x.path),3600), 'as imagens');
+      const byPath=Object.fromEntries((signed||[]).map(s=>[s.path,s.signedUrl])); setFotos(fs.map(f=>({...f,url:byPath[f.path]}))); }
+    else setFotos([]);
+  },[id]);
+  const itSub=it=>it.subtotal!=null?Number(it.subtotal):(Number(it.quantidade)||0)*(Number(it.valor_unit)||0);
+  useEffect(()=>{load();},[id]);
+  async function setStatus(s){ const patch={status:s}; if(s==='entregue') patch.entregue_em=new Date().toISOString();
+    const {error}=await db.from('ordens').update(patch).eq('id',id); if(error)toast('Erro: '+error.message,'err'); else {toast('Status atualizado.','ok');load();} }
+  async function registrarPag(modo){ const info=pagInfo(o);
+    const novo = modo==='quitar' ? info.net : Math.min(info.net, info.pago + (Number(pagInput)||0));
+    if(modo!=='quitar' && !(Number(pagInput)>0)){ toast('Informe um valor.','err'); return; }
+    const recebido=+(novo-info.pago).toFixed(2);
+    if(!(recebido>0)){ toast('Não há valor novo a registrar.','err'); return; }
+    const {error}=await db.from('ordens').update({valor_pago:novo}).eq('id',id);
+    if(error){ toast('Erro: '+error.message,'err'); return; }
+    const lr=await lancarReceitaOS(tenantId,o,recebido);
+    setPagInput(''); load();
+    if(lr&&lr.error) toast('Pagamento salvo, mas o lançamento no Financeiro falhou: '+lr.error.message,'err');
+    else toast('Recebido '+BRL(recebido)+' — lançado no Financeiro.','ok'); }
+  async function uploadFoto(e){ const file=e.target.files&&e.target.files[0]; if(e.target) e.target.value=''; if(!file) return;
+    if(!/^image\//.test(file.type)){ toast('Selecione uma imagem.','err'); return; }
+    setUpBusy(true);
+    try{ const blob=await resizeImage(file);
+      const path=tenantId+'/'+id+'/'+uuid()+'.jpg';
+      const up=await db.storage.from('os-fotos').upload(path,blob,{contentType:'image/jpeg',upsert:false}); if(up.error) throw up.error;
+      const ins=await db.from('ordem_fotos').insert({tenant_id:tenantId,ordem_id:id,path}); if(ins.error) throw ins.error;
+      toast('Foto adicionada.','ok'); load();
+    }catch(err){ toast('Erro ao enviar foto: '+(err.message||err),'err'); }
+    finally{ setUpBusy(false); } }
+  async function delFoto(f){ try{ await db.storage.from('os-fotos').remove([f.path]); }catch(_){}
+    const {error}=await db.from('ordem_fotos').delete().eq('id',f.id);
+    if(error) toast('Erro: '+error.message,'err'); else { toast('Foto removida.','ok'); load(); } }
+  const osText=()=>'*Ateliê '+(tenant?.nome||'')+'* — Ordem de Serviço #'+o.numero+'\n'
+    +'Cliente: '+(cli?.nome||'—')+'\n'+'Serviço: '+(o.descricao||'—')+'\n'+'Total: '+BRL(o.valor)+'\n'
+    +(pagInfo(o).saldo>0.009?'Saldo a receber: '+BRL(pagInfo(o).saldo)+'\n':'')
+    +'Entrada: '+fmtDate(o.data_entrada)+(o.prazo?'  •  Prazo: '+fmtDate(o.prazo):'')+'\n'
+    +'Status: '+(STATUS[o.status]?.l||o.status)+(o.observacoes?'\nObs.: '+o.observacoes:'');
+  function printOS(){
+    const temItens=itens&&itens.length>0;
+    const servicoLinha = temItens
+      ? '<tr><td style="color:#8a7e86;vertical-align:top">Serviços</td><td><table style="width:100%;border-collapse:collapse">'
+        +'<thead><tr><th style="text-align:left;border-bottom:1px solid #e7ddd0;padding:2px 0">Serviço</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Qtd</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Valor</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Subtotal</th></tr></thead><tbody>'
+        +itens.map(it=>'<tr><td style="padding:2px 0">'+esc(it.descricao||'—')+'</td><td style="text-align:right">'+(Number(it.quantidade)||1)+'</td><td style="text-align:right">'+BRL(it.valor_unit)+'</td><td style="text-align:right"><b>'+BRL(itSub(it))+'</b></td></tr>').join('')
+        +'</tbody></table></td></tr>'
+      : '<tr><td style="color:#8a7e86">Serviço</td><td>'+esc(o.descricao||'—')+'</td></tr>';
+    const body='<h3>Ordem de Serviço #'+o.numero+'</h3><table><tbody>'
+      +'<tr><td style="width:36%;color:#8a7e86">Cliente</td><td>'+esc(cli?.nome||'—')+'</td></tr>'
+      +servicoLinha
+      +(Number(o.desconto)>0?'<tr><td style="color:#8a7e86">Desconto</td><td>− '+BRL(o.desconto)+'</td></tr>':'')
+      +'<tr><td style="color:#8a7e86">Total a pagar</td><td><b>'+BRL(o.valor)+'</b></td></tr>'
+      +(Number(o.valor_pago)>0?'<tr><td style="color:#8a7e86">Pago</td><td>'+BRL(o.valor_pago)+'</td></tr>':'')
+      +(pagInfo(o).saldo>0.009?'<tr><td style="color:#8a7e86">Saldo a receber</td><td><b>'+BRL(pagInfo(o).saldo)+'</b></td></tr>':'')
+      +'<tr><td style="color:#8a7e86">Entrada</td><td>'+fmtDate(o.data_entrada)+'</td></tr>'
+      +'<tr><td style="color:#8a7e86">Prazo</td><td>'+fmtDate(o.prazo)+'</td></tr>'
+      +'<tr><td style="color:#8a7e86">Status</td><td>'+esc(STATUS[o.status]?.l||o.status)+'</td></tr>'
+      +(o.observacoes?'<tr><td style="color:#8a7e86">Observações</td><td>'+esc(o.observacoes)+'</td></tr>':'')
+      +'</tbody></table><div class="kv" style="margin-top:30px"><span>Assinatura: __________________________</span><span>Data: ____/____/______</span></div>';
+    printDoc('Ordem de Serviço #'+o.numero, body, tenant?.nome);
+  }
+  if(o===null) return html`<${Shell} title="OS"><div class="hint">Carregando…</div></${Shell}>`;
+  if(!o) return html`<${Shell} title="OS"><${Empty} title="OS não encontrada"><button class="link" onClick=${()=>go('/ordens')}>Voltar</button></${Empty}></${Shell}>`;
+  return html`<${Shell} title=${'OS #'+o.numero}>
+    <div style=${{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
+      <button class="btn ghost sm" onClick=${()=>go('/ordens')}><${Ic} d=${I.back}/>Ordens</button>
+      <div style=${{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+        ${cli?.whatsapp&&html`<a class="btn sm wa" target="_blank" title="Avisar cliente pelo WhatsApp"
+          href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent('Olá '+(cli.nome||'').split(' ')[0]+'! Seu serviço'+(o.descricao?' ("'+o.descricao+'")':'')+' está pronto para retirada. 🧵 — '+(tenant?.nome||''))}>
+          <${Ic} d=${I.wa}/>Avisar pronto</a>`}
+        <button class="btn sm" onClick=${printOS}><${Ic} d=${I.print}/>Imprimir OS</button>
+        <button class="btn sm" title="Cupom não fiscal (recibo)" onClick=${()=>printCupom(o,cli,tenant?.nome,settings,itens)}><${Ic} d=${I.file}/>Cupom</button>
+        ${cli?.whatsapp&&html`<a class="btn sm wa" target="_blank" title="Enviar a OS ao cliente" href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent(osText())}><${Ic} d=${I.wa}/>Enviar OS</a>`}
+        <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
+        <button class="btn sm ghost" onClick=${()=>setDel(true)}><${Ic} d=${I.trash}/></button>
+      </div>
+    </div>
+    <div class="row side" style=${{marginTop:'12px'}}>
+      <div class="glass panel">
+        <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <h1 class="hi serif" style=${{fontSize:'1.7rem'}}>${o.descricao||'Serviço'}</h1><${Badge} status=${o.status}/></div>
+        <div class="f3" style=${{marginTop:'14px',gap:'12px'}}>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Cliente</div><div class="b">${cli?html`<button class="link" onClick=${()=>go('/clientes/'+cli.id)}>${cli.nome}</button>`:'—'}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Valor</div><div class="b">${BRL(o.valor)}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Entrada</div><div class="b">${fmtDate(o.data_entrada)}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Prazo</div><div class="b">${fmtDate(o.prazo)}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Prova</div><div class="b" style=${o.data_prova&&o.data_prova>=todayISO()?{color:'var(--violet,#8e2cb0)'}:null}>${fmtDate(o.data_prova)}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Entregue</div><div class="b">${o.entregue_em?fmtDate(o.entregue_em.slice(0,10)):'—'}</div></div>
+          <div><div class="muted" style=${{fontSize:'.74rem'}}>Responsável</div><div class="b">${(usuarios||[]).find(u=>u.id===o.responsavel_id)?.nome||'—'}</div></div>
+        </div>
+        ${itens.length>0&&html`<div style=${{marginTop:'16px'}}>
+          <div class="muted" style=${{fontSize:'.74rem',marginBottom:'6px'}}>Serviços desta OS</div>
+          <div class="tblwrap"><table class="tbl"><thead><tr><th>Serviço</th><th class="r">Qtd</th><th class="r">Valor</th><th class="r">Subtotal</th></tr></thead>
+            <tbody>${itens.map(it=>html`<tr key=${it.id}><td>${it.descricao}</td><td class="r">${Number(it.quantidade)||1}</td><td class="r">${BRL(it.valor_unit)}</td><td class="r b">${BRL(itSub(it))}</td></tr>`)}</tbody>
+            <tfoot><tr><td colspan="3" class="r b">Total</td><td class="r b">${BRL(o.valor)}</td></tr></tfoot>
+          </table></div>
+        </div>`}
+        ${(()=>{ const p=pagInfo(o); const bruto=(itens.length?itens.reduce((a,it)=>a+itSub(it),0):(Number(o.valor)+(Number(o.desconto)||0)));
+          return html`<div style=${{marginTop:'16px',background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'12px',padding:'12px 14px'}}>
+          <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
+            <div class="muted" style=${{fontSize:'.74rem'}}>Pagamento</div>
+            <span class="tag" style=${{color:PAG[p.st].c,background:PAG[p.st].bg,fontWeight:700}}>${PAG[p.st].l}</span></div>
+          ${Number(o.desconto)>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontSize:'.86rem'}}><span class="muted">Subtotal</span><span>${BRL(bruto)}</span></div>`}
+          ${Number(o.desconto)>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontSize:'.86rem',marginTop:'2px'}}><span class="muted">Desconto</span><span>− ${BRL(o.desconto)}</span></div>`}
+          <div style=${{display:'flex',justifyContent:'space-between',fontWeight:700,marginTop:'3px'}}><span>Total a pagar</span><span>${BRL(p.net)}</span></div>
+          <div style=${{display:'flex',justifyContent:'space-between',fontSize:'.86rem',marginTop:'3px'}}><span class="muted">Pago</span><span>${BRL(p.pago)}</span></div>
+          <div style=${{display:'flex',justifyContent:'space-between',fontWeight:700,marginTop:'2px',color:p.saldo>0.009?'#b3452f':'#2f6b43'}}><span>${p.saldo>0.009?'Saldo a receber':'Quitado'}</span><span>${p.saldo>0.009?BRL(p.saldo):'✓'}</span></div>
+          ${p.saldo>0.009&&html`<div style=${{display:'flex',gap:'6px',marginTop:'10px',flexWrap:'wrap',alignItems:'center'}}>
+            <input type="number" step="0.01" min="0" placeholder="Valor recebido" value=${pagInput} onInput=${e=>setPagInput(e.target.value)} style=${{flex:'1 1 120px',maxWidth:'160px'}}/>
+            <button class="btn sm" onClick=${()=>registrarPag('add')}>Registrar</button>
+            <button class="btn sm pri" onClick=${()=>registrarPag('quitar')}>Quitar tudo</button>
+          </div>`}
+        </div>`; })()}
+        ${o.observacoes&&html`<div class="notice" style=${{marginTop:'14px'}}>${o.observacoes}</div>`}
+        <label style=${{marginTop:'16px'}}>Avançar status</label>
+        <div style=${{display:'flex',flexWrap:'wrap',gap:'6px'}}>
+          ${STATUS_ORDER.map(s=>html`<button key=${s} class=${'btn sm'+(o.status===s?' pri':'')} onClick=${()=>setStatus(s)}>${STATUS[s].l}</button>`)}
+        </div>
+      </div>
+      <div class="glass panel">
+        <h3>Histórico de status</h3><p class="desc">Trilha de auditoria.</p>
+        ${hist.length===0? html`<div class="muted" style=${{fontSize:'.85rem'}}>Sem mudanças registradas.</div>`
+          : html`<div class="stat-list">${hist.map(h=>html`<div class="it" key=${h.id}>
+            <span>${h.de?STATUS[h.de]?.l+' → ':''}<b>${STATUS[h.para]?.l||h.para}</b></span>
+            <span class="muted" style=${{fontSize:'.76rem'}}>${new Date(h.criado_em).toLocaleDateString('pt-BR')}</span></div>`)}</div>`}
+      </div>
+      <div class="glass panel">
+        <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px'}}>
+          <h3>Fotos da peça</h3>
+          <label class=${'btn sm pri'+(upBusy?' disabled':'')} style=${{cursor:upBusy?'default':'pointer'}}>
+            ${upBusy?'Enviando…':'+ Foto'}
+            <input type="file" accept="image/*" capture="environment" style=${{display:'none'}} disabled=${upBusy} onChange=${uploadFoto}/>
+          </label>
+        </div>
+        <p class="desc">Registre a peça, o molde ou a referência da cliente.</p>
+        ${fotos.length===0? html`<div class="muted" style=${{fontSize:'.85rem'}}>Nenhuma foto ainda.</div>`
+          : html`<div style=${{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
+            ${fotos.map(f=>html`<div key=${f.id} style=${{position:'relative'}}>
+              <a href=${f.url} target="_blank" rel="noopener">
+                <img src=${f.url} alt="Foto da peça" loading="lazy" style=${{width:'100%',aspectRatio:'1',objectFit:'cover',borderRadius:'10px',border:'1px solid var(--line,#e7ddd0)'}}/></a>
+              <button title="Remover foto" onClick=${()=>delFoto(f)} style=${{position:'absolute',top:'4px',right:'4px',background:'rgba(0,0,0,.55)',color:'#fff',border:'none',padding:'1px 7px',borderRadius:'8px',cursor:'pointer',fontSize:'.9rem'}}>×</button>
+            </div>`)}
+          </div>`}
+      </div>
+    </div>
+    ${edit&&html`<${OrdemForm} row=${o} tenantId=${tenantId} clientes=${clientes||[]} servicos=${servicos||[]} usuarios=${usuarios||[]} onClose=${()=>setEdit(false)} onSaved=${()=>{setEdit(false);load();}}/>`}
+    ${del&&html`<${Confirm} danger text=${'Excluir a OS #'+o.numero+'?'} onClose=${()=>setDel(false)}
+      onYes=${async()=>{ const{error}=await db.from('ordens').delete().eq('id',id); if(error)toast('Erro: '+error.message,'err'); else{toast('OS excluída.','ok');go('/ordens');} }}/>`}
+  </${Shell}>`;
+}
+
+/* ========== SERVIÇOS ========== */
+function ServicoForm({row,onClose,onSaved,tenantId}){
+  const [f,setF]=useState(()=>({nome:'',descricao:'',preco_base:'',ativo:true,...(row||{})}));
+  const [busy,setBusy]=useState(false); const set=(k,v)=>setF(x=>({...x,[k]:v}));
+  async function save(){ if(!f.nome||!f.nome.trim()){toast('Informe o nome do serviço.','err');return;} setBusy(true);
+    const payload={tenant_id:tenantId,nome:f.nome.trim(),descricao:f.descricao||null,preco_base:Number(f.preco_base)||0,ativo:f.ativo!==false};
+    const res=row?.id?await db.from('servicos').update(payload).eq('id',row.id):await db.from('servicos').insert(payload);
+    setBusy(false); if(res.error){toast('Erro: '+res.error.message,'err');return;} toast('Serviço salvo.','ok'); onSaved(); }
+  return html`<${Modal} title=${row?.id?'Editar serviço':'Novo serviço'} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'…':'Salvar'}</button></${Fragment}>`}>
+    <label>Nome</label><input value=${f.nome} onInput=${e=>set('nome',e.target.value)} placeholder="Ex.: Bainha de calça"/>
+    <div class="f2"><div><label>Preço base (R$)</label><input type="number" step="0.01" value=${f.preco_base} onInput=${e=>set('preco_base',e.target.value)}/></div>
+      <div><label>Ativo</label><select value=${f.ativo?'1':'0'} onInput=${e=>set('ativo',e.target.value==='1')}><option value="1">Sim</option><option value="0">Não</option></select></div></div>
+    <label>Descrição</label><textarea value=${f.descricao||''} onInput=${e=>set('descricao',e.target.value)}/>
+  </${Modal}>`;
+}
+function Servicos(){
+  const {tenantId}=useApp();
+  const [rows,reload]=useRows('servicos',{order:'nome',asc:true});
+  const [edit,setEdit]=useState(null),[del,setDel]=useState(null);
+  return html`<${Shell} title="Serviços">
+    <div class="bar"><div class="search"><div class="hint" style=${{margin:0}}>Catálogo padrão para agilizar a criação de OS e alimentar os relatórios.</div></div>
+      <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Novo serviço</button></div>
+    <div class="glass panel">
+      ${!rows? html`<div class="hint">Carregando…</div>`
+        : rows.length===0? html`<${Empty} icon=${I.tag} title="Nenhum serviço">Cadastre os serviços que você oferece.</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Serviço</th><th>Descrição</th><th>Status</th><th class="r">Preço · Ações</th></tr></thead>
+          <tbody>${rows.map(s=>html`<tr key=${s.id}><td class="b">${s.nome}</td><td class="muted">${s.descricao||'—'}</td>
+            <td>${s.ativo?html`<span class="tag">Ativo</span>`:html`<span class="muted">Inativo</span>`}</td>
+            <td class="r"><span class="b">${BRL(s.preco_base)}</span>
+              <button class="btn sm ghost" onClick=${()=>setEdit(s)}><${Ic} d=${I.edit}/></button>
+              <button class="btn sm ghost" onClick=${()=>setDel(s)}><${Ic} d=${I.trash}/></button></td></tr>`)}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${ServicoForm} row=${edit.id?edit:null} tenantId=${tenantId} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
+    ${del&&html`<${Confirm} danger text=${'Excluir o serviço '+del.nome+'?'} onClose=${()=>setDel(null)}
+      onYes=${async()=>{const{error}=await db.from('servicos').delete().eq('id',del.id);if(error)toast('Erro: '+error.message,'err');else{toast('Serviço excluído.','ok');reload();}}}/>`}
+  </${Shell}>`;
+}
+
+/* ========== ESTOQUE ========== */
+function ProdutoForm({row,onClose,onSaved,tenantId}){
+  const [f,setF]=useState(()=>({nome:'',categoria:'',unidade:'un',quantidade:0,quantidade_minima:0,preco:0,fornecedor:'',localizacao:'',...(row||{})}));
+  const [busy,setBusy]=useState(false); const set=(k,v)=>setF(x=>({...x,[k]:v}));
+  async function save(){ if(!f.nome||!f.nome.trim()){toast('Informe o nome.','err');return;} setBusy(true);
+    const payload={tenant_id:tenantId,nome:f.nome.trim(),categoria:f.categoria||null,unidade:f.unidade||'un',
+      quantidade:Number(f.quantidade)||0,quantidade_minima:Number(f.quantidade_minima)||0,preco:Number(f.preco)||0,
+      fornecedor:f.fornecedor||null,localizacao:f.localizacao||null};
+    const res=row?.id?await db.from('estoque_produtos').update(payload).eq('id',row.id):await db.from('estoque_produtos').insert(payload);
+    setBusy(false); if(res.error){toast('Erro: '+res.error.message,'err');return;} toast('Produto salvo.','ok'); onSaved(); }
+  return html`<${Modal} title=${row?.id?'Editar item':'Novo item de estoque'} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'…':'Salvar'}</button></${Fragment}>`}>
+    <label>Nome</label><input value=${f.nome} onInput=${e=>set('nome',e.target.value)} placeholder="Ex.: Linha preta 120"/>
+    <div class="f2"><div><label>Categoria</label><input value=${f.categoria||''} onInput=${e=>set('categoria',e.target.value)} placeholder="Linhas, agulhas…"/></div>
+      <div><label>Unidade</label><input value=${f.unidade} onInput=${e=>set('unidade',e.target.value)} placeholder="un, m, cx"/></div></div>
+    <div class="f3"><div><label>Quantidade</label><input type="number" step="0.01" value=${f.quantidade} onInput=${e=>set('quantidade',e.target.value)}/></div>
+      <div><label>Mínimo</label><input type="number" step="0.01" value=${f.quantidade_minima} onInput=${e=>set('quantidade_minima',e.target.value)}/></div>
+      <div><label>Preço unit. (R$)</label><input type="number" step="0.01" value=${f.preco} onInput=${e=>set('preco',e.target.value)}/></div></div>
+    <div class="f2"><div><label>Fornecedor</label><input value=${f.fornecedor||''} onInput=${e=>set('fornecedor',e.target.value)}/></div>
+      <div><label>Localização</label><input value=${f.localizacao||''} onInput=${e=>set('localizacao',e.target.value)} placeholder="Gaveta 2"/></div></div>
+    ${row?.id&&html`<div class="notice" style=${{marginTop:'12px'}}>Para dar entrada/saída de quantidade, use <b>Movimentar</b> na lista — mantém o histórico correto.</div>`}
+  </${Modal}>`;
+}
+function MovForm({produto,onClose,onSaved,tenantId}){
+  const [tipo,setTipo]=useState('entrada'),[qtd,setQtd]=useState(''),[motivo,setMotivo]=useState(''),[busy,setBusy]=useState(false);
+  async function save(){ const q=Number(qtd); if(!q||q<=0){toast('Informe a quantidade.','err');return;} setBusy(true);
+    const {error}=await db.from('estoque_movimentos').insert({tenant_id:tenantId,produto_id:produto.id,tipo,quantidade:q,motivo:motivo||null});
+    setBusy(false); if(error){toast('Erro: '+error.message,'err');return;} toast('Movimentação registrada.','ok'); onSaved(); }
+  return html`<${Modal} title=${'Movimentar · '+produto.nome} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'…':'Registrar'}</button></${Fragment}>`}>
+    <div class="notice" style=${{marginBottom:'12px'}}>Saldo atual: <b>${produto.quantidade} ${produto.unidade}</b></div>
+    <div class="f2"><div><label>Tipo</label><select value=${tipo} onInput=${e=>setTipo(e.target.value)}>
+      <option value="entrada">Entrada (compra/reposição)</option><option value="saida">Saída (uso/baixa)</option><option value="ajuste">Ajuste (definir saldo)</option></select></div>
+      <div><label>Quantidade</label><input type="number" step="0.01" value=${qtd} onInput=${e=>setQtd(e.target.value)}/></div></div>
+    <label>Motivo</label><input value=${motivo} onInput=${e=>setMotivo(e.target.value)} placeholder="Opcional"/>
+  </${Modal}>`;
+}
+function Estoque(){
+  const {tenantId}=useApp();
+  const [rows,reload]=useRows('estoque_produtos',{order:'nome',asc:true});
+  const [q,setQ]=useState(''),[edit,setEdit]=useState(null),[mov,setMov]=useState(null),[del,setDel]=useState(null),[low,setLow]=useState(false);
+  const filtered=useMemo(()=>{ if(!rows) return null; const s=q.toLowerCase();
+    return rows.filter(p=>(!s||(p.nome||'').toLowerCase().includes(s)||(p.categoria||'').toLowerCase().includes(s))&&(!low||Number(p.quantidade)<=Number(p.quantidade_minima))); },[rows,q,low]);
+  const lowCount=(rows||[]).filter(p=>Number(p.quantidade)<=Number(p.quantidade_minima)).length;
+  return html`<${Shell} title="Estoque">
+    <div class="bar">
+      <div class="search"><input placeholder="Buscar item ou categoria…" value=${q} onInput=${e=>setQ(e.target.value)}/></div>
+      <button class=${'btn'+(low?' pri':'')} onClick=${()=>setLow(l=>!l)}><${Ic} d=${I.alert}/>Estoque baixo${lowCount?' ('+lowCount+')':''}</button>
+      <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Novo item</button>
+    </div>
+    <div class="glass panel">
+      ${!filtered? html`<div class="hint">Carregando…</div>`
+        : filtered.length===0? html`<${Empty} icon=${I.box} title=${q||low?'Nada encontrado':'Estoque vazio'}>${q||low?'Ajuste os filtros.':'Cadastre linhas, agulhas e insumos.'}</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Item</th><th>Categoria</th><th class="r">Saldo</th><th class="r">Mín.</th><th class="r">Valor</th><th class="r">Ações</th></tr></thead>
+          <tbody>${filtered.map(p=>{ const lo=Number(p.quantidade)<=Number(p.quantidade_minima);
+            return html`<tr key=${p.id} class=${lo?'low':''}><td class="b">${p.nome}</td><td class="muted">${p.categoria||'—'}</td>
+              <td class="r b" style=${lo?{color:'var(--warn)'}:null}>${p.quantidade} ${p.unidade}${lo?' ⚠':''}</td>
+              <td class="r muted">${p.quantidade_minima}</td><td class="r">${BRL(p.preco)}</td>
+              <td class="r"><button class="btn sm" onClick=${()=>setMov(p)}>Movimentar</button>
+                <button class="btn sm ghost" onClick=${()=>setEdit(p)}><${Ic} d=${I.edit}/></button>
+                <button class="btn sm ghost" onClick=${()=>setDel(p)}><${Ic} d=${I.trash}/></button></td></tr>`; })}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${ProdutoForm} row=${edit.id?edit:null} tenantId=${tenantId} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
+    ${mov&&html`<${MovForm} produto=${mov} tenantId=${tenantId} onClose=${()=>setMov(null)} onSaved=${()=>{setMov(null);reload();}}/>`}
+    ${del&&html`<${Confirm} danger text=${'Excluir '+del.nome+'?'} onClose=${()=>setDel(null)}
+      onYes=${async()=>{const{error}=await db.from('estoque_produtos').delete().eq('id',del.id);if(error)toast('Erro: '+error.message,'err');else{toast('Item excluído.','ok');reload();}}}/>`}
+  </${Shell}>`;
+}
+
+/* ========== FINANCEIRO ========== */
+function LancForm({row,onClose,onSaved,tenantId,categorias}){
+  const [f,setF]=useState(()=>({tipo:'receita',categoria_id:'',descricao:'',valor:'',vencimento:todayISO(),pago:true,...(row||{})}));
+  const [busy,setBusy]=useState(false); const set=(k,v)=>setF(x=>({...x,[k]:v}));
+  async function save(){ if(f.valor===''||isNaN(Number(f.valor))){toast('Informe o valor.','err');return;} setBusy(true);
+    const payload={tenant_id:tenantId,tipo:f.tipo,categoria_id:f.categoria_id||null,descricao:f.descricao||null,valor:Number(f.valor)||0,
+      vencimento:f.vencimento||null,pago:!!f.pago,pago_em:f.pago?(f.pago_em||todayISO()):null};
+    const res=row?.id?await db.from('financeiro_lancamentos').update(payload).eq('id',row.id):await db.from('financeiro_lancamentos').insert(payload);
+    setBusy(false); if(res.error){toast('Erro: '+res.error.message,'err');return;} toast('Lançamento salvo.','ok'); onSaved(); }
+  const cats=categorias.filter(c=>c.tipo===f.tipo);
+  return html`<${Modal} title=${row?.id?'Editar lançamento':'Novo lançamento'} onClose=${onClose} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${onClose}>Cancelar</button><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'…':'Salvar'}</button></${Fragment}>`}>
+    <div class="f2"><div><label>Tipo</label><select value=${f.tipo} onInput=${e=>set('tipo',e.target.value)}>
+      <option value="receita">Receita (a receber)</option><option value="despesa">Despesa (a pagar)</option></select></div>
+      <div><label>Categoria</label><select value=${f.categoria_id||''} onInput=${e=>set('categoria_id',e.target.value)}>
+        <option value="">— Sem categoria —</option>${cats.map(c=>html`<option key=${c.id} value=${c.id}>${c.nome}</option>`)}</select></div></div>
+    <label>Descrição</label><input value=${f.descricao||''} onInput=${e=>set('descricao',e.target.value)} placeholder="Ex.: Compra de linhas"/>
+    <div class="f3"><div><label>Valor (R$)</label><input type="number" step="0.01" value=${f.valor} onInput=${e=>set('valor',e.target.value)}/></div>
+      <div><label>Vencimento</label><input type="date" value=${f.vencimento||''} onInput=${e=>set('vencimento',e.target.value)}/></div>
+      <div><label>Pago/Recebido</label><select value=${f.pago?'1':'0'} onInput=${e=>set('pago',e.target.value==='1')}><option value="1">Sim</option><option value="0">Não</option></select></div></div>
+  </${Modal}>`;
+}
+function Financeiro(){
+  const {tenantId,tenant}=useApp();
+  const [rows,reload]=useRows('financeiro_lancamentos',{order:'vencimento',asc:false});
+  const [categorias]=useRows('financeiro_categorias',{order:'nome',asc:true});
+  const [filt,setFilt]=useState('todas'),[edit,setEdit]=useState(null),[del,setDel]=useState(null);
+  const catName=useMemo(()=>Object.fromEntries((categorias||[]).map(c=>[c.id,c.nome])),[categorias]);
+  const ms=monthStart();
+  const kpis=useMemo(()=>{ const r=rows||[]; const inMonth=x=>(x.pago_em||x.vencimento||'')>=ms;
+    const rec=r.filter(l=>l.tipo==='receita'&&l.pago&&inMonth(l)).reduce((a,l)=>a+Number(l.valor||0),0);
+    const desp=r.filter(l=>l.tipo==='despesa'&&l.pago&&inMonth(l)).reduce((a,l)=>a+Number(l.valor||0),0);
+    const aReceber=r.filter(l=>l.tipo==='receita'&&!l.pago).reduce((a,l)=>a+Number(l.valor||0),0);
+    const aPagar=r.filter(l=>l.tipo==='despesa'&&!l.pago).reduce((a,l)=>a+Number(l.valor||0),0);
+    return {rec,desp,saldo:rec-desp,aReceber,aPagar}; },[rows]);
+  const filtered=useMemo(()=>{ if(!rows) return null;
+    return rows.filter(l=> filt==='todas'||(filt==='receita'&&l.tipo==='receita')||(filt==='despesa'&&l.tipo==='despesa')||(filt==='aberto'&&!l.pago)); },[rows,filt]);
+  async function togglePago(l){ const{error}=await db.from('financeiro_lancamentos').update({pago:!l.pago,pago_em:!l.pago?todayISO():null}).eq('id',l.id);
+    if(error)toast('Erro: '+error.message,'err'); else reload(); }
+  const hoje=todayISO();
+  const caixa=useMemo(()=>{ const r=(rows||[]).filter(l=>l.pago&&l.pago_em===hoje);
+    const entrou=r.filter(l=>l.tipo==='receita').reduce((a,l)=>a+Number(l.valor||0),0);
+    const saiu=r.filter(l=>l.tipo==='despesa').reduce((a,l)=>a+Number(l.valor||0),0);
+    return {itens:r, entrou, saiu, saldo:entrou-saiu}; },[rows,hoje]);
+  function imprimirFechamento(){
+    const linhas=caixa.itens.length
+      ? caixa.itens.map(l=>'<tr><td>'+esc(l.descricao||(l.tipo==='receita'?'Receita':'Despesa'))+'</td>'
+          +'<td style="text-align:right;color:'+(l.tipo==='receita'?'#2f6b43':'#b3452f')+'">'+(l.tipo==='receita'?'+ ':'− ')+BRL(l.valor)+'</td></tr>').join('')
+      : '<tr><td colspan="2" style="color:#8a7e86">Nenhum movimento hoje.</td></tr>';
+    const body='<h3>Fechamento do dia — '+fmtDate(hoje)+'</h3>'
+      +'<table><tbody>'+linhas+'</tbody></table>'
+      +'<table style="margin-top:22px"><tbody>'
+      +'<tr><td style="width:60%;color:#8a7e86">Entradas</td><td style="text-align:right"><b>'+BRL(caixa.entrou)+'</b></td></tr>'
+      +'<tr><td style="color:#8a7e86">Saídas</td><td style="text-align:right"><b>'+BRL(caixa.saiu)+'</b></td></tr>'
+      +'<tr><td style="color:#8a7e86">Saldo do dia</td><td style="text-align:right"><b>'+BRL(caixa.saldo)+'</b></td></tr>'
+      +'</tbody></table>'
+      +'<div class="kv" style="margin-top:30px"><span>Conferido por: __________________________</span><span>Data: ____/____/______</span></div>';
+    printDoc('Fechamento do dia', body, tenant?.nome);
+  }
+  return html`<${Shell} title="Financeiro">
+    <div class="grid">
+      <div class="glass kpi ok" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.rec)}</div><div class="l">Recebido no mês</div></div>
+      <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:'var(--danger)'}}>${BRL(kpis.desp)}</div><div class="l">Pago no mês</div></div>
+      <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:kpis.saldo>=0?'var(--ok)':'var(--danger)'}}>${BRL(kpis.saldo)}</div><div class="l">Saldo do mês</div></div>
+      <div class="glass kpi warn" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.aReceber)}</div><div class="l">A receber (aberto)</div></div>
+    </div>
+    <div class="glass panel" style=${{marginTop:'18px'}}>
+      <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+        <div><h3>Fechamento do dia</h3><p class="desc">O que entrou e saiu hoje, ${fmtDate(hoje)}.</p></div>
+        <button class="btn sm" onClick=${imprimirFechamento}><${Ic} d=${I.print}/>Imprimir</button>
+      </div>
+      <div class="f3" style=${{gap:'12px',marginTop:'6px'}}>
+        <div><div class="muted" style=${{fontSize:'.74rem'}}>Entrou hoje</div><div class="b" style=${{fontSize:'1.15rem',color:'var(--ok)'}}>${BRL(caixa.entrou)}</div></div>
+        <div><div class="muted" style=${{fontSize:'.74rem'}}>Saiu hoje</div><div class="b" style=${{fontSize:'1.15rem',color:'var(--danger)'}}>${BRL(caixa.saiu)}</div></div>
+        <div><div class="muted" style=${{fontSize:'.74rem'}}>Saldo do dia</div><div class="b" style=${{fontSize:'1.15rem',color:caixa.saldo>=0?'var(--ok)':'var(--danger)'}}>${BRL(caixa.saldo)}</div></div>
+      </div>
+      ${caixa.itens.length===0
+        ? html`<div class="muted" style=${{fontSize:'.85rem',marginTop:'10px'}}>Nenhum movimento hoje.</div>`
+        : html`<div class="tblwrap" style=${{marginTop:'12px'}}><table class="tbl">
+            <thead><tr><th>Movimento</th><th class="r">Valor</th></tr></thead>
+            <tbody>${caixa.itens.map(l=>html`<tr key=${l.id}>
+              <td>${l.descricao||(l.tipo==='receita'?'Receita':'Despesa')}</td>
+              <td class="r b" style=${{color:l.tipo==='receita'?'var(--ok)':'var(--danger)'}}>${l.tipo==='receita'?'+ ':'− '}${BRL(l.valor)}</td>
+            </tr>`)}</tbody>
+          </table></div>`}
+    </div>
+    <div class="bar" style=${{marginTop:'18px'}}>
+      <select value=${filt} onInput=${e=>setFilt(e.target.value)} style=${{maxWidth:'190px'}}>
+        <option value="todas">Todos</option><option value="receita">Receitas</option><option value="despesa">Despesas</option><option value="aberto">Em aberto</option></select>
+      <div class="search"/>
+      <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Novo lançamento</button>
+    </div>
+    <div class="glass panel">
+      ${!filtered? html`<div class="hint">Carregando…</div>`
+        : filtered.length===0? html`<${Empty} icon=${I.money} title="Sem lançamentos">Registre receitas e despesas do ateliê.</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Descrição</th><th>Categoria</th><th>Venc.</th><th>Situação</th><th class="r">Valor</th><th class="r">Ações</th></tr></thead>
+          <tbody>${filtered.map(l=>html`<tr key=${l.id}>
+            <td class="b">${l.descricao||'—'}</td><td class="muted">${catName[l.categoria_id]||'—'}</td><td>${fmtDate(l.vencimento)}</td>
+            <td>${l.pago?html`<span class="badge" style=${{color:'var(--ok)',background:'rgba(63,125,82,.14)'}}><span class="dot"/>${l.tipo==='receita'?'Recebido':'Pago'}</span>`
+              :html`<span class="badge" style=${{color:'var(--warn)',background:'rgba(185,131,37,.14)'}}><span class="dot"/>Em aberto</span>`}</td>
+            <td class="r b" style=${{color:l.tipo==='receita'?'var(--ok)':'var(--danger)'}}>${l.tipo==='receita'?'+':'−'} ${BRL(l.valor)}</td>
+            <td class="r"><button class="btn sm" onClick=${()=>togglePago(l)}>${l.pago?'Reabrir':'Baixar'}</button>
+              <button class="btn sm ghost" onClick=${()=>setEdit(l)}><${Ic} d=${I.edit}/></button>
+              <button class="btn sm ghost" onClick=${()=>setDel(l)}><${Ic} d=${I.trash}/></button></td></tr>`)}</tbody></table></div>`}
+    </div>
+    ${edit&&html`<${LancForm} row=${edit.id?edit:null} tenantId=${tenantId} categorias=${categorias||[]} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
+    ${del&&html`<${Confirm} danger text="Excluir este lançamento?" onClose=${()=>setDel(null)}
+      onYes=${async()=>{const{error}=await db.from('financeiro_lancamentos').delete().eq('id',del.id);if(error)toast('Erro: '+error.message,'err');else{toast('Excluído.','ok');reload();}}}/>`}
+  </${Shell}>`;
+}
+
+/* ========== RELATÓRIOS ========== */
+function Relatorios(){
+  const {tenant}=useApp();
+  const [data,setData]=useState(null);
+  const [ini,setIni]=useState(monthStart()),[fim,setFim]=useState(todayISO());
+  const load=useCallback(async()=>{
+    setData(null);
+    const [rOs,rCli,rFin]=await Promise.all([
+      db.from('ordens').select('*'),
+      db.from('clientes').select('id,nome'),
+      db.from('financeiro_lancamentos').select('tipo,valor,pago,pago_em,descricao,vencimento'),
+    ]);
+    const os=qd(rOs,'as ordens')||[], cli=qd(rCli,'as clientes')||[], fin=qd(rFin,'o financeiro')||[];
+    const cn=Object.fromEntries((cli||[]).map(c=>[c.id,c.nome]));
+    const inRange=o=>o.data_entrada>=ini&&o.data_entrada<=fim;
+    const per=(os||[]).filter(inRange);
+    const receita=per.reduce((a,o)=>a+Number(o.valor||0),0);
+    const porStatus=STATUS_ORDER.map(s=>[s,per.filter(o=>o.status===s).length]).filter(([,c])=>c>0);
+    const topServ=Object.entries(per.reduce((m,o)=>{const k=(o.descricao||'Sem descrição').trim();m[k]=m[k]||{c:0,v:0};m[k].c++;m[k].v+=Number(o.valor||0);return m;},{})).sort((a,b)=>b[1].c-a[1].c).slice(0,8);
+    const topCli=Object.entries((os||[]).reduce((m,o)=>{if(!o.cliente_id)return m;m[o.cliente_id]=(m[o.cliente_id]||0)+1;return m;},{})).map(([id,c])=>[cn[id]||'—',c]).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const durs=per.filter(o=>o.entregue_em&&o.data_entrada).map(o=>daysBetween(o.data_entrada,o.entregue_em.slice(0,10))).filter(d=>d>=0);
+    const tempoMedio=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1):null;
+    setData({qtd:per.length,receita,porStatus,topServ,topCli,tempoMedio,per,cn,fin:fin||[],ini,fim});
+  },[ini,fim]);
+  useEffect(()=>{load();},[]);
+  const periodo = data? fmtDate(data.ini)+' a '+fmtDate(data.fim) : '';
+  const printEntradas=()=>{ const rows=data.per.slice().sort((a,b)=>a.data_entrada.localeCompare(b.data_entrada));
+    const tot=rows.reduce((s,o)=>s+Number(o.valor||0),0);
+    const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span><span>Serviços: <b>'+rows.length+'</b></span></div>'
+      +'<table><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrada</th><th class="r">Valor</th></tr></thead><tbody>'
+      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+fmtDate(o.data_entrada)+'</td><td class="r">'+BRL(o.valor)+'</td></tr>').join('')
+      +'</tbody><tfoot><tr><td colspan="4">Total de entradas</td><td class="r">'+BRL(tot)+'</td></tr></tfoot></table>';
+    printDoc('Relatório de Entradas — '+periodo, body, tenant?.nome); };
+  const printFinalizados=()=>{ const rows=data.per.filter(o=>o.status==='finalizado'||o.status==='entregue').sort((a,b)=>(a.entregue_em||'').localeCompare(b.entregue_em||''));
+    const tot=rows.reduce((s,o)=>s+Number(o.valor||0),0);
+    const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span><span>Finalizados: <b>'+rows.length+'</b></span><span>Tempo médio: <b>'+(data.tempoMedio??'—')+' dias</b></span></div>'
+      +'<table><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrega</th><th class="r">Valor</th></tr></thead><tbody>'
+      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+(o.entregue_em?fmtDate(o.entregue_em.slice(0,10)):'—')+'</td><td class="r">'+BRL(o.valor)+'</td></tr>').join('')
+      +'</tbody><tfoot><tr><td colspan="4">Total finalizado</td><td class="r">'+BRL(tot)+'</td></tr></tfoot></table>';
+    printDoc('Relatório de Finalizados — '+periodo, body, tenant?.nome); };
+  const printFaturamento=()=>{ const inR=l=>{ const d=l.pago_em||l.vencimento||''; return d>=data.ini&&d<=data.fim; };
+    const rec=data.fin.filter(l=>l.tipo==='receita'&&l.pago&&inR(l)); const desp=data.fin.filter(l=>l.tipo==='despesa'&&l.pago&&inR(l));
+    const tr=rec.reduce((s,l)=>s+Number(l.valor||0),0), td=desp.reduce((s,l)=>s+Number(l.valor||0),0);
+    const osTot=data.per.reduce((s,o)=>s+Number(o.valor||0),0);
+    const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span></div>'
+      +'<table><tbody>'
+      +'<tr><td>Serviços registrados no período</td><td class="r">'+BRL(osTot)+'</td></tr>'
+      +'<tr><td>Receitas recebidas</td><td class="r">'+BRL(tr)+'</td></tr>'
+      +'<tr><td>Despesas pagas</td><td class="r">− '+BRL(td)+'</td></tr>'
+      +'</tbody><tfoot><tr><td>Saldo do período</td><td class="r">'+BRL(tr-td)+'</td></tr></tfoot></table>'
+      +(rec.length?('<h3 style="margin-top:18px">Receitas recebidas</h3><table><thead><tr><th>Descrição</th><th>Data</th><th class="r">Valor</th></tr></thead><tbody>'+rec.map(l=>'<tr><td>'+esc(l.descricao||'—')+'</td><td>'+fmtDate(l.pago_em||l.vencimento)+'</td><td class="r">'+BRL(l.valor)+'</td></tr>').join('')+'</tbody></table>'):'');
+    printDoc('Relatório de Faturamento — '+periodo, body, tenant?.nome); };
+  return html`<${Shell} title="Relatórios">
+    <div class="bar">
+      <div><label style=${{margin:'0 0 4px'}}>De</label><input type="date" value=${ini} onInput=${e=>setIni(e.target.value)}/></div>
+      <div><label style=${{margin:'0 0 4px'}}>Até</label><input type="date" value=${fim} onInput=${e=>setFim(e.target.value)}/></div>
+      <div style=${{alignSelf:'flex-end'}}><button class="btn pri" onClick=${load}>Aplicar</button></div>
+    </div>
+    ${!data? html`<div class="hint">Calculando…</div>`: html`<${Fragment}>
+      <div class="grid">
+        <div class="glass kpi" style=${{cursor:'default'}}><div class="n">${data.qtd}</div><div class="l">Serviços no período</div></div>
+        <div class="glass kpi ok" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(data.receita)}</div><div class="l">Valor no período</div></div>
+        <div class="glass kpi" style=${{cursor:'default'}}><div class="n">${data.tempoMedio??'—'}</div><div class="l">Tempo médio (dias)</div></div>
+        <div class="glass kpi" style=${{cursor:'default'}}><div class="n">${data.qtd?BRL(data.receita/data.qtd):BRL(0)}</div><div class="l">Ticket médio</div></div>
+      </div>
+      <div class="glass panel" style=${{marginTop:'16px'}}>
+        <h3>Gerenciador de relatórios</h3><p class="desc">Emita cada relatório individualmente — abre versão pronta para impressão / PDF.</p>
+        <div style=${{display:'flex',gap:'10px',flexWrap:'wrap'}}>
+          <button class="btn" onClick=${printEntradas}><${Ic} d=${I.print}/>Entradas do período</button>
+          <button class="btn" onClick=${printFinalizados}><${Ic} d=${I.print}/>Finalizados</button>
+          <button class="btn" onClick=${printFaturamento}><${Ic} d=${I.print}/>Faturamento</button>
+        </div>
+      </div>
+      <div class="row two">
+        <div class="glass panel"><h3>Serviços mais solicitados</h3><p class="desc">No período selecionado.</p>
+          ${data.topServ.length? html`<div class="stat-list">${data.topServ.map(([s,o])=>html`<div class="it" key=${s}><span>${s}</span><span><span class="muted" style=${{marginRight:'10px'}}>${BRL(o.v)}</span><span class="v">${o.c}×</span></span></div>`)}</div>`:html`<div class="muted">Sem dados.</div>`}
+        </div>
+        <div class="glass panel"><h3>Clientes mais frequentes</h3><p class="desc">Total histórico de serviços.</p>
+          ${data.topCli.length? html`<div class="stat-list">${data.topCli.map(([n,c])=>html`<div class="it" key=${n}><span>${n}</span><span class="v">${c}×</span></div>`)}</div>`:html`<div class="muted">Sem dados.</div>`}
+        </div>
+      </div>
+      <div class="glass panel" style=${{marginTop:'16px'}}><h3>Distribuição por status</h3>
+        ${data.porStatus.length? html`<div class="stat-list">${data.porStatus.map(([s,c])=>html`<div class="it" key=${s}><${Badge} status=${s}/><span class="v">${c}</span></div>`)}</div>`:html`<div class="muted">Sem dados.</div>`}
+      </div>
+    </${Fragment}>`}
+  </${Shell}>`;
+}
+
+/* ========== FISCAL (arquitetado, ativação futura) ========== */
+function Fiscal(){
+  const {settings}=useApp();
+  const f=(settings&&settings.fiscal)||{};
+  const portal=f.portal||'https://www.nfse.gov.br';
+  const [rows,setRows]=useState(null),[emit,setEmit]=useState(null);
+  const load=useCallback(async()=>{
+    const data=qd(await db.from('ordens').select('id,numero,valor,status,descricao,cliente_id,nfse_emitida,nfse_numero,nfse_emitida_em').in('status',['finalizado','entregue']).order('numero',{ascending:false}), 'as ordens para emissão');
+    const ids=[...new Set((data||[]).map(o=>o.cliente_id).filter(Boolean))];
+    let cmap={};
+    if(ids.length){ const cs=qd(await db.from('clientes').select('id,nome,cpf').in('id',ids), 'os dados das clientes'); (cs||[]).forEach(c=>{cmap[c.id]=c;}); }
+    setRows((data||[]).map(o=>({...o, cliente:cmap[o.cliente_id]||null})));
+  },[]);
+  useEffect(()=>{load();},[]);
+  if(rows===null) return html`<${Shell} title="Fiscal (NFS-e)"><div class="hint">Carregando…</div></${Shell}>`;
+  const pend=rows.filter(o=>!o.nfse_emitida), done=rows.filter(o=>o.nfse_emitida);
+  const totalPend=pend.reduce((a,o)=>a+Number(o.valor||0),0);
+  return html`<${Shell} title="Fiscal (NFS-e)">
+    <div class="notice" style=${{marginBottom:'16px'}}>
+      <b>NFS-e pelo Emissor Nacional — gratuito.</b> Como <b>${f.regime||'MEI'}</b>, a nota de serviço é emitida no
+      <b>Portal Nacional da NFS-e</b>, sem custo e sem gateway. O sistema prepara os dados de cada serviço e guarda o
+      número da nota para o seu controle.${f.iss_obs?html`<br/><span class="muted">${f.iss_obs}</span>`:''}
+    </div>
+    <div class="row two">
+      <div class="glass panel"><h3>Identidade fiscal</h3><p class="desc">Dados usados na emissão da nota de serviço.</p>
+        <div class="stat-list">
+          <div class="it"><span>CNPJ</span><span class="v">${settings?.cnpj||'—'}</span></div>
+          <div class="it"><span>Regime</span><span class="v">${f.regime||'MEI'}</span></div>
+          <div class="it"><span>Serviço · LC 116</span><span class="v">${f.item_lc116||'14.09'}</span></div>
+        </div>
+        ${f.descricao_servico?html`<p class="muted" style=${{marginTop:'8px',fontSize:'.82rem'}}>${f.descricao_servico}</p>`:''}
+        <a class="btn pri" style=${{marginTop:'12px',display:'inline-flex'}} href=${portal} target="_blank" rel="noopener"><${Ic} d=${I.file}/>Abrir Emissor Nacional</a>
+        <p class="muted" style=${{marginTop:'8px',fontSize:'.76rem'}}>Entre com sua conta <b>gov.br</b>. Há também o app <b>NFS-e Mobile</b> (Android/iOS).</p>
+      </div>
+      <div class="glass panel"><h3>Serviços a emitir</h3><p class="desc">OS finalizadas/entregues ainda sem NFS-e.</p>
+        <div class="stat-list"><div class="it"><span>Pendentes</span><span class="v">${pend.length}</span></div>
+          <div class="it"><span>Valor total</span><span class="v">${BRL(totalPend)}</span></div></div>
+        ${pend.length===0? html`<div class="muted" style=${{marginTop:'10px'}}>Nenhum serviço pendente de nota. ✓</div>`
+        : html`<div class="tblwrap" style=${{marginTop:'10px'}}><table class="tbl"><thead><tr><th>#</th><th>Serviço</th><th class="r">Valor</th><th></th></tr></thead>
+          <tbody>${pend.slice(0,10).map(o=>html`<tr key=${o.id}>
+            <td class="b">${o.numero}</td><td>${o.descricao||'—'}<br/><span class="muted" style=${{fontSize:'.72rem'}}>${o.cliente?.nome||'Consumidor'}</span></td>
+            <td class="r">${BRL(o.valor)}</td>
+            <td class="r"><button class="btn sm pri" onClick=${()=>setEmit(o)}>Emitir</button></td></tr>`)}</tbody></table></div>`}
+      </div>
+    </div>
+    ${done.length>0&&html`<div class="glass panel" style=${{marginTop:'16px'}}>
+      <h3>Notas emitidas</h3><p class="desc">Registro das NFS-e já emitidas no portal.</p>
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>NFS-e</th><th>OS</th><th>Serviço</th><th class="r">Valor</th><th>Emitida em</th></tr></thead>
+        <tbody>${done.slice(0,20).map(o=>html`<tr key=${o.id}><td class="b">${o.nfse_numero||'—'}</td><td>#${o.numero}</td><td>${o.descricao||'—'}</td><td class="r">${BRL(o.valor)}</td><td>${fmtDateTime(o.nfse_emitida_em)}</td></tr>`)}</tbody></table></div>
+    </div>`}
+    ${emit&&html`<${EmitirNfse} ordem=${emit} portal=${portal} onClose=${()=>setEmit(null)} onDone=${()=>{setEmit(null);load();}}/>`}
+  </${Shell}>`;
+}
+
+function EmitirNfse({ordem, portal, onClose, onDone}){
+  const [num,setNum]=useState(''),[busy,setBusy]=useState(false);
+  const disc=(ordem.descricao||'Serviço de costura')+' — Ref. OS #'+ordem.numero;
+  async function marcar(){
+    if(!num.trim()){ toast('Informe o número da NFS-e emitida.','err'); return; }
+    setBusy(true);
+    const {error}=await db.from('ordens').update({nfse_emitida:true, nfse_numero:num.trim(), nfse_emitida_em:new Date().toISOString()}).eq('id',ordem.id);
+    setBusy(false);
+    if(error){ toast('Erro ao registrar: '+error.message,'err'); return; }
+    toast('NFS-e registrada!','ok'); onDone();
+  }
+  function copiar(){ try{ navigator.clipboard.writeText(disc); toast('Discriminação copiada.','ok'); }catch(_){ toast('Copie manualmente.','err'); } }
+  return html`<${Modal} title=${'Emitir NFS-e — OS #'+ordem.numero} onClose=${onClose} footer=${html`<${Fragment}>
+    <a class="btn pri" href=${portal} target="_blank" rel="noopener">Abrir Emissor Nacional</a>
+    <button class="btn" disabled=${busy} onClick=${marcar}>${busy?'…':'Registrar nº da nota'}</button></${Fragment}>`}>
+    <p style=${{marginTop:0,color:'#5a525c',fontSize:'.9rem'}}>Emita a nota no <b>Portal Nacional</b> com os dados abaixo e depois registre o número aqui, para controle.</p>
+    <div class="stat-list">
+      <div class="it"><span>Tomador</span><span class="v">${ordem.cliente?.nome||'Consumidor não identificado'}</span></div>
+      ${ordem.cliente?.cpf?html`<div class="it"><span>CPF/CNPJ</span><span class="v">${ordem.cliente.cpf}</span></div>`:''}
+      <div class="it"><span>Valor do serviço</span><span class="v">${BRL(ordem.valor)}</span></div>
+    </div>
+    <label style=${{marginTop:'10px'}}>Discriminação do serviço</label>
+    <div class="field"><input type="text" readOnly value=${disc} onFocus=${e=>e.target.select()}/><button type="button" class="toggle" onClick=${copiar}>copiar</button></div>
+    <label style=${{marginTop:'10px'}}>Número da NFS-e (após emitir no portal)</label>
+    <input type="text" value=${num} onInput=${e=>setNum(e.target.value)} placeholder="ex.: 000123"/>
+  </${Modal}>`;
+}
+
+/* ========== CONFIG ========== */
+function ContaPanel({profile,role}){
+  const [nome,setNome]=useState(profile?.nome||'');
+  const [s1,setS1]=useState(''),[s2,setS2]=useState(''),[busy,setBusy]=useState(false),[busyP,setBusyP]=useState(false),[showP,setShowP]=useState(false);
+  async function saveNome(){ if(!nome.trim()){toast('Informe o nome.','err');return;} setBusy(true);
+    const {error}=await db.from('profiles').update({nome:nome.trim()}).eq('id',profile.id); setBusy(false);
+    if(error)toast('Erro: '+error.message,'err'); else toast('Perfil atualizado.','ok'); }
+  async function savePwd(){ if((s1||'').length<6){toast('A senha deve ter ao menos 6 caracteres.','err');return;}
+    if(s1!==s2){toast('As senhas não coincidem.','err');return;} setBusyP(true);
+    const {error}=await db.auth.updateUser({password:s1}); setBusyP(false);
+    if(error)toast('Erro: '+error.message,'err'); else {toast('Senha alterada com sucesso.','ok'); setS1('');setS2('');} }
+  return html`<div class="glass panel"><h3>Sua conta</h3><p class="desc">Gerencie seu nome e senha de acesso.</p>
+    <label>Nome</label><input value=${nome} onInput=${e=>setNome(e.target.value)}/>
+    <div style=${{marginTop:'8px'}}><button class="btn sm pri" disabled=${busy} onClick=${saveNome}>${busy?'…':'Salvar nome'}</button></div>
+    <div class="it" style=${{marginTop:'12px',paddingTop:'12px',borderTop:'1px solid var(--border)'}}><span class="muted">Papel</span><span class="v">${role}</span></div>
+    <label style=${{marginTop:'10px'}}>Nova senha</label>
+    <div class="field"><input type=${showP?'text':'password'} value=${s1} onInput=${e=>setS1(e.target.value)} placeholder="mín. 6 caracteres"/>
+      <button type="button" class="toggle" onClick=${()=>setShowP(v=>!v)}>${showP?'ocultar':'mostrar'}</button></div>
+    <label>Confirmar nova senha</label><input type=${showP?'text':'password'} value=${s2} onInput=${e=>setS2(e.target.value)}/>
+    <div style=${{marginTop:'10px',display:'flex',gap:'8px'}}>
+      <button class="btn sm" disabled=${busyP} onClick=${savePwd}>${busyP?'…':'Alterar senha'}</button>
+      <button class="btn sm ghost" onClick=${()=>db.auth.signOut()}>Sair da conta</button></div>
+  </div>`;
+}
+function AteliePanel({tenant,role}){
+  const canEdit = role==='owner'||role==='gestor';
+  const [nome,setNome]=useState(tenant?.nome||'');
+  const [st,setSt]=useState(null),[busy,setBusy]=useState(false);
+  useEffect(()=>{ (async()=>{ const data=qd(await db.from('tenant_settings').select('*').eq('tenant_id',tenant.id).maybeSingle(), 'os dados do ateliê'); setSt(data||{tenant_id:tenant.id}); })(); },[]);
+  const set=(k,v)=>setSt(x=>({...x,[k]:v}));
+  async function save(){ setBusy(true);
+    const r1=await db.from('tenants').update({nome:nome.trim()}).eq('id',tenant.id);
+    const r2=await db.from('tenant_settings').upsert({tenant_id:tenant.id,subtitulo:st.subtitulo||null,telefone:st.telefone||null,whatsapp:st.whatsapp||null,email:st.email||null,cnpj:st.cnpj||null});
+    setBusy(false);
+    if(r1.error||r2.error){ toast('Erro: '+((r1.error||r2.error).message),'err'); return; }
+    tenant.nome=nome.trim(); toast('Dados do ateliê salvos.','ok');
+  }
+  if(!st) return html`<div class="glass panel"><h3>Ateliê</h3><div class="hint">Carregando…</div></div>`;
+  return html`<div class="glass panel"><h3>Ateliê</h3><p class="desc">Informações do seu ateliê (aparecem no sistema e nas impressões).</p>
+    <label>Nome do ateliê</label><input value=${nome} disabled=${!canEdit} onInput=${e=>setNome(e.target.value)}/>
+    <label>Subtítulo</label><input value=${st.subtitulo||''} disabled=${!canEdit} onInput=${e=>set('subtitulo',e.target.value)} placeholder="Ex.: Ajustes, reformas e sob medida"/>
+    <div class="f2"><div><label>Telefone</label><input value=${st.telefone||''} disabled=${!canEdit} onInput=${e=>set('telefone',maskPhone(e.target.value))}/></div>
+      <div><label>WhatsApp</label><input value=${st.whatsapp||''} disabled=${!canEdit} onInput=${e=>set('whatsapp',maskPhone(e.target.value))}/></div></div>
+    <div class="f2"><div><label>E-mail</label><input value=${st.email||''} disabled=${!canEdit} onInput=${e=>set('email',e.target.value)}/></div>
+      <div><label>CNPJ (opcional)</label><input value=${st.cnpj||''} disabled=${!canEdit} onInput=${e=>set('cnpj',e.target.value)}/></div></div>
+    ${canEdit? html`<div style=${{marginTop:'10px'}}><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'Salvando…':'Salvar dados do ateliê'}</button></div>`
+      : html`<div class="notice" style=${{marginTop:'10px'}}>Somente a administradora pode editar estes dados.</div>`}
+  </div>`;
+}
+function PreferenciasPanel({tenant,role}){
+  const canEdit = role==='owner'||role==='gestor';
+  const [feat,setFeat]=useState(null),[busy,setBusy]=useState(false);
+  useEffect(()=>{ (async()=>{ const data=qd(await db.from('tenant_settings').select('features').eq('tenant_id',tenant.id).maybeSingle(), 'as preferências');
+    setFeat((data&&data.features)||{}); })(); },[]);
+  async function alternar(v){
+    if(!canEdit) return;
+    const novo={...(feat||{}), saudacao_diaria:v};
+    setFeat(novo); setBusy(true);
+    const {error}=await db.from('tenant_settings').update({features:novo}).eq('tenant_id',tenant.id);
+    setBusy(false);
+    if(error){ toast('Erro ao salvar: '+error.message,'err'); setFeat(f=>({...f,saudacao_diaria:!v})); return; }
+    toast(v?'Mensagem de boas-vindas ativada.':'Mensagem de boas-vindas desativada.','ok');
+  }
+  if(!feat) return html`<div class="glass panel"><h3>Preferências</h3><div class="hint">Carregando…</div></div>`;
+  const ligada = feat.saudacao_diaria!==false;
+  return html`<div class="glass panel"><h3>Preferências</h3><p class="desc">Pequenos ajustes de experiência do sistema.</p>
+    <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'12px',padding:'12px 0'}}>
+      <div>
+        <div class="b">Mensagem de boas-vindas</div>
+        <div class="muted" style=${{fontSize:'.84rem'}}>Exibe uma saudação no topo da HOME, uma vez por dia.</div>
+      </div>
+      <button type="button" disabled=${busy||!canEdit} onClick=${()=>alternar(!ligada)} aria-pressed=${ligada}
+        title=${ligada?'Desativar':'Ativar'}
+        style=${{position:'relative',width:'50px',height:'28px',borderRadius:'999px',border:'none',flex:'0 0 auto',
+          cursor:(busy||!canEdit)?'default':'pointer',opacity:(busy||!canEdit)?.6:1,
+          background:ligada?'var(--violet,#8e2cb0)':'#c9c2cb',transition:'background .2s'}}>
+        <span style=${{position:'absolute',top:'3px',left:ligada?'25px':'3px',width:'22px',height:'22px',borderRadius:'50%',background:'#fff',transition:'left .2s',boxShadow:'0 1px 3px rgba(0,0,0,.3)'}}></span>
+      </button>
+    </div>
+    ${!canEdit&&html`<div class="notice">Somente a administradora pode alterar as preferências.</div>`}
+  </div>`;
+}
+function Config(){
+  const {tenant,role,profile}=useApp();
+  return html`<${Shell} title="Configurações">
+    <div class="row two">
+      <${AteliePanel} tenant=${tenant} role=${role}/>
+      <${ContaPanel} profile=${profile} role=${role}/>
+    </div>
+    <div style=${{marginTop:'16px'}}><${PreferenciasPanel} tenant=${tenant} role=${role}/></div>
+  </${Shell}>`;
+}
+
+/* ========== RECUPERAÇÃO DE RECEITA ========== */
+function Recuperacao(){
+  const {tenant}=useApp();
+  const [d,setD]=useState(null);
+  useEffect(()=>{ (async()=>{
+    const [rCli,rOs]=await Promise.all([
+      db.from('clientes').select('id,nome,whatsapp'),
+      db.from('ordens').select('cliente_id,valor,status,data_entrada'),
+    ]);
+    const cli=qd(rCli,'as clientes')||[], os=qd(rOs,'as ordens')||[];
+    const by={}; (os||[]).forEach(o=>{ if(!o.cliente_id)return; const b=by[o.cliente_id]||(by[o.cliente_id]={last:null,total:0,n:0}); b.n++; b.total+=Number(o.valor||0); if(!b.last||o.data_entrada>b.last)b.last=o.data_entrada; });
+    const hoje=todayISO();
+    const inativos=(cli||[]).map(c=>{ const b=by[c.id]; return {...c, dias:b&&b.last?daysBetween(b.last,hoje):null, total:b?b.total:0, n:b?b.n:0}; })
+      .filter(c=>c.n>0 && c.dias!=null && c.dias>=60).sort((a,b)=>b.dias-a.dias);
+    setD({inativos, orcamentos:(os||[]).filter(o=>o.status==='orcamento'), cancel:(os||[]).filter(o=>o.status==='cancelado')});
+  })(); },[]);
+  const msg=c=>encodeURIComponent('Olá '+((c.nome||'').split(' ')[0])+'! Sentimos sua falta no ateliê. Faz um tempinho que você não aparece — tem alguma peça esperando um ajuste? Estou à disposição. — '+(tenant?.nome||''));
+  return html`<${Shell} title="Recuperação de receita">
+    <div class="hint">Reative clientes parados e resgate orçamentos que não fecharam — receita que já estava ao seu alcance.</div>
+    ${!d? html`<div class="hint">Carregando…</div>`: html`<${Fragment}>
+      <div class="grid">
+        <div class="glass kpi" style=${{cursor:'default'}}><div class="n">${d.inativos.length}</div><div class="l">Inativos (60+ dias)</div></div>
+        <button class="kpi" onClick=${()=>go('/ordens?f=orcamento')}><div class="n">${d.orcamentos.length}</div><div class="l">Orçamentos em aberto</div></button>
+        <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(d.inativos.reduce((a,c)=>a+c.total,0))}</div><div class="l">Já gasto pelos inativos</div></div>
+        <button class="kpi" onClick=${()=>go('/ordens?f=cancelado')}><div class="n">${d.cancel.length}</div><div class="l">OS canceladas</div></button>
+      </div>
+      <div class="glass panel" style=${{marginTop:'18px'}}>
+        <h3>Clientes para reconquistar</h3><p class="desc">Sem voltar há 60 dias ou mais — comece pelos que mais gastaram.</p>
+        ${d.inativos.length===0? html`<${Empty} icon=${I.refresh} title="Ninguém parado">Seus clientes estão ativos.</${Empty}>`
+          : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Sem voltar</th><th class="r">Serviços</th><th class="r">Total gasto</th><th class="r">Ação</th></tr></thead>
+            <tbody>${d.inativos.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${c.dias} dias</td><td class="r">${c.n}</td><td class="r b">${BRL(c.total)}</td>
+              <td class="r">${c.whatsapp? html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Reconquistar</a>`: html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}</td></tr>`)}</tbody></table></div>`}
+      </div>
+    </${Fragment}>`}
+  </${Shell}>`;
+}
+
+/* ========== ALAVANCAGEM ========== */
+function Alavancagem(){
+  const {tenant}=useApp();
+  const [clientes]=useRows('clientes',{order:'nome',asc:true});
+  const [servicos]=useRows('servicos',{order:'nome',asc:true});
+  const [counts,setCounts]=useState({});
+  const [seg,setSeg]=useState('todos'),[servId,setServId]=useState(''),[desc,setDesc]=useState(15);
+  useEffect(()=>{ (async()=>{ const os=qd(await db.from('ordens').select('cliente_id'), 'as ordens das clientes'); const m={}; (os||[]).forEach(o=>{ if(o.cliente_id) m[o.cliente_id]=(m[o.cliente_id]||0)+1; }); setCounts(m); })(); },[]);
+  const serv=(servicos||[]).find(s=>s.id===servId);
+  const preco=serv?Number(serv.preco_base):0, precoDesc=preco*(1-Number(desc||0)/100);
+  const alvo=useMemo(()=>{ let list=(clientes||[]).filter(c=>c.whatsapp);
+    if(seg==='aniversariantes') list=list.filter(bdayThisMonth);
+    if(seg==='frequentes') list=list.filter(c=>(counts[c.id]||0)>=3);
+    if(seg==='novos') list=list.filter(c=>(counts[c.id]||0)<=1);
+    return list; },[clientes,seg,counts]);
+  const msg=c=>encodeURIComponent('Olá '+((c.nome||'').split(' ')[0])+'! Oferta especial pra você'
+    +(serv? ' em '+serv.nome+': de '+BRL(preco)+' por '+BRL(precoDesc)+' ('+desc+'% off)':' aqui no ateliê')+'. Vamos agendar? — '+(tenant?.nome||''));
+  return html`<${Shell} title="Alavancagem">
+    <div class="hint">Gere mais receita da base atual: escolha um público, um serviço e um desconto, e dispare a oferta por WhatsApp.</div>
+    <div class="glass panel">
+      <label>Público-alvo</label>
+      <div class="seg" style=${{marginBottom:'10px'}}>
+        ${[['todos','Todos'],['aniversariantes','Aniversariantes do mês'],['frequentes','Frequentes (3+)'],['novos','Novos (1 visita)']].map(([k,l])=>html`<button key=${k} class=${'chip'+(seg===k?' on':'')} onClick=${()=>setSeg(k)}>${l}</button>`)}
+      </div>
+      <div class="f2">
+        <div><label>Serviço em oferta</label><select value=${servId} onInput=${e=>setServId(e.target.value)}><option value="">— Oferta genérica —</option>${(servicos||[]).map(s=>html`<option key=${s.id} value=${s.id}>${s.nome} · ${BRL(s.preco_base)}</option>`)}</select></div>
+        <div><label>Desconto (%)</label><input type="number" min="0" max="90" value=${desc} onInput=${e=>setDesc(e.target.value)}/></div>
+      </div>
+      ${serv&&html`<div class="notice" style=${{marginTop:'12px'}}>${serv.nome}: de <b>${BRL(preco)}</b> por <b>${BRL(precoDesc)}</b> (${desc}% off).</div>`}
+    </div>
+    <div class="glass panel" style=${{marginTop:'16px'}}>
+      <h3>Clientes no público (${alvo.length})</h3><p class="desc">Cada disparo abre o WhatsApp com a mensagem pronta.</p>
+      ${alvo.length===0? html`<${Empty} icon=${I.rocket} title="Nenhum cliente">Ajuste o público ou cadastre WhatsApp nos clientes.</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Serviços feitos</th><th class="r">Enviar oferta</th></tr></thead>
+          <tbody>${alvo.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${counts[c.id]||0}</td>
+            <td class="r"><a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Oferecer</a></td></tr>`)}</tbody></table></div>`}
+    </div>
+  </${Shell}>`;
+}
+
+/* ========== NOVIDADES / CONTROLE DE VERSÃO ========== */
+function Novidades(){
+  const {isAdmin}=useApp();
+  const [rows,setRows]=useState(null);
+  useEffect(()=>{ (async()=>{
+    const pub=(typeof db.schema==='function')?db.schema('public'):db;
+    const data=qd(await pub.from('plataforma_versoes').select('*').eq('sistema','atelie').order('ordem',{ascending:true}), 'as novidades');
+    setRows(data||[]);
+  })(); },[]);
+  const tipoMeta={novidade:'Novidade',melhoria:'Melhoria',correcao:'Correção'};
+  const lancados=(rows||[]).filter(r=>r.status==='lancado');
+  const roadmap=(rows||[]).filter(r=>r.status!=='lancado');
+  return html`<${Shell} title="Novidades">
+    <div class="hint">O que há de novo no Ateliê Manager — melhorias entregues para você.</div>
+    <div class="glass panel">
+      <h3>Lançado</h3><p class="desc">Já disponível no seu sistema.</p>
+      ${!rows? html`<div class="hint">Carregando…</div>`
+        : lancados.length===0? html`<${Empty} icon=${I.spark} title="Sem novidades ainda">Em breve, melhorias por aqui.</${Empty}>`
+        : html`<div class="stat-list">${lancados.map(r=>html`<div class="it" key=${r.id} style=${{alignItems:'flex-start',flexDirection:'column',gap:'3px',padding:'11px 4px'}}>
+            <div style=${{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}>
+              <span class="tag">${tipoMeta[r.tipo]||r.tipo}</span><b>${r.titulo}</b>
+              ${r.versao?html`<span class="muted" style=${{fontSize:'.72rem'}}>v${r.versao}</span>`:''}</div>
+            ${r.descricao&&html`<span class="muted" style=${{fontSize:'.86rem'}}>${r.descricao}</span>`}
+          </div>`)}</div>`}
+    </div>
+    ${isAdmin&&roadmap.length>0&&html`<div class="glass panel" style=${{marginTop:'16px'}}>
+      <h3>Roadmap · interno</h3><p class="desc">Planejado / em andamento — visível só para você (admin).</p>
+      <div class="stat-list">${roadmap.map(r=>html`<div class="it" key=${r.id}>
+        <span><b>${r.titulo}</b>${r.descricao?html` <span class="muted" style=${{fontSize:'.8rem'}}>— ${r.descricao}</span>`:''}</span>
+        <span class="badge" style=${r.status==='em_andamento'?{color:'#b98325',background:'rgba(185,131,37,.14)'}:{color:'#8a7e86',background:'rgba(0,0,0,.05)'}}>${r.status==='em_andamento'?'Em andamento':'Planejado'}</span>
+      </div>`)}</div>
+    </div>`}
+    <div class="hint" style=${{marginTop:'14px'}}>Versão atual: <b>v${APP_VERSION}</b></div>
+  </${Shell}>`;
+}
+
+/* ========== ROUTER ========== */
+function Router(){
+  const h=useHash(); const [path]=h.split('?'); const seg=path.split('/').filter(Boolean);
+  if(seg[0]==='clientes'&&seg[1]) return html`<${ClienteDetail} id=${seg[1]}/>`;
+  if(seg[0]==='clientes') return html`<${Clientes}/>`;
+  if(seg[0]==='ordens'&&seg[1]) return html`<${OrdemDetail} id=${seg[1]}/>`;
+  if(seg[0]==='ordens') return html`<${Ordens}/>`;
+  if(seg[0]==='servicos') return html`<${Servicos}/>`;
+  if(seg[0]==='estoque') return html`<${Estoque}/>`;
+  if(seg[0]==='financeiro') return html`<${Financeiro}/>`;
+  if(seg[0]==='relatorios') return html`<${Relatorios}/>`;
+  if(seg[0]==='fiscal') return html`<${Fiscal}/>`;
+  if(seg[0]==='recuperacao') return html`<${Recuperacao}/>`;
+  if(seg[0]==='alavancagem') return html`<${Alavancagem}/>`;
+  if(seg[0]==='novidades') return html`<${Novidades}/>`;
+  if(seg[0]==='config') return html`<${Config}/>`;
+  if(seg[0]==='master') return html`<${Master}/>`;
+  return html`<${Dashboard}/>`;
+}
+
+/* ========== BILLING GATE (assinatura Stripe · reusa fin_assinaturas/criar-checkout) ========== */
+function BillingGate({user}){
+  const [st,setSt]=useState(null);
+  const load=useCallback(async()=>{
+    try{
+      const pub=(typeof db.schema==='function')?db.schema('public'):db;
+      const [perf,ass,cfg]=await Promise.all([
+        pub.from('fin_perfis').select('is_admin').maybeSingle(),
+        pub.from('fin_assinaturas').select('status,current_period_end').maybeSingle(),
+        pub.from('config').select('valor').eq('chave','atelie_billing').maybeSingle(),
+      ]);
+      const admin=!!(perf.data&&perf.data.is_admin);
+      const status=(ass.data&&ass.data.status)||'none';
+      const active=status==='active'||status==='trialing';
+      const pastDue=status==='past_due';
+      const billing=(cfg.data&&cfg.data.valor)||{};
+      const GRACE=Number(billing.grace_days!=null?billing.grace_days:45);
+      const created=(user&&user.created_at)?new Date(user.created_at):null;
+      const graceLeft=created?Math.ceil((created.getTime()+GRACE*86400000-Date.now())/86400000):null;
+      const graceValid=GRACE>0&&graceLeft!=null&&graceLeft>0;
+      setSt({admin,status,active,pastDue,graceLeft,graceValid,
+        blocked:!admin&&!active&&!pastDue&&!graceValid,
+        priceLabel:billing.preco_label||'Plano mensal', priceId:billing.stripe_price_id||null, coupon:billing.coupon||null});
+    }catch(_){ setSt({admin:false,active:false,pastDue:false,graceValid:true,blocked:false}); } // falha aberta: nunca bloqueia
+  },[user]);
+  useEffect(()=>{ load(); },[user]);
+  useEffect(()=>{
+    const q=location.search||''; if(q.indexOf('assinatura=')<0) return;
+    const ok=/assinatura=ok/.test(q);
+    toast(ok?'Pagamento recebido! Ativando seu acesso…':'Checkout cancelado. Você pode assinar quando quiser.', ok?'ok':'');
+    try{ history.replaceState(null,'',location.origin+location.pathname+location.hash); }catch(_){}
+    if(ok){ [1500,4000,8000].forEach(ms=>setTimeout(load,ms)); }
+  },[]);
+  async function assinar(){
+    const { data:{ session } }=await db.auth.getSession();
+    if(!session){ toast('Sua sessão expirou. Entre novamente para assinar.','err'); return; }
+    const back=location.origin+location.pathname;
+    try{
+      const r=await fetch(SUPABASE_URL+'/functions/v1/criar-checkout',{ method:'POST',
+        headers:{ 'Content-Type':'application/json','apikey':SUPABASE_ANON,'Authorization':'Bearer '+session.access_token },
+        body: JSON.stringify({ success_url:back+'?assinatura=ok', cancel_url:back+'?assinatura=cancelada', price_id:(st&&st.priceId)||undefined, coupon:(st&&st.coupon)||undefined }) });
+      const j=await r.json().catch(()=>({}));
+      if(j&&j.url) location.href=j.url; else toast('Não foi possível abrir o checkout'+(j&&j.error?': '+j.error:'.'),'err');
+    }catch(_){ toast('Falha ao iniciar assinatura. Tente novamente.','err'); }
+  }
+  if(!st) return null;
+  const showBanner=!st.admin&&!st.active&&(st.pastDue||(st.graceValid&&!st.blocked));
+  const lock=html`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+  return html`<${Fragment}>
+    ${showBanner&&html`<div class=${'gate-bar '+(st.pastDue?'':'info')}>
+      <span class="gd"></span>
+      <span>${st.pastDue?'Pagamento pendente — regularize para manter o acesso.':'Ative sua assinatura para manter o acesso completo ao sistema.'}</span>
+      <button class="gb" onClick=${assinar}>${st.pastDue?'Regularizar':'Assinar'}</button>
+    </div>`}
+    ${st.blocked&&html`<div class="gate-ov">
+      <div class="gate-card">
+        <div class="gate-ring">${lock}</div>
+        <div class="gate-price">${st.priceLabel}</div>
+        <h3>Assine para acessar</h3>
+        <p>Seu acesso ao Ateliê Manager está pausado. Reative em segundos — seus dados continuam salvos e voltam exatamente como estavam.</p>
+        <button class="gate-btn" onClick=${assinar}>Assinar agora</button>
+        <button class="gate-exit" onClick=${()=>db.auth.signOut()}>Sair da conta</button>
+      </div>
+    </div>`}
+  </${Fragment}>`;
+}
+
+/* ========== PRIMEIRO ACESSO (sugestão de trocar senha, 1x) ========== */
+function FirstAccessModal({onClose}){
+  const {profile}=useApp();
+  const [s1,setS1]=useState(''),[s2,setS2]=useState(''),[show,setShow]=useState(false),[busy,setBusy]=useState(false);
+  async function done(clearOnly){
+    if(!clearOnly){
+      if((s1||'').length<6){ toast('A senha deve ter ao menos 6 caracteres.','err'); return; }
+      if(s1!==s2){ toast('As senhas não coincidem.','err'); return; }
+      setBusy(true);
+      const {error}=await db.auth.updateUser({password:s1});
+      if(error){ setBusy(false); toast('Erro: '+error.message,'err'); return; }
+    }
+    try{ await db.from('profiles').update({trocar_senha:false}).eq('id',profile.id); }catch(_){}
+    setBusy(false); if(!clearOnly) toast('Senha atualizada. Bem-vinda!','ok'); onClose();
+  }
+  return html`<${Modal} title="Bem-vinda ao seu sistema!" onClose=${()=>done(true)} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${()=>done(true)}>Fazer depois</button>
+    <button class="btn pri" disabled=${busy} onClick=${()=>done(false)}>${busy?'Salvando…':'Salvar nova senha'}</button></${Fragment}>`}>
+    <p style=${{marginTop:0,color:'#5a525c',fontSize:'.92rem'}}>Seu sistema está pronto e no seu nome. Para começar com segurança, crie uma <b>nova senha</b> — só sua.</p>
+    <label>Nova senha</label>
+    <div class="field"><input type=${show?'text':'password'} value=${s1} onInput=${e=>setS1(e.target.value)} placeholder="mín. 6 caracteres"/>
+      <button type="button" class="toggle" onClick=${()=>setShow(v=>!v)}>${show?'ocultar':'mostrar'}</button></div>
+    <label>Confirmar nova senha</label><input type=${show?'text':'password'} value=${s2} onInput=${e=>setS2(e.target.value)}/>
+  </${Modal}>`;
+}
+
+/* ========== ATIVAÇÃO (primeiro acesso pós-pagamento) ========== */
+function getQ(name){ try{ return new URLSearchParams(location.search).get(name); }catch(_){ return null; } }
+function Ativar(){
+  const token=getQ('a')||'';
+  const [usuario,setUsuario]=useState(''),[s1,setS1]=useState(''),[s2,setS2]=useState('');
+  const [show,setShow]=useState(false),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[okMsg,setOkMsg]=useState('');
+  async function submit(e){ e.preventDefault(); setErr('');
+    if(!token){ setErr('Link de ativação inválido ou incompleto.'); return; }
+    const u=usuario.trim();
+    if(u.length<3){ setErr('Escolha um usuário com ao menos 3 caracteres.'); return; }
+    if(!/^[a-zA-Z0-9._-]+$/.test(u)){ setErr('No usuário, use apenas letras, números, ponto, hífen ou sublinhado.'); return; }
+    if(s1.length<6){ setErr('A senha deve ter ao menos 6 caracteres.'); return; }
+    if(s1!==s2){ setErr('As senhas não coincidem.'); return; }
+    setBusy(true);
+    try{
+      const r=await fetch(SUPABASE_URL+'/functions/v1/ativar-conta',{ method:'POST',
+        headers:{ 'Content-Type':'application/json','apikey':SUPABASE_ANON,'Authorization':'Bearer '+SUPABASE_ANON },
+        body: JSON.stringify({ token, username:u, senha:s1 }) });
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok || !j.ok){ setBusy(false); setErr(j.error||'Não foi possível ativar sua conta.'); return; }
+      setOkMsg('Conta criada! Entrando…');
+      const { error }=await db.auth.signInWithPassword({ email:j.email, password:s1 });
+      if(error){ setBusy(false); setErr('Conta criada. Use seu novo usuário e senha para entrar.'); setTimeout(()=>{ location.href=location.origin+location.pathname+'#/'; },1600); return; }
+      try{ history.replaceState(null,'',location.origin+location.pathname+'#/'); }catch(_){}
+      location.hash='/';
+    }catch(_){ setBusy(false); setErr('Falha na ativação. Tente novamente.'); }
+  }
+  return html`<${Fragment}><${LivingBg}/><div class="center"><div class="glass card">
+    <div style=${{display:'grid',placeItems:'center',marginBottom:'10px'}}><${BrandLogo} size=${110}/></div>
+    <h1 class="title">Ative seu acesso</h1>
+    <div class="sub">Crie seu usuário e senha para entrar no seu Ateliê Manager.</div>
+    <form onSubmit=${submit}>
+      ${err&&html`<div class="err">${err}</div>`}
+      ${okMsg&&html`<div style=${{background:'rgba(63,125,82,.12)',color:'#3f7d52',padding:'8px 10px',borderRadius:'8px',fontSize:'.85rem',marginBottom:'8px'}}>${okMsg}</div>`}
+      <label>Nome de usuário</label>
+      <input type="text" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ex.: costureirasalvador" value=${usuario} onInput=${e=>setUsuario(e.target.value)} required/>
+      <label>Senha</label>
+      <div class="field"><input type=${show?'text':'password'} placeholder="mín. 6 caracteres" value=${s1} onInput=${e=>setS1(e.target.value)} required/>
+        <button type="button" class="toggle" onClick=${()=>setShow(v=>!v)}>${show?'ocultar':'mostrar'}</button></div>
+      <label>Confirmar senha</label>
+      <input type=${show?'text':'password'} value=${s2} onInput=${e=>setS2(e.target.value)} required/>
+      <button class="primary" disabled=${busy}>${busy?'Ativando…':'Ativar e entrar'}</button>
+    </form>
+    <div class="foot"><${ByVizio} dark=${true}/></div>
+  </div></div></${Fragment}>`;
+}
+
+/* ========== MASTER · gerar link de ativação (admin) ========== */
+function Master(){
+  const {isAdmin}=useApp();
+  const [email,setEmail]=useState(''),[nome,setNome]=useState(''),[dias,setDias]=useState('7');
+  const [link,setLink]=useState(''),[err,setErr]=useState(''),[busy,setBusy]=useState(false);
+  async function gerar(e){ e.preventDefault(); setErr(''); setLink('');
+    const em=email.trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ setErr('Informe um e-mail válido.'); return; }
+    const { data:{ session } }=await db.auth.getSession();
+    if(!session){ setErr('Sessão expirada. Entre novamente.'); return; }
+    setBusy(true);
+    try{
+      const r=await fetch(SUPABASE_URL+'/functions/v1/gerar-ativacao',{ method:'POST',
+        headers:{ 'Content-Type':'application/json','apikey':SUPABASE_ANON,'Authorization':'Bearer '+session.access_token },
+        body: JSON.stringify({ email:em, nome:nome.trim()||undefined, dias:Number(dias)||7,
+          instancia:nome.trim()?('Ateliê Manager — '+nome.trim()):undefined }) });
+      const j=await r.json().catch(()=>({}));
+      setBusy(false);
+      if(!r.ok || !j.url){ setErr(j.error||'Não foi possível gerar o link.'); return; }
+      setLink(j.url);
+    }catch(_){ setBusy(false); setErr('Falha ao gerar o link. Tente novamente.'); }
+  }
+  function copiar(){ try{ navigator.clipboard.writeText(link); toast('Link copiado!','ok'); }catch(_){ toast('Copie manualmente o link.','err'); } }
+  return html`<${Shell}>
+    <div style=${{marginBottom:'14px'}}><h1 class="h1">Ativação de cliente</h1>
+      <p class="muted">Gere o link de primeiro acesso <b>depois</b> de confirmar o pagamento. O link cria a conta já ativa; a cliente define usuário e senha.</p></div>
+    ${!isAdmin?html`<div class="glass card"><h3>Acesso restrito</h3><p class="muted">Esta área é exclusiva do administrador da plataforma.</p></div>`
+    :html`<div class="glass card" style=${{maxWidth:'560px'}}>
+      <form onSubmit=${gerar}>
+        ${err&&html`<div class="err">${err}</div>`}
+        <label>E-mail da cliente (o mesmo do pagamento)</label>
+        <input type="email" autocapitalize="none" autocorrect="off" spellcheck="false" value=${email} onInput=${e=>setEmail(e.target.value)} placeholder="cliente@email.com" required/>
+        <label>Nome (opcional)</label>
+        <input type="text" value=${nome} onInput=${e=>setNome(e.target.value)} placeholder="Aimée"/>
+        <label>Validade do link (dias)</label>
+        <input type="number" min="1" max="30" value=${dias} onInput=${e=>setDias(e.target.value)}/>
+        <button class="primary" disabled=${busy}>${busy?'Gerando…':'Gerar link de ativação'}</button>
+      </form>
+      ${link&&html`<div style=${{marginTop:'16px'}}>
+        <label>Link para enviar à cliente</label>
+        <div class="field"><input type="text" readOnly value=${link} onFocus=${e=>e.target.select()}/>
+          <button type="button" class="toggle" onClick=${copiar}>copiar</button></div>
+        <p class="muted" style=${{fontSize:'.8rem'}}>Envie por WhatsApp ou e-mail. Ao abrir, ela cria usuário e senha e entra já com acesso liberado.</p>
+      </div>`}
+    </div>`}
+    ${isAdmin&&html`<${MonitorAcessos}/>`}
+  </${Shell}>`;
+}
+
+/* ========== MONITORAMENTO DE ACESSO (exclusivo do admin master) ========== */
+function MonitorAcessos(){
+  const [rows,setRows]=useState(null),[err,setErr]=useState('');
+  const carregar=useCallback(async()=>{
+    const pub=(typeof db.schema==='function')?db.schema('public'):db;
+    const {data,error}=await pub.rpc('admin_monitor_acessos');
+    if(error){ setErr(error.message); setRows([]); return; }
+    setErr(''); setRows(data||[]);
+  },[]);
+  useEffect(()=>{carregar();},[]);
+  const quando=x=>{ if(!x) return null; const d=new Date(String(x).replace(' ','T').replace(/([+-]\d{2})$/,'$1:00')); return isNaN(d)?null:d; };
+  const fmt=x=>{ const d=quando(x); return d? d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'; };
+  const haQuanto=x=>{ const d=quando(x); if(!d) return 'nunca acessou';
+    const min=Math.floor((Date.now()-d.getTime())/60000);
+    if(min<1) return 'agora'; if(min<60) return 'há '+min+' min';
+    const h=Math.floor(min/60); if(h<24) return 'há '+h+'h';
+    const dias=Math.floor(h/24); return 'há '+dias+(dias===1?' dia':' dias'); };
+  return html`<div class="glass panel" style=${{marginTop:'18px'}}>
+    <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+      <div><h3>Monitoramento de acesso</h3><p class="desc">Quem entrou, quando e há quanto tempo. Visível apenas para você.</p></div>
+      <button class="btn sm" onClick=${carregar}>Atualizar</button>
+    </div>
+    ${err&&html`<div class="err">${err}</div>`}
+    ${rows===null? html`<div class="hint">Carregando…</div>`
+    : rows.length===0? html`<div class="muted" style=${{fontSize:'.85rem'}}>Nenhum usuário.</div>`
+    : html`<div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Usuário</th><th>Ateliê</th><th>Último acesso</th><th class="r">Sessões</th><th class="r">Acessos</th><th>Conta criada</th></tr></thead>
+        <tbody>${rows.map(r=>{ const nunca=!r.ultimo_login; return html`<tr key=${r.user_id}>
+          <td><div class="b">${r.nome||'—'}</div><div class="muted" style=${{fontSize:'.74rem'}}>${r.email}${r.papel?' · '+r.papel:''}${r.ativo===false?' · inativo':''}</div></td>
+          <td>${r.atelie||'—'}</td>
+          <td><div class=${nunca?'':'b'} style=${nunca?{color:'#b3452f',fontWeight:600}:null}>${haQuanto(r.ultimo_login)}</div>
+              <div class="muted" style=${{fontSize:'.74rem'}}>${fmt(r.ultimo_login)}</div></td>
+          <td class="r">${Number(r.sessoes_ativas)||0}</td>
+          <td class="r">${Number(r.acessos_registrados)||0}</td>
+          <td class="muted" style=${{fontSize:'.8rem'}}>${fmt(r.conta_criada)}</td>
+        </tr>`; })}</tbody>
+      </table></div>`}
+    <p class="muted" style=${{fontSize:'.76rem',marginTop:'10px'}}>“Acessos” conta as aberturas do sistema registradas a partir desta versão. “Sessões” são as sessões ativas agora.</p>
+  </div>`;
+}
+
+/* ========== NOVIDADE (aviso de nova versão liberada) ========== */
+function NovidadeModal({onClose}){
+  const {profile}=useApp();
+  const [items,setItems]=useState(null);
+  useEffect(()=>{ (async()=>{
+    try{
+      const pub=(typeof db.schema==='function')?db.schema('public'):db;
+      const {data}=await pub.from('plataforma_versoes').select('titulo,descricao,tipo,versao,lancado_em,data,instrucoes')
+        .eq('sistema','atelie').eq('status','lancado').not('lancado_em','is',null).order('lancado_em',{ascending:false});
+      const vistoEm=profile&&profile.novidades_vistas_em;
+      if(!vistoEm){ try{ await db.from('profiles').update({novidades_vistas_em:new Date().toISOString()}).eq('id',profile.id); }catch(_){}
+        onClose(); return; }
+      const novos=(data||[]).filter(r=>r.lancado_em&&new Date(r.lancado_em)>new Date(vistoEm)).slice(0,4);
+      if(novos.length===0){ onClose(); return; }
+      setItems(novos);
+    }catch(_){ onClose(); }
+  })(); },[]);
+  async function fechar(ir){ try{ await db.from('profiles').update({novidades_vistas_em:new Date().toISOString()}).eq('id',profile.id); }catch(_){}
+    onClose(); if(ir) go('/novidades'); }
+  if(!items||items.length===0) return null;
+  const tag={novidade:'Novidade',melhoria:'Melhoria',correcao:'Correção'};
+  const tagBg={novidade:'var(--violet,#8e2cb0)',melhoria:'#2f8f8f',correcao:'#3f7d52'};
+  const topo=items[0];
+  const dataFmt=topo.data?fmtDate(topo.data):(topo.lancado_em?fmtDateTime(topo.lancado_em):'');
+  const instrucoes=items.filter(r=>r.instrucoes&&String(r.instrucoes).trim());
+  return html`<${Modal} wide=${true} onClose=${()=>fechar(false)} footer=${html`<${Fragment}>
+    <button class="btn" onClick=${()=>fechar(true)}>Ver todas as novidades</button>
+    <button class="btn pri" onClick=${()=>fechar(false)}>Entendi, vamos lá! ✨</button></${Fragment}>`}>
+    <div style=${{margin:'-4px -4px 4px',padding:'20px 22px',borderRadius:'16px',color:'#fff',background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 10px 30px -12px rgba(0,0,0,.35)'}}>
+      <div style=${{fontSize:'1.7rem',lineHeight:1}}>✨</div>
+      <div class="serif" style=${{fontSize:'1.5rem',fontWeight:700,marginTop:'8px'}}>Seu sistema acaba de melhorar!</div>
+      <div style=${{opacity:.92,marginTop:'6px',display:'flex',gap:'10px',flexWrap:'wrap',alignItems:'center',fontSize:'.9rem'}}>
+        ${topo.versao&&html`<span style=${{background:'rgba(255,255,255,.22)',padding:'2px 10px',borderRadius:'999px',fontWeight:600}}>Versão ${topo.versao}</span>`}
+        ${dataFmt&&html`<span style=${{opacity:.9}}>${dataFmt}</span>`}
+      </div>
+    </div>
+    <p style=${{margin:'14px 4px 8px',color:'var(--muted,#5a525c)'}}>Preparamos com carinho estas melhorias pra você 💜</p>
+    <div style=${{display:'grid',gap:'10px'}}>${items.map((r,i)=>html`<div key=${i} style=${{background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'12px',padding:'12px 14px'}}>
+      <div style=${{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}>
+        <span style=${{fontSize:'.68rem',fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:'#fff',background:tagBg[r.tipo]||'#8a7e86',padding:'2px 8px',borderRadius:'999px'}}>${tag[r.tipo]||r.tipo}</span>
+        <b>${r.titulo}</b>${r.versao&&r.versao!==topo.versao?html`<span class="muted" style=${{fontSize:'.72rem'}}>v${r.versao}</span>`:''}
+      </div>
+      ${r.descricao&&html`<div style=${{marginTop:'6px',fontSize:'.9rem',color:'var(--ink,#3a343c)',lineHeight:1.45}}>${r.descricao}</div>`}
+    </div>`)}</div>
+    ${instrucoes.length>0&&html`<div style=${{marginTop:'14px',borderRadius:'12px',padding:'14px 16px',background:'color-mix(in srgb,var(--violet,#8e2cb0) 8%,transparent)',border:'1px solid color-mix(in srgb,var(--violet,#8e2cb0) 25%,transparent)'}}>
+      <div style=${{fontWeight:700,display:'flex',alignItems:'center',gap:'6px',marginBottom:'6px'}}>💡 Como usar</div>
+      ${instrucoes.map((r,i)=>html`<div key=${i} style=${{fontSize:'.9rem',lineHeight:1.5,marginTop:i?'8px':0,whiteSpace:'pre-wrap'}}>${instrucoes.length>1?html`<b>${r.titulo}: </b>`:''}${r.instrucoes}</div>`)}
+    </div>`}
+  </${Modal}>`;
+}
+
+/* ========== ROOT ========== */
+function App(){
+  const [session,setSession]=useState(undefined);
+  const [ctx,setCtx]=useState(null);
+  const [firstDone,setFirstDone]=useState(false);
+  const [novidDone,setNovidDone]=useState(false);
+  const [recovery,setRecovery]=useState(()=>/type=recovery/.test(location.hash||''));
+  useEffect(()=>{
+    db.auth.getSession().then(({data})=>setSession(data.session));
+    const { data:sub }=db.auth.onAuthStateChange((_e,s)=>{ if(_e==='PASSWORD_RECOVERY') setRecovery(true); setSession(s); });
+    return ()=>sub.subscription.unsubscribe();
+  },[]);
+  useEffect(()=>{ if(!session){ setCtx(null); return; } (async()=>{
+    const [{data:m},{data:prof},adm]=await Promise.all([
+      db.from('tenant_memberships').select('tenant_id,role').eq('user_id',session.user.id).eq('ativo',true).limit(1).maybeSingle(),
+      db.from('profiles').select('*').eq('id',session.user.id).maybeSingle(),
+      (typeof db.schema==='function'?db.schema('public'):db).from('fin_perfis').select('is_admin').maybeSingle(),
+    ]);
+    let tenant=null, settings={};
+    if(m?.tenant_id){ tenant=qd(await db.from('tenants').select('*').eq('id',m.tenant_id).maybeSingle(), 'o ateliê');
+      const st=qd(await db.from('tenant_settings').select('cor_primaria,cor_secundaria,cnpj,endereco,telefone,whatsapp,email,subtitulo,fiscal,features').eq('tenant_id',m.tenant_id).maybeSingle(), 'as configurações do ateliê');
+      settings=st||{};
+      if(st?.cor_primaria) document.documentElement.style.setProperty('--plum',st.cor_primaria);
+      if(st?.cor_secundaria) document.documentElement.style.setProperty('--violet',st.cor_secundaria);
+    }
+    setCtx({ tenant, tenantId:m?.tenant_id, settings, role:m?.role||'atendente', isAdmin:!!(adm&&adm.data&&adm.data.is_admin), trocarSenha:!!(prof&&prof.trocar_senha), profile:prof||{nome:(session.user.email||'').split('@')[0]} });
+    // registro silencioso de acesso (1x por sessão do navegador) — invisível ao usuário
+    try{ if(!sessionStorage.getItem('vz_acesso')){ sessionStorage.setItem('vz_acesso','1');
+      const pubc=(typeof db.schema==='function')?db.schema('public'):db;
+      pubc.from('plataforma_acessos').insert({ sistema:'atelie', tenant_id:m?.tenant_id||null, user_agent:(navigator.userAgent||'').slice(0,300) }).then(()=>{},()=>{});
+    } }catch(_){}
+  })(); },[session]);
+  const onAtivar=(location.hash||'').replace(/^#\/?/,'').split('?')[0].split('/')[0]==='ativar';
+  if(onAtivar) return html`<${Fragment}><${Toaster}/><${Ativar}/></${Fragment}>`;
+  if(recovery) return html`<${Fragment}><${Toaster}/><${ResetSenha} onDone=${()=>setRecovery(false)}/></${Fragment}>`;
+  if(session===undefined) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Carregando…</div></div></${Fragment}>`;
+  if(!session) return html`<${Fragment}><${Toaster}/><${VersionGate}/><${Login}/></${Fragment}>`;
+  if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
+  const showFirst=ctx.trocarSenha&&!firstDone;
+  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${VersionGate}/><${BillingGate} user=${session.user}/>${showFirst?html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`:(!novidDone&&html`<${NovidadeModal} onClose=${()=>setNovidDone(true)}/>`)}<${Router}/></${Ctx.Provider}>`;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(createElement(App));
+</script>
+</body>
+</html>
