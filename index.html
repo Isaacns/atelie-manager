@@ -277,7 +277,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.19.5'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
+window.APP_VERSION = '1.19.6'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -417,6 +417,10 @@ const I = {
   spark:'M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3ZM19 14l.9 2.3L22 17l-2.1.7L19 20l-.9-2.3L16 17l2.1-.7L19 14Z',
 };
 const Ic = ({d,cls,style}) => html`<svg class=${cls} style=${style} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d=${d}/></svg>`;
+/* Ícone OFICIAL do WhatsApp (glifo de marca): balão + fone, PREENCHIDO (fill), não
+   traçado como os demais ícones. Herda a cor do botão (.btn.wa → branco sobre verde).
+   Usar sempre <${'IcWA'}/> nos botões wa.me — nunca o Ic genérico. */
+const IcWA = ({cls,style}) => html`<svg class=${cls} style=${style} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12.05 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.359.101 11.892c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652a11.97 11.97 0 005.71 1.448h.006c6.585 0 11.946-5.36 11.949-11.897a11.9 11.9 0 00-3.481-8.45"/></svg>`;
 
 const Mark = ({cls='mark breathe'}) => html`<svg class=${cls} viewBox="0 0 104 60" fill="none" aria-hidden="true">
   <circle cx="24" cy="27" r="10" stroke="currentColor" stroke-width="4"/>
@@ -844,7 +848,7 @@ function Dashboard(){
           <h3>Aniversariantes do mês</h3><p class="desc">Um carinho que fideliza.</p>
           <div class="stat-list">${k.aniversariantes.map(c=>html`<div class="it" key=${c.id}>
             <span>${isBdayToday(c)?'🎉 ':''}<b>${c.nome}</b> <span class="muted">· dia ${String(bdayDay(c)).padStart(2,'0')}</span></span>
-            ${c.whatsapp?html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+encodeURIComponent('Feliz aniversário, '+(c.nome||'').split(' ')[0]+'! Desejamos tudo de bom. Com carinho, '+(tenant?.nome||''))} title="Enviar felicitação"><${Ic} d=${I.wa}/></a>`:html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}
+            ${c.whatsapp?html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+encodeURIComponent('Feliz aniversário, '+(c.nome||'').split(' ')[0]+'! Desejamos tudo de bom. Com carinho, '+(tenant?.nome||''))} title="Enviar felicitação"><${IcWA}/></a>`:html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}
           </div>`)}</div>
         </div>`}
       </div>
@@ -918,7 +922,7 @@ function Clientes(){
           <tbody>${filtered.map(c=>html`<tr key=${c.id} class="click" onClick=${()=>go('/clientes/'+c.id)}>
             <td class="b">${c.nome}</td><td>${c.telefone||'—'}</td><td>${c.cidade||'—'}</td>
             <td class="r" onClick=${e=>e.stopPropagation()}>
-              ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank" title="WhatsApp"><${Ic} d=${I.wa}/></a>`}
+              ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank" title="WhatsApp"><${IcWA}/></a>`}
               <button class="btn sm ghost" onClick=${()=>setEdit(c)} title="Editar"><${Ic} d=${I.edit}/></button>
               <button class="btn sm ghost" onClick=${()=>setDel(c)} title="Excluir"><${Ic} d=${I.trash}/></button>
             </td></tr>`)}</tbody></table></div>`}
@@ -948,7 +952,7 @@ function ClienteDetail({id}){
           <div><h1 class="hi serif" style=${{fontSize:'1.7rem'}}>${c.nome}</h1>
             <div class="hint" style=${{margin:'2px 0 0'}}>${[c.bairro,c.cidade].filter(Boolean).join(', ')||'—'}</div></div>
           <div style=${{display:'flex',gap:'6px'}}>
-            ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank"><${Ic} d=${I.wa}/>WhatsApp</a>`}
+            ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank"><${IcWA}/>WhatsApp</a>`}
             <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
           </div>
         </div>
@@ -1218,10 +1222,10 @@ function OrdemDetail({id}){
       <div style=${{display:'flex',gap:'6px',flexWrap:'wrap'}}>
         ${cli?.whatsapp&&html`<a class="btn sm wa" target="_blank" title="Avisar cliente pelo WhatsApp"
           href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent('Olá '+(cli.nome||'').split(' ')[0]+'! Seu serviço'+(o.descricao?' ("'+o.descricao+'")':'')+' está pronto para retirada. 🧵 — '+(tenant?.nome||''))}>
-          <${Ic} d=${I.wa}/>Avisar pronto</a>`}
+          <${IcWA}/>Avisar pronto</a>`}
         <button class="btn sm" onClick=${printOS}><${Ic} d=${I.print}/>Imprimir OS</button>
         <button class="btn sm" title="Cupom não fiscal (recibo)" onClick=${()=>printCupom(o,cli,tenant?.nome,settings,itens)}><${Ic} d=${I.file}/>Cupom</button>
-        ${cli?.whatsapp&&html`<a class="btn sm wa" target="_blank" title="Enviar a OS ao cliente" href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent(osText())}><${Ic} d=${I.wa}/>Enviar OS</a>`}
+        ${cli?.whatsapp&&html`<a class="btn sm wa" target="_blank" title="Enviar a OS ao cliente" href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent(osText())}><${IcWA}/>Enviar OS</a>`}
         <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
         <button class="btn sm ghost" onClick=${()=>setDel(true)}><${Ic} d=${I.trash}/></button>
       </div>
@@ -1813,7 +1817,7 @@ function Recuperacao(){
         ${d.inativos.length===0? html`<${Empty} icon=${I.refresh} title="Ninguém parado">Seus clientes estão ativos.</${Empty}>`
           : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Sem voltar</th><th class="r">Serviços</th><th class="r">Total gasto</th><th class="r">Ação</th></tr></thead>
             <tbody>${d.inativos.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${c.dias} dias</td><td class="r">${c.n}</td><td class="r b">${BRL(c.total)}</td>
-              <td class="r">${c.whatsapp? html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Reconquistar</a>`: html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}</td></tr>`)}</tbody></table></div>`}
+              <td class="r">${c.whatsapp? html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${IcWA}/>Reconquistar</a>`: html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}</td></tr>`)}</tbody></table></div>`}
       </div>
     </${Fragment}>`}
   </${Shell}>`;
@@ -1854,7 +1858,7 @@ function Alavancagem(){
       ${alvo.length===0? html`<${Empty} icon=${I.rocket} title="Nenhum cliente">Ajuste o público ou cadastre WhatsApp nos clientes.</${Empty}>`
         : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Serviços feitos</th><th class="r">Enviar oferta</th></tr></thead>
           <tbody>${alvo.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${counts[c.id]||0}</td>
-            <td class="r"><a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Oferecer</a></td></tr>`)}</tbody></table></div>`}
+            <td class="r"><a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${IcWA}/>Oferecer</a></td></tr>`)}</tbody></table></div>`}
     </div>
   </${Shell}>`;
 }
