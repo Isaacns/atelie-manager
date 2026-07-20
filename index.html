@@ -34,6 +34,11 @@
   .serif{font-family:"Cormorant Garamond",Georgia,serif}
   a{color:inherit}
   .center{min-height:100dvh;display:grid;place-items:center;padding:24px}
+  /* O #root já é .center, e as telas de login/ativação/carregando trazem o próprio .center.
+     Aninhados, os dois somavam 100dvh + 24px de padding CADA (barra de rolagem à toa) e o de
+     dentro, virando item de grid, encolhia — o cartão de login perdia os 420px e ficava
+     estreito. O de dentro não repete altura nem respiro; quem centraliza é o de fora. */
+  .center .center{min-height:auto;padding:0;width:100%}
   .glass{background:rgba(251,248,243,.72);backdrop-filter:blur(18px);
     border:1px solid rgba(255,255,255,.5);box-shadow:var(--shadow);border-radius:1.25rem}
   /* logo */
@@ -368,7 +373,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.22.2'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
+window.APP_VERSION = '1.22.3'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
