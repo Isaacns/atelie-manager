@@ -70,7 +70,12 @@
   .side .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
   .side .brand .nm{font-family:"Cormorant Garamond",serif;font-size:1.15rem;line-height:1;font-weight:600}
   .side .brand .tg{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-  .nav{display:flex;flex-direction:column;gap:2px;overflow:visible}
+  /* O menu rola; o rodapé (usuária + Sair) fica ancorado embaixo, sempre visível.
+     Antes o .side tinha altura fixa sem rolagem: ao crescer o menu, o Sair caiu para fora da tela.
+     min-height:0 é obrigatório — sem ele o item flex não encolhe e a rolagem não acontece. */
+  .nav{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-height:0;overflow-y:auto;
+    scrollbar-width:none;-ms-overflow-style:none}
+  .nav::-webkit-scrollbar{width:0;height:0}   /* §2: barra de rolagem invisível */
   .nav a{position:relative;display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:.6rem;
     font-size:.9rem;font-weight:500;color:#5a525c;text-decoration:none;cursor:pointer;transition:.12s}
   .nav a:hover{background:rgba(142,44,176,.07);color:var(--plum)}
@@ -79,7 +84,7 @@
   .nav a svg{width:18px;height:18px;color:var(--muted);flex:0 0 auto}
   .nav a:hover svg{color:var(--plum)}
   .nav .sep{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:#b6a9b1;padding:14px 12px 4px}
-  .side .who{margin-top:auto;padding-top:12px;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)}
+  .side .who{flex:0 0 auto;margin-top:8px;padding-top:12px;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)}
   .side .who b{color:var(--fg);display:block;font-size:.85rem}
   .side .who button{margin-top:8px;width:100%;height:34px;border:1px solid var(--border);background:rgba(255,255,255,.6);
     border-radius:.5rem;cursor:pointer;color:var(--fg);font-size:.82rem}
@@ -261,8 +266,34 @@
     .topbar h2{font-size:1.05rem}
   }
 
+  /* ===== §8.1 — identificação do usuário no canto superior direito ===== */
+  .topbar .user{display:flex;align-items:center;gap:10px;padding:3px 4px 3px 11px;border-radius:999px;
+    border:1px solid transparent;background:transparent;cursor:pointer;font-family:inherit;transition:.15s}
+  .topbar .user:hover{border-color:var(--border);background:rgba(255,255,255,.6)}
+  .topbar .user .txt{display:flex;flex-direction:column;line-height:1.2;text-align:right}
+  .topbar .user .txt b{font-size:.82rem;color:var(--fg);font-weight:600}
+  .topbar .user .txt span{font-size:.67rem;color:var(--muted)}
+  .av{width:38px;height:38px;border-radius:50%;flex:0 0 auto;overflow:hidden;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--plum),var(--violet));color:#fff;font-weight:700;font-size:.82rem;
+    letter-spacing:.02em;box-shadow:0 0 0 2px var(--card)}
+  .av img{width:100%;height:100%;object-fit:cover;display:block}
+  .av.lg{width:84px;height:84px;font-size:1.5rem}
+  .topbar .icob{width:34px;height:34px;border-radius:50%;border:1px solid transparent;background:transparent;
+    cursor:pointer;color:var(--muted);display:grid;place-items:center;flex:0 0 auto}
+  .topbar .icob:hover{border-color:var(--border);background:rgba(255,255,255,.6);color:var(--plum)}
+  .topbar .icob svg{width:17px;height:17px}
+  @media (max-width:720px){ .topbar .user .txt{display:none} .topbar .user{padding:3px} }
+  /* tela de bloqueio */
+  .lockscr{position:fixed;inset:0;z-index:99998;display:grid;place-items:center;padding:20px;
+    background:rgba(46,43,49,.5);backdrop-filter:blur(16px)}
+  .lockbox{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:26px;width:min(360px,94vw);text-align:center}
+  .lockbox .av{margin:0 auto 12px}
+
   /* ===== Módulo AGENDA (padrão VIZIO §16) + arrastar (§15) ===== */
-  .ag-week{display:grid;grid-template-columns:repeat(6,minmax(178px,1fr));gap:10px;overflow-x:auto;padding-bottom:6px}
+  /* 6 colunas que CABEM na largura do conteúdo: minmax(0,1fr) deixa a coluna encolher.
+     Com minmax(178px,…) a semana somava ~1118px num espaço de ~1072px e nascia barra de rolagem. */
+  .ag-week{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
   .ag-day{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px;display:flex;flex-direction:column;gap:8px}
   .ag-day.hoje{border-color:var(--violet);box-shadow:0 0 0 2px rgba(142,44,176,.16)}
   .ag-day-h{display:flex;align-items:center;gap:6px}
@@ -297,7 +328,8 @@
   .ag-card .acts button:hover{color:var(--plum);border-color:var(--plum)}
   .ag-foco{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:rgba(142,44,176,.07);
     border:1px solid rgba(142,44,176,.18);border-radius:10px;padding:9px 12px;font-size:.85rem;margin-bottom:12px}
-  @media (max-width:820px){ .ag-week{grid-template-columns:repeat(6,minmax(158px,1fr))} }
+  /* Só em tela estreita a semana rola na horizontal — no desktop ela cabe inteira. */
+  @media (max-width:900px){ .ag-week{grid-template-columns:repeat(6,minmax(150px,1fr));overflow-x:auto;padding-bottom:6px} }
   @media (prefers-reduced-motion:reduce){ .ag-per{transition:none} }
 </style>
 </head>
@@ -316,7 +348,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.20.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
+window.APP_VERSION = '1.21.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -454,6 +486,10 @@ const I = {
   rocket:'M5 15c-1.6 1.6-2 5.5-2 5.5s3.9-.4 5.5-2M9 11a5 5 0 0 0 4 4l6-6a6 6 0 0 0 1.5-5.5A6 6 0 0 0 15 5l-6 6ZM15.5 8.5h.01',
   ruler:'M3 8l5-5 13 13-5 5zM7 7l2 2M11 5l2 2M9 11l2 2M13 9l2 2',
   spark:'M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3ZM19 14l.9 2.3L22 17l-2.1.7L19 20l-.9-2.3L16 17l2.1-.7L19 14Z',
+  lock:'M7 10V7a5 5 0 0 1 10 0v3M5 10h14v10H5zM12 14v2.5',
+  exit:'M15 17l5-5-5-5M20 12H9M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7',
+  camera:'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
+  key:'M14.5 9.5a4 4 0 1 1-5.66 5.66 4 4 0 0 1 5.66-5.66Zm0 0L21 3M18 6l2 2',
 };
 const Ic = ({d,cls,style}) => html`<svg class=${cls} style=${style} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d=${d}/></svg>`;
 /* Ícone OFICIAL do WhatsApp (glifo de marca): balão + fone, PREENCHIDO (fill), não
@@ -725,6 +761,149 @@ function AlertsBell(){
     </div>`}
   </div>`;
 }
+/* ========== §8.1 — usuário no canto superior direito ========== */
+const PAPEL={owner:'Administradora',gestor:'Gestora',financeiro:'Financeiro',atendente:'Atendente',costureira:'Costureira',estoque:'Estoque'};
+/* §8.1: iniciais = 2 primeiras letras do nome. NUNCA hardcodar (era 'IS' fixo no Motors). */
+const iniciais = nome => (String(nome||'?').trim().slice(0,2) || '?').toUpperCase();
+
+const Avatar = ({nome,url,cls=''}) => html`<span class=${'av '+cls}>
+  ${url? html`<img src=${url} alt=${nome||'Foto'}/>` : iniciais(nome)}</span>`;
+
+/* A tela de bloqueio vive acima de tudo (App), mas o botão está no topo (Shell).
+   Um evento simples liga os dois sem precisar carregar estado por toda a árvore. */
+const bloquearTela=()=>{ try{ sessionStorage.setItem('vz_lock','1'); }catch(_){ } window.dispatchEvent(new Event('vz-lock')); };
+
+function LockGate(){
+  const {profile,email}=useApp();
+  const [locked,setLocked]=useState(()=>{ try{ return sessionStorage.getItem('vz_lock')==='1'; }catch(_){ return false; } });
+  const [senha,setSenha]=useState(''); const [busy,setBusy]=useState(false); const [erro,setErro]=useState('');
+  useEffect(()=>{ const f=()=>setLocked(true); window.addEventListener('vz-lock',f); return ()=>window.removeEventListener('vz-lock',f); },[]);
+  if(!locked) return null;
+  async function desbloquear(e){
+    e&&e.preventDefault();
+    if(!senha) return;
+    setBusy(true); setErro('');
+    const {error}=await db.auth.signInWithPassword({email,password:senha});
+    setBusy(false);
+    if(error){ setErro('Senha incorreta. Tente de novo.'); return; }
+    setSenha(''); try{ sessionStorage.removeItem('vz_lock'); }catch(_){ }
+    setLocked(false);
+  }
+  return html`<div class="lockscr">
+    <form class="lockbox" onSubmit=${desbloquear}>
+      <${Avatar} nome=${profile?.nome} url=${profile?.avatar_url} cls="lg"/>
+      <h3 style=${{fontFamily:'"Cormorant Garamond",serif',fontSize:'1.4rem',margin:'0 0 2px'}}>Tela bloqueada</h3>
+      <div class="muted" style=${{fontSize:'.84rem',marginBottom:'14px'}}>
+        Digite sua senha para voltar, ${(profile?.nome||'').split(' ')[0]}.</div>
+      ${erro&&html`<div class="err">${erro}</div>`}
+      <input type="password" autoFocus value=${senha} onInput=${e=>setSenha(e.target.value)} placeholder="Sua senha"/>
+      <button class="btn pri" type="submit" disabled=${busy||!senha} style=${{width:'100%',marginTop:'10px',justifyContent:'center'}}>
+        ${busy?'Verificando…':'Desbloquear'}</button>
+      <button type="button" class="link" style=${{marginTop:'12px'}} onClick=${()=>db.auth.signOut()}>Sair da conta</button>
+    </form>
+  </div>`;
+}
+
+function UserChip(){
+  const {profile,role}=useApp();
+  const [ficha,setFicha]=useState(false);
+  return html`<${Fragment}>
+    <button class="user" title="Ver e editar meu perfil" onClick=${()=>setFicha(true)}>
+      <span class="txt"><b>${profile?.nome||'Você'}</b><span>${PAPEL[role]||role}</span></span>
+      <${Avatar} nome=${profile?.nome} url=${profile?.avatar_url}/>
+    </button>
+    <button class="icob" title="Bloquear a tela" onClick=${bloquearTela}><${Ic} d=${I.lock}/></button>
+    <button class="icob" title="Sair" onClick=${()=>db.auth.signOut()}><${Ic} d=${I.exit}/></button>
+    ${ficha&&html`<${PerfilModal} onClose=${()=>setFicha(false)}/>`}
+  </${Fragment}>`;
+}
+
+function PerfilModal({onClose}){
+  const {profile,role,tenantId,email,refreshProfile}=useApp();
+  const [nome,setNome]=useState(profile?.nome||'');
+  const [arquivo,setArquivo]=useState(null);        // §8.1: só sobe ao salvar
+  const [previa,setPrevia]=useState(profile?.avatar_url||'');
+  const [s1,setS1]=useState(''),[s2,setS2]=useState('');
+  const [busy,setBusy]=useState(false);
+
+  function escolherFoto(e){
+    const f=e.target.files&&e.target.files[0]; if(e.target) e.target.value='';
+    if(!f) return;
+    if(!/^image\//.test(f.type)){ toast('Escolha uma imagem.','err'); return; }
+    if(f.size>3*1024*1024){ toast('A foto precisa ter no máximo 3 MB.','err'); return; }
+    setArquivo(f); setPrevia(URL.createObjectURL(f));   // prévia local, nada sobe ainda
+  }
+
+  async function salvar(){
+    if(!nome.trim()){ toast('Escreva seu nome.','err'); return; }
+    setBusy(true);
+    try{
+      let avatar_url=profile?.avatar_url||null;
+      if(arquivo){
+        const blob=await resizeImage(arquivo,512,.85);
+        const ext=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg');
+        /* §8.1: <tenant>/<user>-<timestamp>.<ext> — nome único, então nunca sobrescreve nada */
+        const caminho=(tenantId||'sem-tenant')+'/'+profile.id+'-'+Date.now()+'.'+ext;
+        const up=await db.storage.from('avatars').upload(caminho,blob,{contentType:blob.type,upsert:false});
+        if(up.error) throw up.error;
+        avatar_url=db.storage.from('avatars').getPublicUrl(caminho).data.publicUrl;
+      }
+      const {error}=await db.from('profiles').update({nome:nome.trim(),avatar_url}).eq('id',profile.id);
+      if(error) throw error;
+
+      if(s1||s2){
+        if(s1.length<6) throw new Error('A senha nova precisa ter pelo menos 6 caracteres.');
+        if(s1!==s2) throw new Error('As duas senhas não são iguais.');
+        const r=await db.auth.updateUser({password:s1});
+        if(r.error) throw r.error;
+        toast('Perfil e senha atualizados.','ok');
+      } else toast('Perfil atualizado.','ok');
+
+      if(refreshProfile) await refreshProfile();
+      onClose();
+    }catch(err){ toast('Não consegui salvar: '+(err.message||err),'err'); }
+    setBusy(false);
+  }
+
+  return html`<${Modal} title="Meu perfil" onClose=${onClose} footer=${html`<${Fragment}>
+      <button class="btn" onClick=${onClose}>Cancelar</button>
+      <button class="btn pri" disabled=${busy} onClick=${salvar}>${busy?'Salvando…':'Salvar'}</button></${Fragment}>`}>
+
+    <div style=${{display:'flex',gap:'16px',alignItems:'center',marginBottom:'16px'}}>
+      <${Avatar} nome=${nome} url=${previa} cls="lg"/>
+      <div>
+        <label class="btn sm" style=${{cursor:'pointer',display:'inline-flex'}}>
+          <${Ic} d=${I.camera}/>${previa?'Trocar foto':'Colocar foto'}
+          <input type="file" accept="image/*" style=${{display:'none'}} onChange=${escolherFoto}/>
+        </label>
+        ${previa&&html`<button class="link" style=${{marginLeft:'10px'}}
+          onClick=${()=>{ setArquivo(null); setPrevia(''); }}>remover</button>`}
+        <div class="muted" style=${{fontSize:'.72rem',marginTop:'6px'}}>JPG ou PNG, até 3 MB.</div>
+      </div>
+    </div>
+
+    <div><label>Nome</label><input value=${nome} onInput=${e=>setNome(e.target.value)} placeholder="Seu nome"/></div>
+
+    <div class="f2" style=${{marginTop:'10px'}}>
+      <div><label>E-mail</label><input value=${email||'—'} disabled/></div>
+      <div><label>Perfil de acesso</label><input value=${PAPEL[role]||role} disabled/></div>
+    </div>
+    <div class="muted" style=${{fontSize:'.72rem',marginTop:'6px'}}>
+      O e-mail e o perfil de acesso são definidos pela administração do sistema.</div>
+
+    <div style=${{marginTop:'18px',paddingTop:'14px',borderTop:'1px solid var(--border)'}}>
+      <div style=${{display:'flex',alignItems:'center',gap:'8px',marginBottom:'8px'}}>
+        <${Ic} d=${I.key} style=${{width:'16px',height:'16px',color:'var(--muted)'}}/>
+        <b style=${{fontSize:'.88rem'}}>Trocar minha senha</b></div>
+      <div class="f2">
+        <div><label>Nova senha</label><input type="password" value=${s1} onInput=${e=>setS1(e.target.value)} placeholder="Mínimo 6 caracteres"/></div>
+        <div><label>Repita a nova senha</label><input type="password" value=${s2} onInput=${e=>setS2(e.target.value)}/></div>
+      </div>
+      <div class="muted" style=${{fontSize:'.72rem',marginTop:'6px'}}>Deixe em branco para manter a senha atual.</div>
+    </div>
+  </${Modal}>`;
+}
+
 function Shell({title,children}){
   const {tenant,role,profile,isAdmin}=useApp();
   const hash=useHash(); const base='/'+((hash.split('?')[0]).split('/')[1]||'');
@@ -753,6 +932,7 @@ function Shell({title,children}){
         <h2>${title}</h2>
         <div class="spacer"></div>
         <${AlertsBell}/>
+        <${UserChip}/>
       </div>
       <div class="wrap">${children}</div>
     </div></div>`;
@@ -2440,6 +2620,16 @@ function App(){
       pubc.from('plataforma_acessos').insert({ sistema:'atelie', tenant_id:m?.tenant_id||null, user_agent:(navigator.userAgent||'').slice(0,300) }).then(()=>{},()=>{});
     } }catch(_){}
   })(); },[session]);
+  /* §8.1: a ficha do usuário edita nome/foto — o topo precisa refletir na hora, sem F5. */
+  const refreshProfile=useCallback(async()=>{
+    if(!session) return;
+    const {data:prof}=await db.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+    if(prof) setCtx(c=>c?{...c,profile:prof}:c);
+  },[session]);
+  /* Memoizado de propósito: sem isto o valor do contexto seria um objeto novo a cada render
+     do App, e TODO consumidor de useApp() re-renderizaria à toa. Os hooks ficam aqui em cima,
+     antes dos returns antecipados abaixo — chamar hook depois de um return é bug silencioso. */
+  const ctxValue=useMemo(()=> ctx?{...ctx, email:session?.user?.email||'', refreshProfile}:null,[ctx,session,refreshProfile]);
   const onAtivar=(location.hash||'').replace(/^#\/?/,'').split('?')[0].split('/')[0]==='ativar';
   if(onAtivar) return html`<${Fragment}><${Toaster}/><${Ativar}/></${Fragment}>`;
   if(recovery) return html`<${Fragment}><${Toaster}/><${ResetSenha} onDone=${()=>setRecovery(false)}/></${Fragment}>`;
@@ -2447,7 +2637,7 @@ function App(){
   if(!session) return html`<${Fragment}><${Toaster}/><${VersionGate}/><${Login}/></${Fragment}>`;
   if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
   const showFirst=ctx.trocarSenha&&!firstDone;
-  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${VersionGate}/><${BillingGate} user=${session.user}/>${showFirst?html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`:(!novidDone&&html`<${NovidadeModal} onClose=${()=>setNovidDone(true)}/>`)}<${Router}/></${Ctx.Provider}>`;
+  return html`<${Ctx.Provider} value=${ctxValue}><${Toaster}/><${VersionGate}/><${BillingGate} user=${session.user}/>${showFirst?html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`:(!novidDone&&html`<${NovidadeModal} onClose=${()=>setNovidDone(true)}/>`)}<${Router}/><${LockGate}/></${Ctx.Provider}>`;
 }
 ReactDOM.createRoot(document.getElementById('root')).render(createElement(App));
 </script>
