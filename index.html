@@ -68,7 +68,11 @@
      sistema "flutuando" e centralizado (Isaac prefere assim). Por isso a altura desconta os
      48px do respiro: com 100dvh cheio, a sidebar terminava fora da tela e cortava o rodapé. */
   .app{display:grid;grid-template-columns:236px 1fr;min-height:calc(100dvh - 48px)}
-  .side{position:sticky;top:24px;z-index:20;height:calc(100dvh - 48px);padding:20px 14px;border-right:1px solid var(--border);
+  /* Cartão flutuante, como todo o resto do sistema: cantos arredondados e SEM borda-linha.
+     A borda-direita reta existia desde sempre, mas ficava escondida porque a sidebar
+     sangrava para fora da tela; ao passar a caber, o canto reto apareceu e destoou. */
+  .side{position:sticky;top:24px;z-index:20;height:calc(100dvh - 48px);padding:20px 14px;
+    border-radius:var(--radius);box-shadow:var(--shadow);
     background:rgba(248,244,238,.75);backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:4px}
   .side .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
   .side .brand .nm{font-family:"Cormorant Garamond",serif;font-size:1.15rem;line-height:1;font-weight:600}
@@ -87,15 +91,11 @@
   .nav a svg{width:18px;height:18px;color:var(--muted);flex:0 0 auto}
   .nav a:hover svg{color:var(--plum)}
   .nav .sep{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:#b6a9b1;padding:14px 12px 4px}
-  .side .who{flex:0 0 auto;margin-top:8px;padding-top:12px;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)}
-  .side .who b{color:var(--fg);display:block;font-size:.85rem}
-  .side .who button{margin-top:8px;width:100%;height:34px;border:1px solid var(--border);background:rgba(255,255,255,.6);
-    border-radius:.5rem;cursor:pointer;color:var(--fg);font-size:.82rem}
-  .side .who button:hover{border-color:var(--plum);color:var(--plum)}
   /* content */
   .main{min-width:0}
+  /* Sem linha embaixo: o topo flutua sobre o fundo, não corta a tela em duas. */
   .topbar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:12px;height:62px;padding:0 24px;
-    background:rgba(244,239,232,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+    background:rgba(244,239,232,.8);backdrop-filter:blur(16px)}
   .topbar h2{font-family:"Cormorant Garamond",serif;font-size:1.5rem;margin:0;font-weight:600}
   .topbar .plan{margin-left:6px;font-size:.68rem;padding:3px 9px;border-radius:999px;background:rgba(142,44,176,.1);color:var(--violet);font-weight:600}
   .topbar .spacer{margin-left:auto}
@@ -275,8 +275,7 @@
 
   /* Assinatura do produto, centralizada no rodapé de toda tela (saiu do canto da sidebar). */
   .assinatura{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;
-    margin-top:34px;padding-top:16px;border-top:1px solid var(--border);
-    color:var(--muted);font-size:.72rem;letter-spacing:.02em}
+    margin-top:34px;color:var(--muted);font-size:.72rem;letter-spacing:.02em}
   .assinatura img,.assinatura svg{height:13px;width:auto;opacity:.85;vertical-align:middle}
 
   /* ===== §8.1 — identificação do usuário no canto superior direito ===== */
@@ -361,7 +360,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.22.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
+window.APP_VERSION = '1.22.1'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
