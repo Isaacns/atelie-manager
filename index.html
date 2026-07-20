@@ -67,11 +67,18 @@
   /* O app vive dentro do #root.center, que tem padding:24px — é esse respiro que deixa o
      sistema "flutuando" e centralizado (Isaac prefere assim). Por isso a altura desconta os
      48px do respiro: com 100dvh cheio, a sidebar terminava fora da tela e cortava o rodapé. */
-  .app{display:grid;grid-template-columns:236px 1fr;min-height:calc(100dvh - 48px)}
+  /* Largura FIXA (236 da barra + 1120 do conteúdo + 48 de padding = 1404). Sem isto o app
+     encolhia junto com o conteúdo — como o #root.center o centraliza, cada módulo mais
+     estreito empurrava a barra lateral para a direita e a tela "pulava" ao trocar de menu. */
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:calc(100dvh - 48px);width:min(1404px,100%)}
   /* Cartão flutuante, como todo o resto do sistema: cantos arredondados e SEM borda-linha.
      A borda-direita reta existia desde sempre, mas ficava escondida porque a sidebar
      sangrava para fora da tela; ao passar a caber, o canto reto apareceu e destoou. */
-  .side{position:sticky;top:24px;z-index:20;height:calc(100dvh - 48px);padding:20px 14px;
+  /* ATENÇÃO ao seletor: precisa ser "aside.side". Existe também <div class="row side"> no
+     dashboard, e um ".side" solto pintava aquele grid com o fundo/blur da barra lateral —
+     era o "cartão atrás dos cartões". O vazamento era antigo; só ficou visível quando a
+     barra ganhou raio e sombra. */
+  aside.side{position:sticky;top:24px;z-index:20;height:calc(100dvh - 48px);padding:20px 14px;
     border-radius:var(--radius);box-shadow:var(--shadow);
     background:rgba(248,244,238,.75);backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:4px}
   .side .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
@@ -247,8 +254,9 @@
   .menu-btn{display:none}
   @media(max-width:820px){
     .app{grid-template-columns:1fr}
-    .side{position:fixed;left:0;top:0;height:100dvh;overflow:auto;z-index:30;width:264px;transform:translateX(-100%);transition:.2s}
-    .side.open{transform:none}
+    aside.side{position:fixed;left:0;top:0;height:100dvh;overflow:auto;z-index:30;width:264px;
+      border-radius:0;transform:translateX(-100%);transition:.2s}
+    aside.side.open{transform:none}
     .menu-btn{display:inline-flex}
     .backdrop{position:fixed;inset:0;background:rgba(46,43,49,.4);z-index:25}
     .wrap{padding:20px 14px 64px}
@@ -360,7 +368,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.22.1'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
+window.APP_VERSION = '1.22.2'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -2507,7 +2515,7 @@ function Master(){
     <div style=${{marginBottom:'14px'}}><h1 class="h1">Ativação de cliente</h1>
       <p class="muted">Gere o link de primeiro acesso <b>depois</b> de confirmar o pagamento. O link cria a conta já ativa; a cliente define usuário e senha.</p></div>
     ${!isAdmin?html`<div class="glass card"><h3>Acesso restrito</h3><p class="muted">Esta área é exclusiva do administrador da plataforma.</p></div>`
-    :html`<div class="glass card" style=${{maxWidth:'560px'}}>
+    :html`<div class="glass card" style=${{maxWidth:'560px',margin:'0 auto'}}>
       <form onSubmit=${gerar}>
         ${err&&html`<div class="err">${err}</div>`}
         <label>E-mail da cliente (o mesmo do pagamento)</label>
