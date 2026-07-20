@@ -334,7 +334,11 @@
 </style>
 </head>
 <body>
-<div id="root" class="center"><div class="sub">Carregando…</div></div>
+<!-- O #root NÃO leva a classe .center: ela tem padding:24px e centraliza, e ficava aplicada
+     também depois do login — empurrava o app 24px para baixo e a sidebar (height:100dvh)
+     terminava fora da tela, cortando o botão Sair. O centro fica só no aviso de carregamento;
+     as telas que precisam (login, ativação, carregando) já trazem o próprio .center. -->
+<div id="root"><div class="center"><div class="sub">Carregando…</div></div></div>
 
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -348,7 +352,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.21.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
+window.APP_VERSION = '1.21.1'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
