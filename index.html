@@ -260,6 +260,45 @@
     .measure-grid{grid-template-columns:1fr 1fr}
     .topbar h2{font-size:1.05rem}
   }
+
+  /* ===== Módulo AGENDA (padrão VIZIO §16) + arrastar (§15) ===== */
+  .ag-week{display:grid;grid-template-columns:repeat(6,minmax(178px,1fr));gap:10px;overflow-x:auto;padding-bottom:6px}
+  .ag-day{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px;display:flex;flex-direction:column;gap:8px}
+  .ag-day.hoje{border-color:var(--violet);box-shadow:0 0 0 2px rgba(142,44,176,.16)}
+  .ag-day-h{display:flex;align-items:center;gap:6px}
+  .ag-day-h b{font-family:"Cormorant Garamond",serif;font-size:1.05rem;line-height:1}
+  .ag-day-h .dt{font-size:.72rem;color:var(--muted)}
+  .ag-day-h .add{margin-left:auto;border:1px solid var(--border);background:transparent;color:var(--plum);
+    width:24px;height:24px;border-radius:8px;cursor:pointer;font-size:1rem;line-height:1;display:grid;place-items:center}
+  .ag-day-h .add:hover{background:rgba(94,58,86,.08)}
+  /* zona de soltar: um período de um dia */
+  .ag-per{border:1px dashed transparent;border-radius:10px;padding:6px;transition:background .15s,border-color .15s}
+  .ag-per.cur{background:rgba(142,44,176,.05)}
+  .ag-per-h{display:flex;align-items:center;gap:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);cursor:pointer;user-select:none}
+  .ag-per-h .n{margin-left:auto;font-size:.7rem;letter-spacing:0;color:var(--muted)}
+  .ag-per-h .agora{background:var(--violet);color:#fff;border-radius:99px;padding:1px 7px;font-size:.58rem;letter-spacing:.06em}
+  .ag-per-body{display:flex;flex-direction:column;gap:6px;margin-top:6px;min-height:34px}
+  .ag-vazio{font-size:.72rem;color:var(--muted2,#a99fa6);padding:4px 2px}
+  /* §15: destino realçado com tracejado no acento do produto */
+  .ag-per.drop-ok{border-color:var(--violet);background:rgba(142,44,176,.09)}
+  /* cartão arrastável */
+  .ag-card{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--plum);border-radius:9px;
+    padding:7px 9px;cursor:grab;position:relative}
+  .ag-card:active{cursor:grabbing}
+  .ag-card.dragging{opacity:.45}
+  .ag-card .t{font-size:.82rem;line-height:1.3;word-break:break-word}
+  .ag-card .o{font-size:.7rem;color:var(--muted);margin-top:2px}
+  .ag-card.feito{border-left-color:var(--ok);opacity:.72}
+  .ag-card.feito .t{text-decoration:line-through;color:var(--muted)}
+  .ag-card .acts{display:flex;gap:4px;margin-top:6px}
+  .ag-card .acts button{border:1px solid var(--border);background:transparent;border-radius:7px;cursor:pointer;
+    font-size:.68rem;padding:2px 7px;color:var(--muted);font-family:inherit}
+  .ag-card .acts button:hover{color:var(--plum);border-color:var(--plum)}
+  .ag-foco{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:rgba(142,44,176,.07);
+    border:1px solid rgba(142,44,176,.18);border-radius:10px;padding:9px 12px;font-size:.85rem;margin-bottom:12px}
+  @media (max-width:820px){ .ag-week{grid-template-columns:repeat(6,minmax(158px,1fr))} }
+  @media (prefers-reduced-motion:reduce){ .ag-per{transition:none} }
 </style>
 </head>
 <body>
@@ -277,7 +316,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.19.6'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
+window.APP_VERSION = '1.20.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -649,6 +688,7 @@ const NAV = [
   {p:'/ordens', l:'Ordens de serviço', i:I.scissors, d:'Do orçamento à entrega'},
   {p:'/servicos', l:'Serviços', i:I.tag, d:'Catálogo de serviços e preços'},
   {g:'Operação'},
+  {p:'/agenda', l:'Agenda', i:I.spark, d:'Suas atividades da semana — arraste para reorganizar'},
   {p:'/estoque', l:'Estoque', i:I.box, d:'Insumos, saldo e movimentações'},
   {p:'/financeiro', l:'Financeiro', i:I.money, roles:['owner','gestor','financeiro'], d:'Receitas, despesas e saldo'},
   {p:'/relatorios', l:'Relatórios', i:I.chart, d:'Faturamento e desempenho'},
@@ -1900,6 +1940,172 @@ function Novidades(){
   </${Shell}>`;
 }
 
+/* ========== AGENDA (módulo padrão VIZIO §16 · arrastar §15) ==========
+   Referência viva: Inovar Formaturas (app-pauta.js). Duas diferenças deliberadas:
+   1) persistência em tabela com tenant_id + RLS (o Inovar usa localStorage, que prende
+      a pauta no aparelho e não acompanha a usuária);
+   2) Seg–Sáb, porque ateliê atende sábado.
+   Arrastar NUNCA é o único caminho: cada cartão tem os botões "Manhã/Tarde/Noite" e
+   "◀ ▶" de dia — no celular o drag nativo não é confiável. */
+const AG_PERIODOS=[['manha','Manhã','🌅'],['tarde','Tarde','☀️'],['noite','Noite','🌙']];
+const agPeriodoAtual=()=>{ const h=new Date().getHours(); return h<12?'manha':(h<18?'tarde':'noite'); };
+const agNomePer=p=>(AG_PERIODOS.find(x=>x[0]===p)||[,'—'])[1];
+const agYmd=d=>{ const x=new Date(d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+const agSegunda=d=>{ const x=new Date(d); const w=x.getDay(); x.setDate(x.getDate()+(w===0?-6:1-w)); x.setHours(0,0,0,0); return x; };
+const AG_DIAS=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+function Agenda(){
+  const {tenantId}=useApp();
+  const [semana,setSemana]=useState(0);
+  const [rows,setRows]=useState(null);
+  const [edit,setEdit]=useState(null);      // {id?,dia,periodo,titulo,observacoes}
+  const [del,setDel]=useState(null);
+  const [arrastando,setArrastando]=useState(null);
+  const [alvo,setAlvo]=useState(null);      // 'YYYY-MM-DD|periodo' realçado
+
+  const dias=useMemo(()=>{ const seg=agSegunda(new Date()); seg.setDate(seg.getDate()+semana*7);
+    return AG_DIAS.map((nome,i)=>{ const d=new Date(seg); d.setDate(seg.getDate()+i); return {nome,data:d,ymd:agYmd(d)}; }); },[semana]);
+  const hojeYmd=agYmd(new Date()), perAtual=agPeriodoAtual();
+
+  const carregar=useCallback(async()=>{
+    if(!tenantId) return;
+    const data=qd(await db.from('agenda_atividades').select('*')
+      .gte('dia',dias[0].ymd).lte('dia',dias[dias.length-1].ymd)
+      .order('ordem',{ascending:true}).order('created_at',{ascending:true}), 'a agenda');
+    setRows(data||[]);
+  },[tenantId,dias]);
+  useEffect(()=>{ carregar(); },[carregar]);
+
+  /* move = alterar dia e/ou período. Usado pelo arrasto E pelos botões (acessibilidade). */
+  async function mover(at,novoDia,novoPer){
+    if(at.dia===novoDia && at.periodo===novoPer) return;          // §15: soltar no mesmo lugar não faz nada
+    setRows(rs=>rs.map(r=>r.id===at.id?{...r,dia:novoDia,periodo:novoPer}:r));   // otimista
+    const {error}=await db.from('agenda_atividades').update({dia:novoDia,periodo:novoPer}).eq('id',at.id);
+    if(error){ toast('Não consegui mover a atividade. '+(error.message||''),'err'); carregar(); }
+  }
+  async function alternarFeito(at){
+    const novo=at.status==='concluida'?'pendente':'concluida';
+    setRows(rs=>rs.map(r=>r.id===at.id?{...r,status:novo}:r));
+    const {error}=await db.from('agenda_atividades').update({status:novo}).eq('id',at.id);
+    if(error){ toast('Não consegui atualizar. '+(error.message||''),'err'); carregar(); }
+  }
+  async function salvar(f){
+    const payload={titulo:(f.titulo||'').trim(),observacoes:f.observacoes||null,dia:f.dia,periodo:f.periodo};
+    if(!payload.titulo){ toast('Escreva o que precisa ser feito.','err'); return false; }
+    const r = f.id ? await db.from('agenda_atividades').update(payload).eq('id',f.id)
+                   : await db.from('agenda_atividades').insert({...payload,tenant_id:tenantId});
+    if(r.error){ toast('Erro ao salvar: '+r.error.message,'err'); return false; }
+    toast(f.id?'Atividade atualizada.':'Atividade criada.','ok'); carregar(); return true;
+  }
+  async function excluir(at){
+    const {error}=await db.from('agenda_atividades').delete().eq('id',at.id);
+    if(error) toast('Erro ao excluir: '+error.message,'err'); else { toast('Atividade removida.','ok'); carregar(); }
+  }
+
+  const rotulo=dias.length?`${dias[0].data.getDate()}/${String(dias[0].data.getMonth()+1).padStart(2,'0')} a ${dias[5].data.getDate()}/${String(dias[5].data.getMonth()+1).padStart(2,'0')}`:'';
+  const total=(rows||[]).length, feitas=(rows||[]).filter(r=>r.status==='concluida').length;
+
+  return html`<${Shell} title="Agenda">
+    <div class="hint">Organize seu dia: crie atividades e <b>arraste</b> para outro dia ou período. Clique para editar.</div>
+
+    <div class="ag-foco">
+      <span>⏰ Agora é <b>${agNomePer(perAtual)}</b> — foque nas atividades deste período.</span>
+      <span style=${{marginLeft:'auto',color:'var(--muted)',fontSize:'.8rem'}}>
+        ${total} atividade${total===1?'':'s'} na semana${total?` · ${feitas} concluída${feitas===1?'':'s'}`:''}</span>
+    </div>
+
+    <div class="bar" style=${{marginBottom:'12px'}}>
+      <button class="btn sm" onClick=${()=>setSemana(s=>s-1)} title="Semana anterior">‹</button>
+      <button class="btn sm" onClick=${()=>setSemana(0)}>Hoje</button>
+      <button class="btn sm" onClick=${()=>setSemana(s=>s+1)} title="Próxima semana">›</button>
+      <span class="muted" style=${{fontSize:'.82rem'}}>Semana de ${rotulo}</span>
+      <button class="btn pri sm" style=${{marginLeft:'auto'}}
+        onClick=${()=>setEdit({dia:hojeYmd,periodo:perAtual,titulo:'',observacoes:''})}>
+        <${Ic} d=${I.plus}/>Nova atividade</button>
+    </div>
+
+    ${rows===null? html`<div class="hint">Carregando…</div>` : html`
+    <div class="ag-week">
+      ${dias.map(d=>{
+        const ehHoje=d.ymd===hojeYmd;
+        return html`<div class=${'ag-day'+(ehHoje?' hoje':'')} key=${d.ymd}>
+          <div class="ag-day-h">
+            <b>${d.nome}</b><span class="dt">${String(d.data.getDate()).padStart(2,'0')}/${String(d.data.getMonth()+1).padStart(2,'0')}</span>
+            <button class="add" title=${'Nova atividade em '+d.nome}
+              onClick=${()=>setEdit({dia:d.ymd,periodo:perAtual,titulo:'',observacoes:''})}>+</button>
+          </div>
+          ${AG_PERIODOS.map(([pid,plabel,pic])=>{
+            const itens=(rows||[]).filter(r=>r.dia===d.ymd&&r.periodo===pid);
+            const chave=d.ymd+'|'+pid, ehAgora=ehHoje&&pid===perAtual;
+            return html`<div key=${pid}
+              class=${'ag-per'+(ehAgora?' cur':'')+(alvo===chave?' drop-ok':'')}
+              onDragOver=${e=>{ e.preventDefault(); if(alvo!==chave) setAlvo(chave); }}
+              onDragLeave=${e=>{ if(!e.currentTarget.contains(e.relatedTarget)&&alvo===chave) setAlvo(null); }}
+              onDrop=${e=>{ e.preventDefault(); setAlvo(null);
+                let id=arrastando; try{ const t=e.dataTransfer.getData('text/agenda-id')||e.dataTransfer.getData('text/plain')||''; if(/^ag:(.+)$/.test(t)) id=RegExp.$1; }catch(_){ }
+                if(!id) return;                                    /* §15: tipo que não entendo, ignoro */
+                const at=(rows||[]).find(r=>r.id===id); if(at) mover(at,d.ymd,pid); }}>
+              <div class="ag-per-h">
+                <span>${pic} ${plabel}</span>
+                ${ehAgora&&html`<span class="agora">agora</span>`}
+                <span class="n">${itens.length}</span>
+              </div>
+              <div class="ag-per-body">
+                ${itens.length===0? html`<div class="ag-vazio">—</div>`
+                : itens.map(at=>html`<div key=${at.id}
+                    class=${'ag-card'+(at.status==='concluida'?' feito':'')+(arrastando===at.id?' dragging':'')}
+                    draggable=${true}
+                    onDragStart=${e=>{ setArrastando(at.id);
+                      try{ e.dataTransfer.setData('text/agenda-id',at.id); e.dataTransfer.setData('text/plain','ag:'+at.id); e.dataTransfer.effectAllowed='move'; }catch(_){ } }}
+                    onDragEnd=${()=>{ setArrastando(null); setAlvo(null); }}>
+                    <div class="t" onClick=${()=>setEdit({id:at.id,dia:at.dia,periodo:at.periodo,titulo:at.titulo,observacoes:at.observacoes||''})}
+                      style=${{cursor:'pointer'}} title="Clique para editar">${at.titulo}</div>
+                    ${at.observacoes&&html`<div class="o">${at.observacoes}</div>`}
+                    <div class="acts">
+                      <button onClick=${()=>alternarFeito(at)} title=${at.status==='concluida'?'Reabrir':'Marcar como concluída'}>
+                        ${at.status==='concluida'?'↩ reabrir':'✓ concluir'}</button>
+                      ${AG_PERIODOS.filter(([q])=>q!==at.periodo).map(([q,ql])=>html`
+                        <button key=${q} title=${'Mover para '+ql} onClick=${()=>mover(at,at.dia,q)}>${ql.slice(0,1)}</button>`)}
+                      <button title="Excluir" onClick=${()=>setDel(at)}>🗑</button>
+                    </div>
+                  </div>`)}
+              </div>
+            </div>`;
+          })}
+        </div>`;
+      })}
+    </div>`}
+
+    ${edit&&html`<${AgendaForm} row=${edit} dias=${dias} onClose=${()=>setEdit(null)} onSave=${salvar}/>`}
+    ${del&&html`<${Confirm} danger text=${'Excluir "'+del.titulo+'"?'} onClose=${()=>setDel(null)} onYes=${()=>excluir(del)}/>`}
+  </${Shell}>`;
+}
+
+function AgendaForm({row,dias,onClose,onSave}){
+  const [f,setF]=useState({...row});
+  const [busy,setBusy]=useState(false);
+  const set=(k,v)=>setF(o=>({...o,[k]:v}));
+  return html`<${Modal} title=${f.id?'Editar atividade':'Nova atividade'} onClose=${onClose} footer=${html`<${Fragment}>
+      <button class="btn" onClick=${onClose}>Cancelar</button>
+      <button class="btn pri" disabled=${busy} onClick=${async()=>{ setBusy(true); const ok=await onSave(f); setBusy(false); if(ok) onClose(); }}>
+        ${busy?'Salvando…':'Salvar'}</button></${Fragment}>`}>
+    <div><label>O que precisa ser feito *</label>
+      <input value=${f.titulo} autoFocus onInput=${e=>set('titulo',e.target.value)} placeholder="Ex.: Cortar o vestido da Roberta"/></div>
+    <div class="f2" style=${{marginTop:'10px'}}>
+      <div><label>Dia</label>
+        <select value=${f.dia} onInput=${e=>set('dia',e.target.value)}>
+          ${dias.map(d=>html`<option key=${d.ymd} value=${d.ymd}>${d.nome} · ${String(d.data.getDate()).padStart(2,'0')}/${String(d.data.getMonth()+1).padStart(2,'0')}</option>`)}
+        </select></div>
+      <div><label>Período</label>
+        <select value=${f.periodo} onInput=${e=>set('periodo',e.target.value)}>
+          ${AG_PERIODOS.map(([p,l])=>html`<option key=${p} value=${p}>${l}</option>`)}
+        </select></div>
+    </div>
+    <div style=${{marginTop:'10px'}}><label>Observações</label>
+      <textarea rows="2" value=${f.observacoes||''} onInput=${e=>set('observacoes',e.target.value)} placeholder="Opcional"></textarea></div>
+  </${Modal}>`;
+}
+
 /* ========== ROUTER ========== */
 function Router(){
   const h=useHash(); const [path]=h.split('?'); const seg=path.split('/').filter(Boolean);
@@ -1908,6 +2114,7 @@ function Router(){
   if(seg[0]==='ordens'&&seg[1]) return html`<${OrdemDetail} id=${seg[1]}/>`;
   if(seg[0]==='ordens') return html`<${Ordens}/>`;
   if(seg[0]==='servicos') return html`<${Servicos}/>`;
+  if(seg[0]==='agenda') return html`<${Agenda}/>`;
   if(seg[0]==='estoque') return html`<${Estoque}/>`;
   if(seg[0]==='financeiro') return html`<${Financeiro}/>`;
   if(seg[0]==='relatorios') return html`<${Relatorios}/>`;
