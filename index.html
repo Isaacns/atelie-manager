@@ -64,8 +64,11 @@
     border-radius:.5rem;padding:10px 12px;font-size:.85rem;margin-bottom:8px}
   .foot{color:var(--muted);text-align:center;font-size:.72rem;margin-top:18px;letter-spacing:.02em}
   /* app shell */
-  .app{display:grid;grid-template-columns:236px 1fr;min-height:100dvh}
-  .side{position:sticky;top:0;z-index:20;height:100dvh;padding:20px 14px;border-right:1px solid var(--border);
+  /* O app vive dentro do #root.center, que tem padding:24px — é esse respiro que deixa o
+     sistema "flutuando" e centralizado (Isaac prefere assim). Por isso a altura desconta os
+     48px do respiro: com 100dvh cheio, a sidebar terminava fora da tela e cortava o rodapé. */
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:calc(100dvh - 48px)}
+  .side{position:sticky;top:24px;z-index:20;height:calc(100dvh - 48px);padding:20px 14px;border-right:1px solid var(--border);
     background:rgba(248,244,238,.75);backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:4px}
   .side .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
   .side .brand .nm{font-family:"Cormorant Garamond",serif;font-size:1.15rem;line-height:1;font-weight:600}
@@ -146,13 +149,17 @@
   .dot{width:7px;height:7px;border-radius:999px;background:currentColor;opacity:.9}
   /* modal */
   .ov{position:fixed;inset:0;background:rgba(46,43,49,.42);backdrop-filter:blur(3px);display:grid;place-items:center;padding:20px;z-index:20}
-  .modal{width:100%;max-width:560px;max-height:90dvh;overflow:auto;background:var(--card);border-radius:1.1rem;
+  /* Coluna flex: cabeçalho e rodapé fixos, MIOLO rolando. Antes o modal inteiro rolava e,
+     quando o conteúdo passava da tela, o .ov (place-items:center) empurrava o topo para fora
+     — o começo do formulário (foto, nome) ficava inalcançável. */
+  .modal{width:100%;max-width:560px;max-height:calc(100dvh - 40px);display:flex;flex-direction:column;
+    background:var(--card);border-radius:1.1rem;
     box-shadow:0 24px 70px rgba(46,43,49,.3);border:1px solid rgba(255,255,255,.6)}
-  .modal .mh{position:sticky;top:0;background:var(--card);display:flex;align-items:center;justify-content:space-between;
-    padding:20px 22px 12px;border-bottom:1px solid var(--border)}
+  .modal .mh{flex:0 0 auto;background:var(--card);display:flex;align-items:center;justify-content:space-between;
+    padding:20px 22px 12px;border-bottom:1px solid var(--border);border-radius:1.1rem 1.1rem 0 0}
   .modal .mh h3{margin:0;font-family:"Cormorant Garamond",serif;font-size:1.35rem;font-weight:600}
-  .modal .mb{padding:18px 22px}
-  .modal .mf{position:sticky;bottom:0;background:var(--card);display:flex;gap:10px;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--border)}
+  .modal .mb{padding:18px 22px;flex:1 1 auto;min-height:0;overflow-y:auto}
+  .modal .mf{flex:0 0 auto;background:var(--card);display:flex;gap:10px;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--border);border-radius:0 0 1.1rem 1.1rem}
   .x{border:0;background:transparent;font-size:1.3rem;color:var(--muted);cursor:pointer;line-height:1}
   .f2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
   .f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px}
@@ -266,6 +273,12 @@
     .topbar h2{font-size:1.05rem}
   }
 
+  /* Assinatura do produto, centralizada no rodapé de toda tela (saiu do canto da sidebar). */
+  .assinatura{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;
+    margin-top:34px;padding-top:16px;border-top:1px solid var(--border);
+    color:var(--muted);font-size:.72rem;letter-spacing:.02em}
+  .assinatura img,.assinatura svg{height:13px;width:auto;opacity:.85;vertical-align:middle}
+
   /* ===== §8.1 — identificação do usuário no canto superior direito ===== */
   .topbar .user{display:flex;align-items:center;gap:10px;padding:3px 4px 3px 11px;border-radius:999px;
     border:1px solid transparent;background:transparent;cursor:pointer;font-family:inherit;transition:.15s}
@@ -334,11 +347,7 @@
 </style>
 </head>
 <body>
-<!-- O #root NÃO leva a classe .center: ela tem padding:24px e centraliza, e ficava aplicada
-     também depois do login — empurrava o app 24px para baixo e a sidebar (height:100dvh)
-     terminava fora da tela, cortando o botão Sair. O centro fica só no aviso de carregamento;
-     as telas que precisam (login, ativação, carregando) já trazem o próprio .center. -->
-<div id="root"><div class="center"><div class="sub">Carregando…</div></div></div>
+<div id="root" class="center"><div class="sub">Carregando…</div></div>
 
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -352,7 +361,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.21.1'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
+window.APP_VERSION = '1.22.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
 
 /* ---------- helpers ---------- */
 const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -766,7 +775,20 @@ function AlertsBell(){
   </div>`;
 }
 /* ========== §8.1 — usuário no canto superior direito ========== */
-const PAPEL={owner:'Administradora',gestor:'Gestora',financeiro:'Financeiro',atendente:'Atendente',costureira:'Costureira',estoque:'Estoque'};
+/* Tratamento por gênero: vem do perfil (profiles.genero), nunca fixo no código.
+   O sistema nasceu falando só no feminino — certo para a Aimée, errado para o Isaac. */
+const PAPEIS={
+  owner:      {f:'Administradora', m:'Administrador',  n:'Administração'},
+  gestor:     {f:'Gestora',        m:'Gestor',         n:'Gestão'},
+  financeiro: {f:'Financeiro',     m:'Financeiro',     n:'Financeiro'},
+  atendente:  {f:'Atendente',      m:'Atendente',      n:'Atendimento'},
+  costureira: {f:'Costureira',     m:'Costureiro',     n:'Costura'},
+  estoque:    {f:'Estoque',        m:'Estoque',        n:'Estoque'},
+};
+const gen = p => (p&&p.genero)==='masculino'?'m':((p&&p.genero)==='neutro'?'n':'f');
+const papelDe = (role,profile) => (PAPEIS[role]||{})[gen(profile)] || role;
+/* "Bem-vinda" / "Bem-vindo" / "Boas-vindas" */
+const bemVindo = profile => ({f:'Bem-vinda',m:'Bem-vindo',n:'Boas-vindas'})[gen(profile)];
 /* §8.1: iniciais = 2 primeiras letras do nome. NUNCA hardcodar (era 'IS' fixo no Motors). */
 const iniciais = nome => (String(nome||'?').trim().slice(0,2) || '?').toUpperCase();
 
@@ -813,7 +835,7 @@ function UserChip(){
   const [ficha,setFicha]=useState(false);
   return html`<${Fragment}>
     <button class="user" title="Ver e editar meu perfil" onClick=${()=>setFicha(true)}>
-      <span class="txt"><b>${profile?.nome||'Você'}</b><span>${PAPEL[role]||role}</span></span>
+      <span class="txt"><b>${profile?.nome||'Você'}</b><span>${papelDe(role,profile)}</span></span>
       <${Avatar} nome=${profile?.nome} url=${profile?.avatar_url}/>
     </button>
     <button class="icob" title="Bloquear a tela" onClick=${bloquearTela}><${Ic} d=${I.lock}/></button>
@@ -825,6 +847,7 @@ function UserChip(){
 function PerfilModal({onClose}){
   const {profile,role,tenantId,email,refreshProfile}=useApp();
   const [nome,setNome]=useState(profile?.nome||'');
+  const [genero,setGenero]=useState(profile?.genero||'feminino');
   const [arquivo,setArquivo]=useState(null);        // §8.1: só sobe ao salvar
   const [previa,setPrevia]=useState(profile?.avatar_url||'');
   const [s1,setS1]=useState(''),[s2,setS2]=useState('');
@@ -852,7 +875,7 @@ function PerfilModal({onClose}){
         if(up.error) throw up.error;
         avatar_url=db.storage.from('avatars').getPublicUrl(caminho).data.publicUrl;
       }
-      const {error}=await db.from('profiles').update({nome:nome.trim(),avatar_url}).eq('id',profile.id);
+      const {error}=await db.from('profiles').update({nome:nome.trim(),avatar_url,genero}).eq('id',profile.id);
       if(error) throw error;
 
       if(s1||s2){
@@ -889,8 +912,17 @@ function PerfilModal({onClose}){
     <div><label>Nome</label><input value=${nome} onInput=${e=>setNome(e.target.value)} placeholder="Seu nome"/></div>
 
     <div class="f2" style=${{marginTop:'10px'}}>
+      <div><label>Como prefere ser tratado(a)</label>
+        <select value=${genero} onInput=${e=>setGenero(e.target.value)}>
+          <option value="feminino">Feminino — "Bem-vinda, Administradora"</option>
+          <option value="masculino">Masculino — "Bem-vindo, Administrador"</option>
+          <option value="neutro">Neutro — sem flexão</option>
+        </select></div>
+      <div><label>Perfil de acesso</label><input value=${papelDe(role,{genero})} disabled/></div>
+    </div>
+    <div class="f2" style=${{marginTop:'10px'}}>
       <div><label>E-mail</label><input value=${email||'—'} disabled/></div>
-      <div><label>Perfil de acesso</label><input value=${PAPEL[role]||role} disabled/></div>
+      <div></div>
     </div>
     <div class="muted" style=${{fontSize:'.72rem',marginTop:'6px'}}>
       O e-mail e o perfil de acesso são definidos pela administração do sistema.</div>
@@ -924,10 +956,6 @@ function Shell({title,children}){
           ? html`<div class="sep" key=${'g'+k}>${it.g}</div>`
           : html`<a key=${it.p} class=${base===it.p?'on':''} onClick=${()=>go(it.p)}><${Ic} d=${it.i}/>${it.l}</a>`)}
       </nav>
-      <div class="who"><b>${profile?.nome||'Você'}</b><span>${({owner:'Administradora',gestor:'Gestora',financeiro:'Financeiro',atendente:'Atendente',costureira:'Costureira',estoque:'Estoque'})[role]||role}</span>
-        <div style=${{margin:'9px 0 4px'}}><${ByVizio} dark=${true}/></div>
-        <div class="muted" style=${{fontSize:'.66rem',marginBottom:'6px'}}>v${APP_VERSION}</div>
-        <button onClick=${()=>db.auth.signOut()}>Sair</button></div>
     </aside>
     <div class="main">
       <div class="topbar">
@@ -938,7 +966,9 @@ function Shell({title,children}){
         <${AlertsBell}/>
         <${UserChip}/>
       </div>
-      <div class="wrap">${children}</div>
+      <div class="wrap">${children}
+        <div class="assinatura"><${ByVizio}/><span>v${APP_VERSION}</span></div>
+      </div>
     </div></div>`;
 }
 
@@ -975,7 +1005,7 @@ function SaudacaoDiaria(){
   const fechar=()=>{ try{ localStorage.setItem(chave,'1'); }catch(_){} setVisivel(false); };
   return html`<div style=${{position:'relative',marginBottom:'16px',padding:'16px 44px 16px 18px',borderRadius:'14px',color:'#fff',
       background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 10px 26px -14px rgba(0,0,0,.4)'}}>
-    <div class="serif" style=${{fontSize:'1.15rem',fontWeight:700}}>Bem-vinda a um novo dia${nome?', '+nome:''} ✨</div>
+    <div class="serif" style=${{fontSize:'1.15rem',fontWeight:700}}>${bemVindo(profile)} a um novo dia${nome?', '+nome:''} ✨</div>
     <div style=${{opacity:.93,marginTop:'4px',fontSize:'.92rem'}}>${frase}</div>
     <button onClick=${fechar} title="Dispensar por hoje" aria-label="Dispensar"
       style=${{position:'absolute',top:'10px',right:'12px',background:'rgba(255,255,255,.18)',color:'#fff',border:'none',
@@ -2391,9 +2421,9 @@ function FirstAccessModal({onClose}){
       if(error){ setBusy(false); toast('Erro: '+error.message,'err'); return; }
     }
     try{ await db.from('profiles').update({trocar_senha:false}).eq('id',profile.id); }catch(_){}
-    setBusy(false); if(!clearOnly) toast('Senha atualizada. Bem-vinda!','ok'); onClose();
+    setBusy(false); if(!clearOnly) toast('Senha atualizada. '+bemVindo(profile)+'!','ok'); onClose();
   }
-  return html`<${Modal} title="Bem-vinda ao seu sistema!" onClose=${()=>done(true)} footer=${html`<${Fragment}>
+  return html`<${Modal} title=${bemVindo(profile)+' ao seu sistema!'} onClose=${()=>done(true)} footer=${html`<${Fragment}>
     <button class="btn" onClick=${()=>done(true)}>Fazer depois</button>
     <button class="btn pri" disabled=${busy} onClick=${()=>done(false)}>${busy?'Salvando…':'Salvar nova senha'}</button></${Fragment}>`}>
     <p style=${{marginTop:0,color:'#5a525c',fontSize:'.92rem'}}>Seu sistema está pronto e no seu nome. Para começar com segurança, crie uma <b>nova senha</b> — só sua.</p>
