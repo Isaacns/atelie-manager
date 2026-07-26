@@ -243,6 +243,8 @@
   .pop-it:last-child{border-bottom:0} .pop-it:hover{background:rgba(142,44,176,.05)}
   .pi-ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:0 0 auto}
   .pi-ic svg{width:15px;height:15px} .pi-ic.warn{background:rgba(185,131,37,.15);color:var(--warn)} .pi-ic.low{background:rgba(142,44,176,.12);color:var(--violet)}
+  .pi-ic.upd{background:linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0));color:#fff}
+  .pop-it:disabled{cursor:default;opacity:.75}
   /* billing gate */
   .gate-bar{position:sticky;top:0;z-index:8;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 16px;font-size:.85rem;font-weight:600;color:#5a3d16;background:linear-gradient(90deg,#fbf1dc,#fce9c0,#fbf1dc);border-bottom:1px solid #f0d69a}
   .gate-bar.info{color:#4c2e46;background:linear-gradient(90deg,#f2e9f4,#ecdcf0,#f2e9f4);border-bottom:1px solid rgba(142,44,176,.25)}
@@ -378,7 +380,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.23.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo */
+window.APP_VERSION = '1.24.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -434,6 +436,10 @@ const monthStart = () => { const d=new Date(); return new Date(d.getFullYear(),d
 const daysBetween = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
 const addDays = (iso,n) => { const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+Number(n||0)); return d.toISOString().slice(0,10); };
 const esc = s => String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+/* Compara versões "x.y.z" numericamente: -1 se a<b, 0 se igual, 1 se a>b. Usado pelo
+   VersionGate para confirmar que o reload realmente chegou na versão publicada (§14.2). */
+const cmpVer = (a,b) => { const pa=String(a||'').split('.').map(n=>parseInt(n,10)||0), pb=String(b||'').split('.').map(n=>parseInt(n,10)||0);
+  for(let i=0;i<Math.max(pa.length,pb.length);i++){ const d=(pa[i]||0)-(pb[i]||0); if(d) return d<0?-1:1; } return 0; };
 function printDoc(title, bodyHtml, tenantName){
   const w=window.open('','_blank','width=900,height=760');
   if(!w){ toast('Permita pop-ups para gerar a impressão.','err'); return; }
@@ -628,8 +634,70 @@ if(typeof window!=='undefined' && !window.__vzErrHook){
    A cliente deixa a aba aberta por horas: sem isto, ela continua rodando código antigo
    mesmo depois do deploy (foi a causa do erro de "subtotal" persistir após a correção).
    Compara o APP_VERSION publicado com o que está rodando e oferece atualizar. */
+/* §14.2 — VersionGate com GARANTIA de atualização (Req do Isaac, v1.24.0):
+   o botão "Atualizar agora" só some depois que o app CONFIRMA, após o reload, que está
+   rodando a versão publicada. Se continuar defasado (cache/SW travado), o próximo clique
+   ESCALA: limpa os caches do SW, desregistra o SW e força reload. Estado atravessa o
+   reload por localStorage (`atelie_update_*`). */
+const LS_PEND='atelie_update_click_pending', LS_ALVO='atelie_update_alvo', LS_TENT='atelie_update_tentativas', LS_VISTA='atelie_ultima_versao_vista';
+
+/* Estado ÚNICO de "atualização disponível", compartilhado pelo banner do VersionGate e pelo
+   sino de avisos da Home. Um só lugar decide se há update pendente, qual a versão-alvo e se
+   está em andamento; os dois consumidores só LEEM daqui e o clique de qualquer um chama a
+   MESMA função `dispararAtualizacao`. Sem lógica duplicada, um estado só. */
+const updateStore=(()=>{ let s={nova:null,trabalhando:false}; const subs=new Set();
+  return { get:()=>s, set:p=>{ s={...s,...p}; subs.forEach(f=>f()); }, sub:f=>{ subs.add(f); return ()=>subs.delete(f); } }; })();
+function useUpdate(){ const [,f]=useState(0); useEffect(()=>updateStore.sub(()=>f(x=>x+1)),[]); return updateStore.get(); }
+const updateEscalando=()=>{ try{ return (Number(localStorage.getItem(LS_TENT)||'0')||0)>=1; }catch(_){ return false; } };
+
+/* Fluxo verificado de atualização (Req do Isaac), acionável pelo botão do VersionGate E pelo
+   item do sino. 1º acionamento: skipWaiting + reload. Se voltar defasado, o 2º ESCALA: limpa
+   os caches do SW, `unregister()` e reload forçado. Persiste o alvo em localStorage para
+   conferir pós-reload — o aviso só some quando a versão realmente bater. */
+async function dispararAtualizacao(){
+  const st=updateStore.get(); const alvo=st.nova; if(!alvo || st.trabalhando) return;
+  updateStore.set({trabalhando:true});
+  let t=0; try{ t=Number(localStorage.getItem(LS_TENT)||'0')||0; }catch(_){}
+  const escalar=t>=1;
+  try{ localStorage.setItem(LS_PEND,'1'); localStorage.setItem(LS_ALVO,alvo); localStorage.setItem(LS_TENT,String(t+1)); }catch(_){}
+  try{ sessionStorage.clear(); }catch(_){}
+  try{
+    if(escalar && 'serviceWorker' in navigator){
+      // 2º acionamento: limpar TODOS os caches do SW + desregistrar + reload forçado.
+      if(window.caches){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
+      const regs=await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r=>r.unregister()));
+    } else if('serviceWorker' in navigator){
+      // 1º acionamento: pedir ao SW que assuma já (skipWaiting), sem esperar abas fecharem.
+      const reg=await navigator.serviceWorker.getRegistration();
+      if(reg){ try{ await reg.update(); }catch(_){}
+        const sw=reg.waiting||reg.installing||reg.active; if(sw) sw.postMessage('PULAR_ESPERA'); }
+    }
+  }catch(_){}
+  // Reload com cache-buster forte (fura HTTP cache do navegador; o SW já é network-first).
+  location.replace(location.pathname+'?v='+encodeURIComponent(alvo)+'&_r='+Date.now()+location.hash);
+}
+
 function VersionGate(){
-  const [nova,setNova]=useState(null);
+  const st=useUpdate(); // lê o estado único; o mesmo que o sino consome
+  // (1) Verificação pós-reload: o usuário clicou "Atualizar"? Então confirmar que pegou.
+  useEffect(()=>{
+    try{
+      const pend=localStorage.getItem(LS_PEND), alvo=localStorage.getItem(LS_ALVO);
+      if(pend && alvo){
+        if(cmpVer(APP_VERSION, alvo) >= 0){
+          // Chegou na versão-alvo (ou além): sucesso. Limpa o estado e o aviso some (banner + sino).
+          localStorage.removeItem(LS_PEND); localStorage.removeItem(LS_ALVO); localStorage.removeItem(LS_TENT);
+          try{ localStorage.setItem(LS_VISTA, APP_VERSION); }catch(_){}
+          updateStore.set({nova:null,trabalhando:false});
+          try{ toast('Tudo certo — você está na versão '+APP_VERSION+'.','ok'); }catch(_){}
+        } else {
+          // Ainda defasado após o reload: mantém o aviso; o próximo clique vai escalar.
+          updateStore.set({nova:alvo,trabalhando:false});
+        }
+      }
+    }catch(_){}
+  },[]);
+  // (2) Checagem contínua: compara a versão publicada com a carregada (network-first).
   useEffect(()=>{
     let vivo=true, checando=false;
     // Não bloquear por document.hidden: uma aba aberta em segundo plano é justamente
@@ -640,7 +708,7 @@ function VersionGate(){
         const base=location.href.replace(/[#?].*$/,'');
         const r=await fetch(base+'index.html?_v='+Date.now(),{cache:'no-store'});
         if(r.ok){ const t=await r.text(); const m=t.match(/APP_VERSION\s*=\s*'([^']+)'/);
-          if(vivo && m && m[1] && m[1]!==APP_VERSION) setNova(m[1]); }
+          if(vivo && m && m[1] && m[1]!==APP_VERSION) updateStore.set({nova:m[1]}); }
       }catch(_){ /* offline: silencioso, tenta de novo depois */ }
       checando=false;
     }
@@ -648,16 +716,19 @@ function VersionGate(){
     const iv=setInterval(checar, 10*60*1000);       // depois, a cada 10 min
     const onFoco=()=>{ if(!document.hidden) checar(); };
     document.addEventListener('visibilitychange', onFoco);
-    return ()=>{ vivo=false; clearTimeout(t); clearInterval(iv); document.removeEventListener('visibilitychange', onFoco); };
+    window.addEventListener('focus', onFoco);        // §14.2: focus além de visibilitychange
+    return ()=>{ vivo=false; clearTimeout(t); clearInterval(iv); document.removeEventListener('visibilitychange', onFoco); window.removeEventListener('focus', onFoco); };
   },[]);
-  if(!nova) return null;
-  const atualizar=()=>{ try{ sessionStorage.clear(); }catch(_){} location.replace(location.pathname+'?v='+nova+location.hash); };
+  if(!st.nova) return null;
+  const escalar = updateEscalando(); // já tentou 1x e voltou defasado → agora força
+  const msg = escalar ? '⏳ Vamos forçar a atualização — só um instante.' : '✨ Uma versão novinha do seu sistema está pronta.';
+  const rotulo = st.trabalhando ? 'Atualizando…' : (escalar ? 'Forçar atualização' : 'Atualizar agora');
   return html`<div style=${{position:'fixed',left:'50%',transform:'translateX(-50%)',bottom:'18px',zIndex:9999,
       display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',borderRadius:'14px',color:'#fff',
       background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 12px 30px -10px rgba(0,0,0,.5)',maxWidth:'92vw'}}>
-    <span style=${{fontSize:'.9rem'}}>✨ Uma versão novinha do seu sistema está pronta.</span>
-    <button onClick=${atualizar} style=${{background:'#fff',color:'var(--plum,#5e3a56)',border:'none',borderRadius:'9px',
-      padding:'8px 14px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap'}}>Atualizar agora</button>
+    <span style=${{fontSize:'.9rem'}}>${msg}</span>
+    <button onClick=${dispararAtualizacao} disabled=${st.trabalhando} style=${{background:'#fff',color:'var(--plum,#5e3a56)',border:'none',borderRadius:'9px',
+      padding:'8px 14px',fontWeight:700,cursor:st.trabalhando?'default':'pointer',opacity:st.trabalhando?.7:1,whiteSpace:'nowrap'}}>${rotulo}</button>
   </div>`;
 }
 
@@ -814,6 +885,7 @@ const NAV = [
 function AlertsBell(){
   const [open,setOpen]=useState(false);
   const [al,setAl]=useState({late:[],low:[]});
+  const upd=useUpdate(); // mesmo estado único do VersionGate: aviso de atualização entra aqui também
   useEffect(()=>{ (async()=>{
     const [rOs,rPr]=await Promise.all([
       db.from('ordens').select('id,numero,descricao,status,prazo,data_entrada,dias_previstos'),
@@ -822,12 +894,16 @@ function AlertsBell(){
     const os=qd(rOs,'os alertas de prazo')||[], pr=qd(rPr,'os alertas de estoque')||[];
     setAl({ late:os.filter(isLate), low:pr.filter(p=>Number(p.quantidade)<=Number(p.quantidade_minima)) });
   })(); },[]);
-  const n=al.late.length+al.low.length;
+  const temUpdate=!!upd.nova, escalar=temUpdate&&updateEscalando();
+  const n=al.late.length+al.low.length+(temUpdate?1:0); // o aviso de atualização conta no badge
   return html`<div style=${{position:'relative'}}>
     <button class="btn ghost sm" style=${{position:'relative'}} title="Avisos" onClick=${()=>setOpen(o=>!o)}><${Ic} d=${I.bell}/>${n>0&&html`<span class="bell-badge">${n}</span>`}</button>
     ${open&&html`<div class="pop">
       <div class="pop-h">Avisos ${n>0?'('+n+')':''}</div>
       ${n===0&&html`<div class="pop-empty">Tudo em dia ✓</div>`}
+      ${temUpdate&&html`<button class="pop-it" key="upd" disabled=${upd.trabalhando} onClick=${()=>dispararAtualizacao()}>
+        <span class="pi-ic upd"><${Ic} d=${I.refresh}/></span><span><b>${escalar?'Vamos forçar a atualização':'Nova atualização disponível'}</b><br/><span class="muted">${upd.trabalhando?'Atualizando…':(escalar?'Toque para forçar — o aviso só some quando a versão atualizar.':'Toque em “'+('Atualizar agora')+'” para ir para a versão '+upd.nova+'.')}</span></span>
+        <span style=${{marginLeft:'auto',alignSelf:'center',flex:'0 0 auto',background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',color:'#fff',fontWeight:700,fontSize:'.72rem',borderRadius:'8px',padding:'6px 10px',whiteSpace:'nowrap',opacity:upd.trabalhando?.7:1}}>${upd.trabalhando?'…':(escalar?'Forçar':'Atualizar agora')}</span></button>`}
       ${al.late.map(o=>html`<button class="pop-it" key=${'l'+o.id} onClick=${()=>{setOpen(false);go('/ordens/'+o.id);}}>
         <span class="pi-ic warn"><${Ic} d=${I.alert}/></span><span><b>OS #${o.numero}</b> atrasada<br/><span class="muted">${o.descricao||'serviço'} · venc. ${fmtDate(dueDate(o))}</span></span></button>`)}
       ${al.low.map(p=>html`<button class="pop-it" key=${'e'+p.id} onClick=${()=>{setOpen(false);go('/estoque');}}>
@@ -2650,6 +2726,9 @@ function NovidadeModal({onClose}){
     }catch(_){ onClose(); }
   })(); },[]);
   async function fechar(ir){ try{ await db.from('profiles').update({novidades_vistas_em:new Date().toISOString()}).eq('id',profile.id); }catch(_){}
+    /* Marcador local complementar (o timestamp no banco é a fonte da verdade, cross-device):
+       registra que esta versão já foi vista, alinhado ao fluxo de verificação do VersionGate. */
+    try{ localStorage.setItem(LS_VISTA, APP_VERSION); }catch(_){}
     onClose(); if(ir) go('/novidades'); }
   if(!items||items.length===0) return null;
   const tag={novidade:'Novidade',melhoria:'Melhoria',correcao:'Correção'};
