@@ -380,7 +380,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.24.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.25.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -490,17 +490,33 @@ function printCupom(o, cli, tenantName, st, itens){
   if(!w){ toast('Permita pop-ups para gerar o cupom.','err'); return; }
   const base=location.href.replace(/[#?].*$/,'').replace(/[^/]*$/,'');
   const s=st||{};
+  /* Largura do cupom = configuração do TENANT (white-label, §4). Default 58mm — a impressora
+     térmica da cliente é 58mm (POS-5890U-L). Aceita coluna futura `largura_cupom` OU chave em
+     `features` (jsonb, adicionável sem migration) — já sai bom por padrão, sem depender de DB. */
+  const larguraCfg = String(s.largura_cupom || (s.features&&s.features.largura_cupom) || '58');
+  const oitenta = larguraCfg==='80';
+  /* Página declarada na largura do PAPEL → o navegador não "encolhe pra caber" (era a causa do
+     cupom fraco: @page 80mm numa térmica 58mm forçava escala ~72%). O corpo fica na área
+     IMPRIMÍVEL real (58mm→48mm de cabeça; 80mm→72mm), para não cortar preços na borda. */
+  const page = oitenta?'80mm':'58mm';
+  const bodyW = oitenta?'72mm':'48mm';
+  const baseFs = oitenta?12.5:13;                 // fonte maior p/ legibilidade térmica (1-bit)
+  const mostrarLogo = !(s.cupom_logo===false || s.cupom_logo==='off' || s.cupom_logo==='nao');
   const end=(typeof s.endereco==='string')?s.endereco:'';
   const info=[].concat(s.cnpj?['CNPJ '+esc(s.cnpj)]:[])
     .concat(end?[esc(end)]:[])
     .concat((s.telefone||s.whatsapp)?[esc(s.telefone||s.whatsapp)]:[]).join('<br>');
-  const linha='<div style="border-top:1px dashed #999;margin:7px 0"></div>';
-  const css='@page{size:80mm auto;margin:0}*{box-sizing:border-box}'
-    +'body{font-family:"Courier New",monospace;color:#111;margin:0;padding:9px 11px;width:80mm;font-size:12px;line-height:1.35}'
-    +'.c{text-align:center}.b{font-weight:700}.nm{font-size:15px;font-weight:700}.mut{color:#555;font-size:10.5px}'
-    +'.row{display:flex;justify-content:space-between;gap:8px}.tot{font-size:14px;font-weight:700}'
-    +'.tag{font-size:11px;font-weight:700;letter-spacing:.08em}.disc{font-size:10px;color:#333;text-align:center;margin-top:6px}';
-  const body='<div class="c"><img src="'+base+'costureira-logo.jpg" style="width:44px;height:44px;border-radius:50%;object-fit:cover" alt="">'
+  /* Preto puro em tudo (a térmica é 1-bit: cinza vira chuvisco). Separador dashed também #000. */
+  const linha='<div style="border-top:1px dashed #000;margin:7px 0"></div>';
+  const css='@page{size:'+page+' auto;margin:0}'
+    +'*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    +'body{font-family:"Courier New",monospace;color:#000;margin:0;padding:2mm 2mm;width:'+bodyW+';font-size:'+baseFs+'px;line-height:1.36;font-weight:600}'
+    +'.c{text-align:center}.b{font-weight:800}.nm{font-size:'+(oitenta?16:17)+'px;font-weight:800;letter-spacing:.02em}'
+    +'.mut{color:#000;font-size:'+(oitenta?10.5:11)+'px}'          // hierarquia por tamanho/peso, não por cinza
+    +'.row{display:flex;justify-content:space-between;gap:6px}.tot{font-size:'+(oitenta?14:15)+'px;font-weight:800}'
+    +'.tag{font-size:'+(oitenta?11:12)+'px;font-weight:800;letter-spacing:.08em}.disc{font-size:'+(oitenta?10:10.5)+'px;text-align:center;margin-top:6px}'
+    +'.lg{width:38px;height:38px;border-radius:50%;object-fit:cover;filter:grayscale(1) contrast(1.7);margin-bottom:2px}';
+  const body='<div class="c">'+(mostrarLogo?'<img class="lg" src="'+base+'costureira-logo.jpg" alt="">':'')
     +'<div class="nm">'+esc(tenantName||'Ateliê')+'</div><div class="mut">'+esc(s.subtitulo||'Ateliê de Costura')+'</div>'
     +(info?'<div class="mut" style="margin-top:3px">'+info+'</div>':'')+'</div>'+linha
     +'<div class="c tag">CUPOM NÃO FISCAL</div>'
@@ -518,7 +534,7 @@ function printCupom(o, cli, tenantName, st, itens){
     +'<div class="mut" style="margin-top:5px">Forma de pagamento: ________________</div>'+linha
     +'<div class="disc">Obrigado pela preferência!</div>'
     +'<div class="disc b">ESTE DOCUMENTO NÃO POSSUI VALOR FISCAL</div>'
-    +'<div class="disc" style="margin-top:9px;color:#999">Ateliê Manager By Vizio</div>';
+    +'<div class="disc" style="margin-top:9px">Ateliê Manager By Vizio</div>';
   w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Cupom não fiscal — OS '+esc(String(o.numero))+'</title><style>'+css+'</style></head><body>'+body
     +'<'+'script>window.onload=function(){setTimeout(function(){window.print()},150)}<'+'/script></body></html>');
   w.document.close();
