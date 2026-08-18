@@ -124,10 +124,21 @@
   @media(min-width:820px){.grid{grid-template-columns:repeat(4,1fr)}}
   .kpi{padding:18px 20px;border-radius:1.1rem;text-align:left;cursor:pointer;border:0;background:rgba(251,248,243,.72);
     backdrop-filter:blur(18px);box-shadow:var(--shadow);transition:.15s;font-family:inherit}
-  .kpi:hover{transform:translateY(-2px);box-shadow:0 14px 38px rgba(70,40,80,.14)}
+  .kpi:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 14px 38px rgba(70,40,80,.14)}
   .kpi .n{font-family:"Cormorant Garamond",serif;font-size:2.1rem;line-height:1;color:var(--plum)}
   .kpi .l{color:var(--muted);font-size:.82rem;margin-top:6px}
   .kpi.warn .n{color:var(--warn)} .kpi.ok .n{color:var(--ok)}
+  /* §20 — micro-animações tasteful: entrada suave (fade + leve subida) com stagger e hover vivo.
+     Só transform/opacity; tudo dentro de no-preference (reduced-motion vê o estado final). */
+  @media (prefers-reduced-motion:no-preference){
+    @keyframes riseIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .rise{animation:riseIn .42s ease-out both}
+    .grid.stagger>*{animation:riseIn .42s ease-out both}
+    .grid.stagger>*:nth-child(1){animation-delay:.03s}
+    .grid.stagger>*:nth-child(2){animation-delay:.09s}
+    .grid.stagger>*:nth-child(3){animation-delay:.15s}
+    .grid.stagger>*:nth-child(4){animation-delay:.21s}
+  }
   /* cards / sections */
   .row{display:grid;gap:16px;margin-top:18px}
   @media(min-width:820px){.row.two{grid-template-columns:1fr 1fr}.row.side{grid-template-columns:1.6fr 1fr}}
@@ -228,6 +239,8 @@
   @keyframes vzF{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
   /* chart */
   .chartbox{height:158px;position:relative}
+  .chart-tip{position:absolute;pointer-events:none;z-index:3;transform:translateY(-100%);white-space:nowrap;
+    background:rgba(46,43,49,.92);color:#fff;font-size:.72rem;line-height:1.25;padding:5px 8px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.22)}
   /* measures + segments */
   .measure-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px}
   @media(max-width:560px){.measure-grid{grid-template-columns:1fr 1fr}}
@@ -381,7 +394,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.27.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.28.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -457,6 +470,19 @@ const esc = s => String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt
    VersionGate para confirmar que o reload realmente chegou na versão publicada (§14.2). */
 const cmpVer = (a,b) => { const pa=String(a||'').split('.').map(n=>parseInt(n,10)||0), pb=String(b||'').split('.').map(n=>parseInt(n,10)||0);
   for(let i=0;i<Math.max(pa.length,pb.length);i++){ const d=(pa[i]||0)-(pb[i]||0); if(d) return d<0?-1:1; } return 0; };
+/* §19 — ordena a tela de Novidades da MAIS RECENTE para a mais antiga.
+   Não dá para confiar só em `ordem`: as versões-semente 1.0.0–1.10.0 foram gravadas com
+   `ordem` INVERTIDO (1.10.0=1 … 1.0.0=70), enquanto as posteriores crescem (131+). Por isso
+   `ordem` asc mostrava 1.10→1.0 no topo e empurrava 1.12–1.25 para o fim (abaixo da 1.0.0);
+   e `ordem` desc reverteria o bloco antigo. Chave real: data de lançamento desc, desempate por
+   semver real (cmpVer, não string) desc e, por fim, `ordem` desc. Não há `limit` — nada corta. */
+const _novDateKey = r => String((r && (r.lancado_em || r.data)) || '').slice(0,19);
+const cmpNovidadeDesc = (a,b) => {
+  const da=_novDateKey(a), db2=_novDateKey(b);
+  if(da!==db2) return da<db2 ? 1 : -1;
+  const cv=cmpVer(b.versao, a.versao); if(cv) return cv;
+  return (Number(b.ordem)||0) - (Number(a.ordem)||0);
+};
 function printDoc(title, bodyHtml, tenantName){
   const w=window.open('','_blank','width=900,height=760');
   if(!w){ toast('Permita pop-ups para gerar a impressão.','err'); return; }
@@ -623,18 +649,102 @@ const Mark = ({cls='mark breathe'}) => html`<svg class=${cls} viewBox="0 0 104 6
 const LivingBg = () => html`<div class="living" aria-hidden="true"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>`;
 const BrandLogo = ({size=40,cls=''}) => html`<img class=${'brandmark breathe-img '+cls} src="costureira-logo.jpg" width=${size} height=${size} alt="Costureira Salvador"/>`;
 const ByVizio = ({dark=true}) => html`<span class="byvizio">Ateliê Manager <b>By</b> <img class="vzfloat" src=${dark?'vizio-dark.svg':'vizio-light.svg'} alt="Vizio"/></span>`;
+/* ---------- count-up (§20: números-chave contam até o valor) ----------
+   money → formata em BRL e respeita o modo privacidade (mascarado = NÃO conta, mostra ••••).
+   prefers-reduced-motion → valor final estático, sem contagem. */
+function Num({value, money=false, dur=700}){
+  const priv=usePrivacidade();
+  const target=Number(value)||0;
+  const reduce = typeof window!=='undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const [disp,setDisp]=useState(reduce?target:0);
+  const raf=useRef(0), from=useRef(reduce?target:0);
+  useEffect(()=>{
+    if(reduce || (money&&priv)){ setDisp(target); from.current=target; return; }
+    const ini=from.current, start=performance.now(), ease=t=>1-Math.pow(1-t,3);
+    const tick=now=>{ const t=Math.min(1,(now-start)/dur); setDisp(ini+(target-ini)*ease(t));
+      if(t<1){ raf.current=requestAnimationFrame(tick); } else { from.current=target; } };
+    cancelAnimationFrame(raf.current); raf.current=requestAnimationFrame(tick);
+    return ()=>cancelAnimationFrame(raf.current);
+  },[target,priv,money,reduce,dur]);
+  if(money && priv) return MASK_BRL;
+  return money ? BRLraw(disp) : String(Math.round(disp));
+}
+
+/* ---------- MiniChart — torre de faturamento com PREENCHIMENTO LÍQUIDO ----------
+   §20 / PADRAO-MOVIMENTO (versão sutil aprovada 18/08): cada barra ENCHE como um tanque —
+   sobe até o valor com uma superfície ondulada contínua e discreta. Canvas próprio (sem
+   Chart.js): 2 camadas de onda (acento sólido à frente + acento translúcido atrás, fora de
+   fase, amplitude ~2px), fase lenta (~0.06/frame), ease do preenchimento (~0.07). Reanima ao
+   mudar o dado (labels/data) e ao alternar privacidade. Cor = acento da marca (tokens do
+   tenant, nunca fixa). prefers-reduced-motion:reduce → sem ondas e sem enchimento: valor final
+   estático. Mascara eixo/tooltip no modo privacidade. Só desenha transform/opacity/path — nada
+   de layout, sem will-change permanente. */
 const MiniChart = ({labels,data,fmt}) => {
-  const ref=useRef(null), inst=useRef(null);
-  const priv=usePrivacidade(); // modo privacidade: mascara eixo/tooltip e redesenha ao alternar
-  useEffect(()=>{ if(!window.Chart||!ref.current) return;
-    if(inst.current) inst.current.destroy();
-    inst.current=new window.Chart(ref.current,{type:'bar',
-      data:{labels,datasets:[{data,backgroundColor:'#8e2cb0',hoverBackgroundColor:'#5e3a56',borderRadius:6,maxBarThickness:36}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>priv?MASK_BRL:(fmt?fmt(c.raw):c.raw)}}},
-      scales:{y:{beginAtZero:true,ticks:{maxTicksLimit:4,font:{size:10},callback:v=>priv?'R$ •••':'R$ '+v},grid:{color:'rgba(94,58,86,.08)'}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
-    return ()=>{ if(inst.current){inst.current.destroy();inst.current=null;} };
+  const wrapRef=useRef(null), cvRef=useRef(null), tipRef=useRef(null);
+  const priv=usePrivacidade();
+  const view=useRef({}); view.current={labels,data,fmt,priv};
+  const st=useRef({fill:0,phase:0,hover:-1,raf:0});
+  useEffect(()=>{
+    const wrap=wrapRef.current, cv=cvRef.current; if(!wrap||!cv) return;
+    const ctx=cv.getContext('2d');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+    const cs=getComputedStyle(document.documentElement);
+    const accent=(cs.getPropertyValue('--violet')||'#8e2cb0').trim()||'#8e2cb0';
+    const accent2=(cs.getPropertyValue('--plum')||'#5e3a56').trim()||'#5e3a56';
+    const grid='rgba(94,58,86,.10)', axis='rgba(94,58,86,.55)';
+    st.current.fill = reduce ? 1 : 0; // reanima do zero a cada (re)montagem/mudança de dado
+    const hexA=(hex,a)=>{ const h=String(hex).replace('#',''); const n=h.length===3?h.split('').map(c=>c+c).join(''):h;
+      const r=parseInt(n.slice(0,2),16)||0,g=parseInt(n.slice(2,4),16)||0,b=parseInt(n.slice(4,6),16)||0; return 'rgba('+r+','+g+','+b+','+a+')'; };
+    const roundRect=(c,x,y,w,h,r)=>{ r=Math.max(0,Math.min(r,w/2,h/2)); c.beginPath(); c.moveTo(x+r,y);
+      c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); };
+    const wave=(c,x,w,yTop,phase,amp,yBase)=>{ c.beginPath(); c.moveTo(x,yBase);
+      const steps=Math.max(6,Math.round(w/4));
+      for(let s=0;s<=steps;s++){ const px=x+w*s/steps, py=yTop+Math.sin(phase+s/steps*Math.PI*2)*amp; c.lineTo(px,py); }
+      c.lineTo(x+w,yBase); c.closePath(); };
+    const niceTop=m=>{ if(m<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(m))); const f=m/p; const s=f<=1?1:f<=2?2:f<=5?5:10; return s*p; };
+    function resize(){ const dpr=Math.min(window.devicePixelRatio||1,2); const w=wrap.clientWidth,h=wrap.clientHeight;
+      cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); cv.style.width=w+'px'; cv.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); }
+    function draw(){ const {labels,data,priv}=view.current; const w=wrap.clientWidth,h=wrap.clientHeight;
+      ctx.clearRect(0,0,w,h);
+      const padL=44,padR=6,padT=8,padB=22, gw=w-padL-padR, gh=h-padT-padB;
+      const top=niceTop(Math.max(0,...data.map(v=>Number(v)||0)));
+      ctx.textBaseline='middle'; ctx.font='10px Inter,Arial,sans-serif';
+      for(let i=0;i<=4;i++){ const y=padT+gh-(gh*i/4);
+        ctx.strokeStyle=grid; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); ctx.stroke();
+        ctx.fillStyle=axis; ctx.textAlign='right'; ctx.fillText(priv?'R$ •••':('R$ '+Math.round(top*i/4)), padL-6, y); }
+      const n=data.length, slot=n?gw/n:gw, bw=Math.min(36,slot*0.62), fill=st.current.fill;
+      for(let i=0;i<n;i++){ const v=Number(data[i])||0, full=gh*(top?v/top:0), cur=full*fill;
+        const x=padL+slot*i+(slot-bw)/2, yBase=padT+gh, yTop=yBase-cur, r=Math.min(6,bw/2);
+        roundRect(ctx,x,padT+gh-full,bw,Math.max(full,0.001),r); ctx.fillStyle=hexA(accent,.08); ctx.fill();
+        if(cur<=0.5) continue;
+        ctx.save(); roundRect(ctx,x,yTop,bw,cur,r); ctx.clip();
+        wave(ctx,x,bw,yTop, st.current.phase+Math.PI*0.9, reduce?0:2.4, yBase); ctx.fillStyle=hexA(accent2,.30); ctx.fill();
+        wave(ctx,x,bw,yTop, st.current.phase, reduce?0:2.0, yBase); ctx.fillStyle=accent; ctx.fill();
+        ctx.restore();
+        if(st.current.hover===i){ roundRect(ctx,x,yTop,bw,cur,r); ctx.fillStyle=hexA('#ffffff',.14); ctx.fill(); } }
+      ctx.fillStyle=axis; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.font='11px Inter,Arial,sans-serif';
+      for(let i=0;i<n;i++){ ctx.fillText(labels[i]||'', padL+slot*i+slot/2, h-6); } }
+    function loop(){ if(!reduce){ st.current.fill += (1-st.current.fill)*0.07; if(st.current.fill>0.999) st.current.fill=1; st.current.phase+=0.06; }
+      draw(); st.current.raf=requestAnimationFrame(loop); }
+    function onMove(e){ const rect=cv.getBoundingClientRect(), mx=e.clientX-rect.left, my=e.clientY-rect.top, w=wrap.clientWidth;
+      const padL=44,padR=6, gw=w-padL-padR, n=view.current.data.length, slot=n?gw/n:gw;
+      let idx=-1; if(mx>=padL && mx<=w-padR){ idx=Math.floor((mx-padL)/slot); if(idx<0||idx>=n) idx=-1; }
+      st.current.hover=idx; const tip=tipRef.current;
+      if(idx>=0 && tip){ const {labels,data,fmt,priv}=view.current; tip.style.display='block';
+        tip.style.left=Math.min(w-96,Math.max(2,mx+8))+'px'; tip.style.top=Math.max(2,my-4)+'px';
+        tip.innerHTML='<b>'+esc(labels[idx]||'')+'</b><br>'+(priv?MASK_BRL:esc(String(fmt?fmt(data[idx]):data[idx]))); }
+      else if(tip){ tip.style.display='none'; }
+      if(reduce) draw(); }
+    function onLeave(){ st.current.hover=-1; if(tipRef.current) tipRef.current.style.display='none'; if(reduce) draw(); }
+    resize();
+    const ro = window.ResizeObserver ? new ResizeObserver(resize) : null;
+    if(ro) ro.observe(wrap); else window.addEventListener('resize',resize);
+    cv.addEventListener('mousemove',onMove); cv.addEventListener('mouseleave',onLeave);
+    if(reduce) draw(); else st.current.raf=requestAnimationFrame(loop);
+    return ()=>{ cancelAnimationFrame(st.current.raf); if(ro) ro.disconnect(); else window.removeEventListener('resize',resize);
+      cv.removeEventListener('mousemove',onMove); cv.removeEventListener('mouseleave',onLeave); };
   },[labels.join(),data.join(),priv]);
-  return html`<div class="chartbox"><canvas ref=${ref}></canvas></div>`;
+  return html`<div class="chartbox" ref=${wrapRef}><canvas ref=${cvRef}></canvas><div class="chart-tip" ref=${tipRef} style=${{display:'none'}}></div></div>`;
 };
 
 /* ---------- toasts ---------- */
@@ -1245,13 +1355,13 @@ function Dashboard(){
     <${SaudacaoDiaria}/>
     <h1 class="hi serif">Olá, ${(profile?.nome||'').split(' ')[0]}</h1>
     <div class="hint">Panorama do ${tenant?.nome||'ateliê'} — atualizado em tempo real.</div>
-    <div class="grid">
-      <button class="kpi" onClick=${()=>go('/ordens?f=ativas')}><div class="n">${k.abertas}</div><div class="l">Ordens em aberto</div></button>
-      <button class="kpi warn" onClick=${()=>go('/ordens?f=atrasadas')}><div class="n">${k.atrasadas}</div><div class="l">Atrasadas</div></button>
-      <button class="kpi" onClick=${()=>go('/clientes')}><div class="n">${k.clientes}</div><div class="l">Clientes</div></button>
-      <button class="kpi ok" onClick=${()=>go('/financeiro')}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(k.recMes)}</div><div class="l">Recebido no mês</div></button>
+    <div class="grid stagger">
+      <button class="kpi" onClick=${()=>go('/ordens?f=ativas')}><div class="n"><${Num} value=${k.abertas}/></div><div class="l">Ordens em aberto</div></button>
+      <button class="kpi warn" onClick=${()=>go('/ordens?f=atrasadas')}><div class="n"><${Num} value=${k.atrasadas}/></div><div class="l">Atrasadas</div></button>
+      <button class="kpi" onClick=${()=>go('/clientes')}><div class="n"><${Num} value=${k.clientes}/></div><div class="l">Clientes</div></button>
+      <button class="kpi ok" onClick=${()=>go('/financeiro')}><div class="n" style=${{fontSize:'1.5rem'}}><${Num} value=${k.recMes} money=${true}/></div><div class="l">Recebido no mês</div></button>
     </div>
-    ${k.agenda.length>0&&html`<div class="glass panel" style=${{marginTop:'18px'}}>
+    ${k.agenda.length>0&&html`<div class="glass panel rise" style=${{marginTop:'18px',animationDelay:'.06s'}}>
       <h3>Agenda dos próximos 7 dias</h3><p class="desc">Provas marcadas e entregas previstas.</p>
       <div class="tblwrap"><table class="tbl">
         <thead><tr><th>Quando</th><th>O quê</th><th>Cliente</th><th>Serviço</th><th class="r">OS</th></tr></thead>
@@ -1265,11 +1375,11 @@ function Dashboard(){
           </tr>`; })}</tbody>
       </table></div>
     </div>`}
-    <div class="glass panel" style=${{marginTop:'18px'}}>
+    <div class="glass panel rise" style=${{marginTop:'18px',animationDelay:'.12s'}}>
       <h3>Faturamento — últimos 6 meses</h3><p class="desc">Serviços entregues por mês.</p>
       <${MiniChart} labels=${k.chart.labels} data=${k.chart.data} fmt=${BRL}/>
     </div>
-    <div class="row side">
+    <div class="row side rise" style=${{animationDelay:'.18s'}}>
       <div class="glass panel">
         <h3>Ordens recentes</h3><p class="desc">As últimas OS registradas.</p>
         ${k.recent.length? html`<div class="tblwrap"><table class="tbl"><thead><tr><th>#</th><th>Descrição</th><th>Status</th><th class="r">Valor</th></tr></thead>
@@ -2315,8 +2425,10 @@ function Novidades(){
   const [rows,setRows]=useState(null);
   useEffect(()=>{ (async()=>{
     const pub=(typeof db.schema==='function')?db.schema('public'):db;
-    const data=qd(await pub.from('plataforma_versoes').select('*').eq('sistema','atelie').order('ordem',{ascending:true}), 'as novidades');
-    setRows(data||[]);
+    /* Ordena no cliente (autoritativo): mostra TODAS as versões, da mais recente à mais antiga
+       (§19). A ordenação do banco é irrelevante aqui — cmpNovidadeDesc é quem manda. */
+    const data=qd(await pub.from('plataforma_versoes').select('*').eq('sistema','atelie').order('lancado_em',{ascending:false,nullsFirst:false}), 'as novidades');
+    setRows((data||[]).slice().sort(cmpNovidadeDesc));
   })(); },[]);
   const tipoMeta={novidade:'Novidade',melhoria:'Melhoria',correcao:'Correção'};
   const lancados=(rows||[]).filter(r=>r.status==='lancado');
