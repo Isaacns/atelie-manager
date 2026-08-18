@@ -313,6 +313,7 @@
   .topbar .icob{width:34px;height:34px;border-radius:50%;border:1px solid transparent;background:transparent;
     cursor:pointer;color:var(--muted);display:grid;place-items:center;flex:0 0 auto}
   .topbar .icob:hover{border-color:var(--border);background:rgba(255,255,255,.6);color:var(--plum)}
+  .topbar .icob.on{color:var(--violet);border-color:var(--border);background:rgba(142,44,176,.1)}
   .topbar .icob svg{width:17px;height:17px}
   @media (max-width:720px){ .topbar .user .txt{display:none} .topbar .user{padding:3px} }
   /* tela de bloqueio */
@@ -380,7 +381,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.25.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.26.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -427,7 +428,23 @@ window.APP_VERSION = '1.25.0'; /* §14.2: nunca const — precisa ser lida como 
 })();
 
 /* ---------- helpers ---------- */
-const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+/* ---------- Modo privacidade (oculta valores em R$ na TELA — padrão do campo de senha / apps de banco) ----------
+   Um único interruptor global esconde TODO valor monetário exibido na tela (KPIs, tabelas,
+   totais), para o cliente não ver os números enquanto a costureira gera a nota/OS na frente dele.
+   IMPORTANTE: só afeta a EXIBIÇÃO na tela. Documentos e mensagens que SAEM da tela — cupom
+   impresso, OS impressa, relatórios A4, fechamento de caixa e mensagens de WhatsApp — usam
+   BRLraw e NUNCA são mascarados (o cliente precisa dos valores reais no papel/mensagem).
+   Estado reativo (pub/sub, espelha o updateStore) + persistido em localStorage. Default: visível. */
+const LS_PRIV='atelie_privacidade_valores';
+const MASK_BRL='R$ ••••';
+const privacyStore=(()=>{ let on=false; try{ on=localStorage.getItem(LS_PRIV)==='1'; }catch(_){}
+  const subs=new Set();
+  const apply=v=>{ on=!!v; try{ localStorage.setItem(LS_PRIV, on?'1':'0'); }catch(_){} subs.forEach(f=>f()); };
+  return { get:()=>on, set:apply, toggle:()=>apply(!on), sub:f=>{ subs.add(f); return ()=>subs.delete(f); } }; })();
+function usePrivacidade(){ const [,f]=useState(0); useEffect(()=>privacyStore.sub(()=>f(x=>x+1)),[]); return privacyStore.get(); }
+/* BRLraw = valor real, sempre (documentos/mensagens). BRL = versão de TELA: mascara quando o modo privacidade está ligado. */
+const BRLraw = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const BRL = n => privacyStore.get() ? MASK_BRL : BRLraw(n);
 const onlyDigits = s => (s||'').replace(/\D/g,'');
 const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('pt-BR') : '—';
 const fmtDateTime = x => { if(!x) return '—'; const d=new Date(String(x).replace(' ','T').replace(/([+-]\d{2})$/,'$1:00')); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); };
@@ -524,13 +541,13 @@ function printCupom(o, cli, tenantName, st, itens){
     +'<div style="margin-top:4px">Cliente: <b>'+esc(cli&&cli.nome?cli.nome:'Consumidor')+'</b></div>'+linha
     +((itens&&itens.length>0)
         ? itens.map(function(it){ var q=Number(it.quantidade)||1; var stv=(it.subtotal!=null?Number(it.subtotal):q*(Number(it.valor_unit)||0));
-            return '<div class="row"><span>'+(q>1?q+'x ':'')+esc(it.descricao||'Serviço')+'</span><span class="b">'+BRL(stv)+'</span></div>'; }).join('')
-        : '<div class="row"><span>'+esc(o.descricao||'Serviço')+'</span><span class="b">'+BRL(o.valor)+'</span></div>')
+            return '<div class="row"><span>'+(q>1?q+'x ':'')+esc(it.descricao||'Serviço')+'</span><span class="b">'+BRLraw(stv)+'</span></div>'; }).join('')
+        : '<div class="row"><span>'+esc(o.descricao||'Serviço')+'</span><span class="b">'+BRLraw(o.valor)+'</span></div>')
     +linha
-    +(Number(o.desconto)>0?'<div class="row"><span>Desconto</span><span>− '+BRL(o.desconto)+'</span></div>':'')
-    +'<div class="row tot"><span>TOTAL</span><span>'+BRL(o.valor)+'</span></div>'
-    +(Number(o.valor_pago)>0?'<div class="row" style="margin-top:3px"><span>Pago</span><span>'+BRL(o.valor_pago)+'</span></div>':'')
-    +(pagInfo(o).saldo>0.009?'<div class="row b"><span>Saldo a receber</span><span>'+BRL(pagInfo(o).saldo)+'</span></div>':'')
+    +(Number(o.desconto)>0?'<div class="row"><span>Desconto</span><span>− '+BRLraw(o.desconto)+'</span></div>':'')
+    +'<div class="row tot"><span>TOTAL</span><span>'+BRLraw(o.valor)+'</span></div>'
+    +(Number(o.valor_pago)>0?'<div class="row" style="margin-top:3px"><span>Pago</span><span>'+BRLraw(o.valor_pago)+'</span></div>':'')
+    +(pagInfo(o).saldo>0.009?'<div class="row b"><span>Saldo a receber</span><span>'+BRLraw(pagInfo(o).saldo)+'</span></div>':'')
     +'<div class="mut" style="margin-top:5px">Forma de pagamento: ________________</div>'+linha
     +'<div class="disc">Obrigado pela preferência!</div>'
     +'<div class="disc b">ESTE DOCUMENTO NÃO POSSUI VALOR FISCAL</div>'
@@ -586,6 +603,8 @@ const I = {
   exit:'M15 17l5-5-5-5M20 12H9M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7',
   camera:'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
   key:'M14.5 9.5a4 4 0 1 1-5.66 5.66 4 4 0 0 1 5.66-5.66Zm0 0L21 3M18 6l2 2',
+  eye:'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
+  eyeOff:'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24M1 1l22 22',
 };
 const Ic = ({d,cls,style}) => html`<svg class=${cls} style=${style} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d=${d}/></svg>`;
 /* Ícone OFICIAL do WhatsApp (glifo de marca): balão + fone, PREENCHIDO (fill), não
@@ -606,14 +625,15 @@ const BrandLogo = ({size=40,cls=''}) => html`<img class=${'brandmark breathe-img
 const ByVizio = ({dark=true}) => html`<span class="byvizio">Ateliê Manager <b>By</b> <img class="vzfloat" src=${dark?'vizio-dark.svg':'vizio-light.svg'} alt="Vizio"/></span>`;
 const MiniChart = ({labels,data,fmt}) => {
   const ref=useRef(null), inst=useRef(null);
+  const priv=usePrivacidade(); // modo privacidade: mascara eixo/tooltip e redesenha ao alternar
   useEffect(()=>{ if(!window.Chart||!ref.current) return;
     if(inst.current) inst.current.destroy();
     inst.current=new window.Chart(ref.current,{type:'bar',
       data:{labels,datasets:[{data,backgroundColor:'#8e2cb0',hoverBackgroundColor:'#5e3a56',borderRadius:6,maxBarThickness:36}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(fmt?fmt(c.raw):c.raw)}}},
-      scales:{y:{beginAtZero:true,ticks:{maxTicksLimit:4,font:{size:10},callback:v=>'R$ '+v},grid:{color:'rgba(94,58,86,.08)'}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>priv?MASK_BRL:(fmt?fmt(c.raw):c.raw)}}},
+      scales:{y:{beginAtZero:true,ticks:{maxTicksLimit:4,font:{size:10},callback:v=>priv?'R$ •••':'R$ '+v},grid:{color:'rgba(94,58,86,.08)'}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
     return ()=>{ if(inst.current){inst.current.destroy();inst.current=null;} };
-  },[labels.join(),data.join()]);
+  },[labels.join(),data.join(),priv]);
   return html`<div class="chartbox"><canvas ref=${ref}></canvas></div>`;
 };
 
@@ -983,6 +1003,17 @@ function LockGate(){
   </div>`;
 }
 
+/* §8.1 — Modo privacidade: olho que oculta os valores em R$ da tela enquanto o cliente vê o
+   monitor (mesmo espírito do campo de senha e dos apps de banco). Olho aberto = valores visíveis;
+   olho cortado = valores ocultos. Só afeta a exibição na tela — cupom, relatórios e WhatsApp
+   seguem com os valores reais. Distinto do cadeado ("Bloquear a tela"), que continua intacto. */
+function PrivacyToggle(){
+  const on=usePrivacidade();
+  const lbl=on?'Mostrar valores':'Ocultar valores';
+  return html`<button class=${'icob'+(on?' on':'')} title=${lbl} aria-label=${lbl} aria-pressed=${on}
+    onClick=${()=>privacyStore.toggle()}><${Ic} d=${on?I.eyeOff:I.eye}/></button>`;
+}
+
 function UserChip(){
   const {profile,role}=useApp();
   const [ficha,setFicha]=useState(false);
@@ -1116,6 +1147,7 @@ function Shell({title,children}){
         <button class="btn ghost sm" title="Voltar" onClick=${()=>history.back()}><${Ic} d=${I.back}/></button>
         <h2>${title}</h2>
         <div class="spacer"></div>
+        <${PrivacyToggle}/>
         <${AlertsBell}/>
         <${UserChip}/>
       </div>
@@ -1595,8 +1627,8 @@ function OrdemDetail({id}){
     const {error}=await db.from('ordem_fotos').delete().eq('id',f.id);
     if(error) toast('Erro: '+error.message,'err'); else { toast('Foto removida.','ok'); load(); } }
   const osText=()=>'*Ateliê '+(tenant?.nome||'')+'* — Ordem de Serviço #'+o.numero+'\n'
-    +'Cliente: '+(cli?.nome||'—')+'\n'+'Serviço: '+(o.descricao||'—')+'\n'+'Total: '+BRL(o.valor)+'\n'
-    +(pagInfo(o).saldo>0.009?'Saldo a receber: '+BRL(pagInfo(o).saldo)+'\n':'')
+    +'Cliente: '+(cli?.nome||'—')+'\n'+'Serviço: '+(o.descricao||'—')+'\n'+'Total: '+BRLraw(o.valor)+'\n'
+    +(pagInfo(o).saldo>0.009?'Saldo a receber: '+BRLraw(pagInfo(o).saldo)+'\n':'')
     +'Entrada: '+fmtDate(o.data_entrada)+(o.prazo?'  •  Prazo: '+fmtDate(o.prazo):'')+'\n'
     +'Status: '+(STATUS[o.status]?.l||o.status)+(o.observacoes?'\nObs.: '+o.observacoes:'');
   function printOS(){
@@ -1604,16 +1636,16 @@ function OrdemDetail({id}){
     const servicoLinha = temItens
       ? '<tr><td style="color:#8a7e86;vertical-align:top">Serviços</td><td><table style="width:100%;border-collapse:collapse">'
         +'<thead><tr><th style="text-align:left;border-bottom:1px solid #e7ddd0;padding:2px 0">Serviço</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Qtd</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Valor</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Subtotal</th></tr></thead><tbody>'
-        +itens.map(it=>'<tr><td style="padding:2px 0">'+esc(it.descricao||'—')+'</td><td style="text-align:right">'+(Number(it.quantidade)||1)+'</td><td style="text-align:right">'+BRL(it.valor_unit)+'</td><td style="text-align:right"><b>'+BRL(itSub(it))+'</b></td></tr>').join('')
+        +itens.map(it=>'<tr><td style="padding:2px 0">'+esc(it.descricao||'—')+'</td><td style="text-align:right">'+(Number(it.quantidade)||1)+'</td><td style="text-align:right">'+BRLraw(it.valor_unit)+'</td><td style="text-align:right"><b>'+BRLraw(itSub(it))+'</b></td></tr>').join('')
         +'</tbody></table></td></tr>'
       : '<tr><td style="color:#8a7e86">Serviço</td><td>'+esc(o.descricao||'—')+'</td></tr>';
     const body='<h3>Ordem de Serviço #'+o.numero+'</h3><table><tbody>'
       +'<tr><td style="width:36%;color:#8a7e86">Cliente</td><td>'+esc(cli?.nome||'—')+'</td></tr>'
       +servicoLinha
-      +(Number(o.desconto)>0?'<tr><td style="color:#8a7e86">Desconto</td><td>− '+BRL(o.desconto)+'</td></tr>':'')
-      +'<tr><td style="color:#8a7e86">Total a pagar</td><td><b>'+BRL(o.valor)+'</b></td></tr>'
-      +(Number(o.valor_pago)>0?'<tr><td style="color:#8a7e86">Pago</td><td>'+BRL(o.valor_pago)+'</td></tr>':'')
-      +(pagInfo(o).saldo>0.009?'<tr><td style="color:#8a7e86">Saldo a receber</td><td><b>'+BRL(pagInfo(o).saldo)+'</b></td></tr>':'')
+      +(Number(o.desconto)>0?'<tr><td style="color:#8a7e86">Desconto</td><td>− '+BRLraw(o.desconto)+'</td></tr>':'')
+      +'<tr><td style="color:#8a7e86">Total a pagar</td><td><b>'+BRLraw(o.valor)+'</b></td></tr>'
+      +(Number(o.valor_pago)>0?'<tr><td style="color:#8a7e86">Pago</td><td>'+BRLraw(o.valor_pago)+'</td></tr>':'')
+      +(pagInfo(o).saldo>0.009?'<tr><td style="color:#8a7e86">Saldo a receber</td><td><b>'+BRLraw(pagInfo(o).saldo)+'</b></td></tr>':'')
       +'<tr><td style="color:#8a7e86">Entrada</td><td>'+fmtDate(o.data_entrada)+'</td></tr>'
       +'<tr><td style="color:#8a7e86">Prazo</td><td>'+fmtDate(o.prazo)+'</td></tr>'
       +'<tr><td style="color:#8a7e86">Status</td><td>'+esc(STATUS[o.status]?.l||o.status)+'</td></tr>'
@@ -1866,14 +1898,14 @@ function Financeiro(){
   function imprimirFechamento(){
     const linhas=caixa.itens.length
       ? caixa.itens.map(l=>'<tr><td>'+esc(l.descricao||(l.tipo==='receita'?'Receita':'Despesa'))+'</td>'
-          +'<td style="text-align:right;color:'+(l.tipo==='receita'?'#2f6b43':'#b3452f')+'">'+(l.tipo==='receita'?'+ ':'− ')+BRL(l.valor)+'</td></tr>').join('')
+          +'<td style="text-align:right;color:'+(l.tipo==='receita'?'#2f6b43':'#b3452f')+'">'+(l.tipo==='receita'?'+ ':'− ')+BRLraw(l.valor)+'</td></tr>').join('')
       : '<tr><td colspan="2" style="color:#8a7e86">Nenhum movimento hoje.</td></tr>';
     const body='<h3>Fechamento do dia — '+fmtDate(hoje)+'</h3>'
       +'<table><tbody>'+linhas+'</tbody></table>'
       +'<table style="margin-top:22px"><tbody>'
-      +'<tr><td style="width:60%;color:#8a7e86">Entradas</td><td style="text-align:right"><b>'+BRL(caixa.entrou)+'</b></td></tr>'
-      +'<tr><td style="color:#8a7e86">Saídas</td><td style="text-align:right"><b>'+BRL(caixa.saiu)+'</b></td></tr>'
-      +'<tr><td style="color:#8a7e86">Saldo do dia</td><td style="text-align:right"><b>'+BRL(caixa.saldo)+'</b></td></tr>'
+      +'<tr><td style="width:60%;color:#8a7e86">Entradas</td><td style="text-align:right"><b>'+BRLraw(caixa.entrou)+'</b></td></tr>'
+      +'<tr><td style="color:#8a7e86">Saídas</td><td style="text-align:right"><b>'+BRLraw(caixa.saiu)+'</b></td></tr>'
+      +'<tr><td style="color:#8a7e86">Saldo do dia</td><td style="text-align:right"><b>'+BRLraw(caixa.saldo)+'</b></td></tr>'
       +'</tbody></table>'
       +'<div class="kv" style="margin-top:30px"><span>Conferido por: __________________________</span><span>Data: ____/____/______</span></div>';
     printDoc('Fechamento do dia', body, tenant?.nome);
@@ -1960,15 +1992,15 @@ function Relatorios(){
     const tot=rows.reduce((s,o)=>s+Number(o.valor||0),0);
     const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span><span>Serviços: <b>'+rows.length+'</b></span></div>'
       +'<table><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrada</th><th class="r">Valor</th></tr></thead><tbody>'
-      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+fmtDate(o.data_entrada)+'</td><td class="r">'+BRL(o.valor)+'</td></tr>').join('')
-      +'</tbody><tfoot><tr><td colspan="4">Total de entradas</td><td class="r">'+BRL(tot)+'</td></tr></tfoot></table>';
+      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+fmtDate(o.data_entrada)+'</td><td class="r">'+BRLraw(o.valor)+'</td></tr>').join('')
+      +'</tbody><tfoot><tr><td colspan="4">Total de entradas</td><td class="r">'+BRLraw(tot)+'</td></tr></tfoot></table>';
     printDoc('Relatório de Entradas — '+periodo, body, tenant?.nome); };
   const printFinalizados=()=>{ const rows=data.per.filter(o=>o.status==='finalizado'||o.status==='entregue').sort((a,b)=>(a.entregue_em||'').localeCompare(b.entregue_em||''));
     const tot=rows.reduce((s,o)=>s+Number(o.valor||0),0);
     const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span><span>Finalizados: <b>'+rows.length+'</b></span><span>Tempo médio: <b>'+(data.tempoMedio??'—')+' dias</b></span></div>'
       +'<table><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrega</th><th class="r">Valor</th></tr></thead><tbody>'
-      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+(o.entregue_em?fmtDate(o.entregue_em.slice(0,10)):'—')+'</td><td class="r">'+BRL(o.valor)+'</td></tr>').join('')
-      +'</tbody><tfoot><tr><td colspan="4">Total finalizado</td><td class="r">'+BRL(tot)+'</td></tr></tfoot></table>';
+      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+(o.entregue_em?fmtDate(o.entregue_em.slice(0,10)):'—')+'</td><td class="r">'+BRLraw(o.valor)+'</td></tr>').join('')
+      +'</tbody><tfoot><tr><td colspan="4">Total finalizado</td><td class="r">'+BRLraw(tot)+'</td></tr></tfoot></table>';
     printDoc('Relatório de Finalizados — '+periodo, body, tenant?.nome); };
   const printFaturamento=()=>{ const inR=l=>{ const d=l.pago_em||l.vencimento||''; return d>=data.ini&&d<=data.fim; };
     const rec=data.fin.filter(l=>l.tipo==='receita'&&l.pago&&inR(l)); const desp=data.fin.filter(l=>l.tipo==='despesa'&&l.pago&&inR(l));
@@ -1976,11 +2008,11 @@ function Relatorios(){
     const osTot=data.per.reduce((s,o)=>s+Number(o.valor||0),0);
     const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span></div>'
       +'<table><tbody>'
-      +'<tr><td>Serviços registrados no período</td><td class="r">'+BRL(osTot)+'</td></tr>'
-      +'<tr><td>Receitas recebidas</td><td class="r">'+BRL(tr)+'</td></tr>'
-      +'<tr><td>Despesas pagas</td><td class="r">− '+BRL(td)+'</td></tr>'
-      +'</tbody><tfoot><tr><td>Saldo do período</td><td class="r">'+BRL(tr-td)+'</td></tr></tfoot></table>'
-      +(rec.length?('<h3 style="margin-top:18px">Receitas recebidas</h3><table><thead><tr><th>Descrição</th><th>Data</th><th class="r">Valor</th></tr></thead><tbody>'+rec.map(l=>'<tr><td>'+esc(l.descricao||'—')+'</td><td>'+fmtDate(l.pago_em||l.vencimento)+'</td><td class="r">'+BRL(l.valor)+'</td></tr>').join('')+'</tbody></table>'):'');
+      +'<tr><td>Serviços registrados no período</td><td class="r">'+BRLraw(osTot)+'</td></tr>'
+      +'<tr><td>Receitas recebidas</td><td class="r">'+BRLraw(tr)+'</td></tr>'
+      +'<tr><td>Despesas pagas</td><td class="r">− '+BRLraw(td)+'</td></tr>'
+      +'</tbody><tfoot><tr><td>Saldo do período</td><td class="r">'+BRLraw(tr-td)+'</td></tr></tfoot></table>'
+      +(rec.length?('<h3 style="margin-top:18px">Receitas recebidas</h3><table><thead><tr><th>Descrição</th><th>Data</th><th class="r">Valor</th></tr></thead><tbody>'+rec.map(l=>'<tr><td>'+esc(l.descricao||'—')+'</td><td>'+fmtDate(l.pago_em||l.vencimento)+'</td><td class="r">'+BRLraw(l.valor)+'</td></tr>').join('')+'</tbody></table>'):'');
     printDoc('Relatório de Faturamento — '+periodo, body, tenant?.nome); };
   return html`<${Shell} title="Relatórios">
     <div class="bar">
@@ -2246,7 +2278,7 @@ function Alavancagem(){
     if(seg==='novos') list=list.filter(c=>(counts[c.id]||0)<=1);
     return list; },[clientes,seg,counts]);
   const msg=c=>encodeURIComponent('Olá '+((c.nome||'').split(' ')[0])+'! Oferta especial pra você'
-    +(serv? ' em '+serv.nome+': de '+BRL(preco)+' por '+BRL(precoDesc)+' ('+desc+'% off)':' aqui no ateliê')+'. Vamos agendar? — '+(tenant?.nome||''));
+    +(serv? ' em '+serv.nome+': de '+BRLraw(preco)+' por '+BRLraw(precoDesc)+' ('+desc+'% off)':' aqui no ateliê')+'. Vamos agendar? — '+(tenant?.nome||''));
   return html`<${Shell} title="Alavancagem">
     <div class="hint">Gere mais receita da base atual: escolha um público, um serviço e um desconto, e dispare a oferta por WhatsApp.</div>
     <div class="glass panel">
@@ -2475,6 +2507,7 @@ function AgendaForm({row,dias,onClose,onSave}){
 
 /* ========== ROUTER ========== */
 function Router(){
+  usePrivacidade(); // alternar o modo privacidade re-renderiza a página inteira (todos os R$ atualizam na hora)
   const h=useHash(); const [path]=h.split('?'); const seg=path.split('/').filter(Boolean);
   if(seg[0]==='clientes'&&seg[1]) return html`<${ClienteDetail} id=${seg[1]}/>`;
   if(seg[0]==='clientes') return html`<${Clientes}/>`;

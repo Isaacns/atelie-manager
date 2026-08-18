@@ -7,6 +7,17 @@
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <title>Ateliê Manager — Costureira Salvador</title>
+<!-- Ícone da aba (favicon) + atalho de celular. Hoje aponta para a logo do tenant
+     (mesma imagem usada na sidebar). White-label: quando a logo passar a vir das
+     configurações do tenant, este href deve acompanhar (setar via JS ao carregar). -->
+<link rel="icon" type="image/jpeg" href="costureira-logo.jpg" />
+<link rel="apple-touch-icon" href="costureira-logo.jpg" />
+<meta name="theme-color" content="#5e3a56" />
+<!-- PWA: instalável na área de trabalho (Edge/Chrome) e no celular. O manifest é
+     injetado em runtime pelo JS (white-label, agnóstico à origem — ver bloco PWA). -->
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -28,6 +39,11 @@
   .serif{font-family:"Cormorant Garamond",Georgia,serif}
   a{color:inherit}
   .center{min-height:100dvh;display:grid;place-items:center;padding:24px}
+  /* O #root já é .center, e as telas de login/ativação/carregando trazem o próprio .center.
+     Aninhados, os dois somavam 100dvh + 24px de padding CADA (barra de rolagem à toa) e o de
+     dentro, virando item de grid, encolhia — o cartão de login perdia os 420px e ficava
+     estreito. O de dentro não repete altura nem respiro; quem centraliza é o de fora. */
+  .center .center{min-height:auto;padding:0;width:100%}
   .glass{background:rgba(251,248,243,.72);backdrop-filter:blur(18px);
     border:1px solid rgba(255,255,255,.5);box-shadow:var(--shadow);border-radius:1.25rem}
   /* logo */
@@ -58,13 +74,32 @@
     border-radius:.5rem;padding:10px 12px;font-size:.85rem;margin-bottom:8px}
   .foot{color:var(--muted);text-align:center;font-size:.72rem;margin-top:18px;letter-spacing:.02em}
   /* app shell */
-  .app{display:grid;grid-template-columns:236px 1fr;min-height:100dvh}
-  .side{position:sticky;top:0;z-index:20;height:100dvh;padding:20px 14px;border-right:1px solid var(--border);
+  /* O app vive dentro do #root.center, que tem padding:24px — é esse respiro que deixa o
+     sistema "flutuando" e centralizado (Isaac prefere assim). Por isso a altura desconta os
+     48px do respiro: com 100dvh cheio, a sidebar terminava fora da tela e cortava o rodapé. */
+  /* Largura FIXA (236 da barra + 1120 do conteúdo + 48 de padding = 1404). Sem isto o app
+     encolhia junto com o conteúdo — como o #root.center o centraliza, cada módulo mais
+     estreito empurrava a barra lateral para a direita e a tela "pulava" ao trocar de menu. */
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:calc(100dvh - 48px);width:min(1404px,100%)}
+  /* Cartão flutuante, como todo o resto do sistema: cantos arredondados e SEM borda-linha.
+     A borda-direita reta existia desde sempre, mas ficava escondida porque a sidebar
+     sangrava para fora da tela; ao passar a caber, o canto reto apareceu e destoou. */
+  /* ATENÇÃO ao seletor: precisa ser "aside.side". Existe também <div class="row side"> no
+     dashboard, e um ".side" solto pintava aquele grid com o fundo/blur da barra lateral —
+     era o "cartão atrás dos cartões". O vazamento era antigo; só ficou visível quando a
+     barra ganhou raio e sombra. */
+  aside.side{position:sticky;top:24px;z-index:20;height:calc(100dvh - 48px);padding:20px 14px;
+    border-radius:var(--radius);box-shadow:var(--shadow);
     background:rgba(248,244,238,.75);backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:4px}
   .side .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
   .side .brand .nm{font-family:"Cormorant Garamond",serif;font-size:1.15rem;line-height:1;font-weight:600}
   .side .brand .tg{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-  .nav{display:flex;flex-direction:column;gap:2px;overflow:visible}
+  /* O menu rola; o rodapé (usuária + Sair) fica ancorado embaixo, sempre visível.
+     Antes o .side tinha altura fixa sem rolagem: ao crescer o menu, o Sair caiu para fora da tela.
+     min-height:0 é obrigatório — sem ele o item flex não encolhe e a rolagem não acontece. */
+  .nav{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-height:0;overflow-y:auto;
+    scrollbar-width:none;-ms-overflow-style:none}
+  .nav::-webkit-scrollbar{width:0;height:0}   /* §2: barra de rolagem invisível */
   .nav a{position:relative;display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:.6rem;
     font-size:.9rem;font-weight:500;color:#5a525c;text-decoration:none;cursor:pointer;transition:.12s}
   .nav a:hover{background:rgba(142,44,176,.07);color:var(--plum)}
@@ -73,15 +108,11 @@
   .nav a svg{width:18px;height:18px;color:var(--muted);flex:0 0 auto}
   .nav a:hover svg{color:var(--plum)}
   .nav .sep{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:#b6a9b1;padding:14px 12px 4px}
-  .side .who{margin-top:auto;padding-top:12px;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted)}
-  .side .who b{color:var(--fg);display:block;font-size:.85rem}
-  .side .who button{margin-top:8px;width:100%;height:34px;border:1px solid var(--border);background:rgba(255,255,255,.6);
-    border-radius:.5rem;cursor:pointer;color:var(--fg);font-size:.82rem}
-  .side .who button:hover{border-color:var(--plum);color:var(--plum)}
   /* content */
   .main{min-width:0}
+  /* Sem linha embaixo: o topo flutua sobre o fundo, não corta a tela em duas. */
   .topbar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:12px;height:62px;padding:0 24px;
-    background:rgba(244,239,232,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+    background:rgba(244,239,232,.8);backdrop-filter:blur(16px)}
   .topbar h2{font-family:"Cormorant Garamond",serif;font-size:1.5rem;margin:0;font-weight:600}
   .topbar .plan{margin-left:6px;font-size:.68rem;padding:3px 9px;border-radius:999px;background:rgba(142,44,176,.1);color:var(--violet);font-weight:600}
   .topbar .spacer{margin-left:auto}
@@ -135,13 +166,17 @@
   .dot{width:7px;height:7px;border-radius:999px;background:currentColor;opacity:.9}
   /* modal */
   .ov{position:fixed;inset:0;background:rgba(46,43,49,.42);backdrop-filter:blur(3px);display:grid;place-items:center;padding:20px;z-index:20}
-  .modal{width:100%;max-width:560px;max-height:90dvh;overflow:auto;background:var(--card);border-radius:1.1rem;
+  /* Coluna flex: cabeçalho e rodapé fixos, MIOLO rolando. Antes o modal inteiro rolava e,
+     quando o conteúdo passava da tela, o .ov (place-items:center) empurrava o topo para fora
+     — o começo do formulário (foto, nome) ficava inalcançável. */
+  .modal{width:100%;max-width:560px;max-height:calc(100dvh - 40px);display:flex;flex-direction:column;
+    background:var(--card);border-radius:1.1rem;
     box-shadow:0 24px 70px rgba(46,43,49,.3);border:1px solid rgba(255,255,255,.6)}
-  .modal .mh{position:sticky;top:0;background:var(--card);display:flex;align-items:center;justify-content:space-between;
-    padding:20px 22px 12px;border-bottom:1px solid var(--border)}
+  .modal .mh{flex:0 0 auto;background:var(--card);display:flex;align-items:center;justify-content:space-between;
+    padding:20px 22px 12px;border-bottom:1px solid var(--border);border-radius:1.1rem 1.1rem 0 0}
   .modal .mh h3{margin:0;font-family:"Cormorant Garamond",serif;font-size:1.35rem;font-weight:600}
-  .modal .mb{padding:18px 22px}
-  .modal .mf{position:sticky;bottom:0;background:var(--card);display:flex;gap:10px;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--border)}
+  .modal .mb{padding:18px 22px;flex:1 1 auto;min-height:0;overflow-y:auto}
+  .modal .mf{flex:0 0 auto;background:var(--card);display:flex;gap:10px;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--border);border-radius:0 0 1.1rem 1.1rem}
   .x{border:0;background:transparent;font-size:1.3rem;color:var(--muted);cursor:pointer;line-height:1}
   .f2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
   .f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px}
@@ -208,6 +243,8 @@
   .pop-it:last-child{border-bottom:0} .pop-it:hover{background:rgba(142,44,176,.05)}
   .pi-ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:0 0 auto}
   .pi-ic svg{width:15px;height:15px} .pi-ic.warn{background:rgba(185,131,37,.15);color:var(--warn)} .pi-ic.low{background:rgba(142,44,176,.12);color:var(--violet)}
+  .pi-ic.upd{background:linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0));color:#fff}
+  .pop-it:disabled{cursor:default;opacity:.75}
   /* billing gate */
   .gate-bar{position:sticky;top:0;z-index:8;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 16px;font-size:.85rem;font-weight:600;color:#5a3d16;background:linear-gradient(90deg,#fbf1dc,#fce9c0,#fbf1dc);border-bottom:1px solid #f0d69a}
   .gate-bar.info{color:#4c2e46;background:linear-gradient(90deg,#f2e9f4,#ecdcf0,#f2e9f4);border-bottom:1px solid rgba(142,44,176,.25)}
@@ -229,8 +266,9 @@
   .menu-btn{display:none}
   @media(max-width:820px){
     .app{grid-template-columns:1fr}
-    .side{position:fixed;left:0;top:0;height:100dvh;overflow:auto;z-index:30;width:264px;transform:translateX(-100%);transition:.2s}
-    .side.open{transform:none}
+    aside.side{position:fixed;left:0;top:0;height:100dvh;overflow:auto;z-index:30;width:264px;
+      border-radius:0;transform:translateX(-100%);transition:.2s}
+    aside.side.open{transform:none}
     .menu-btn{display:inline-flex}
     .backdrop{position:fixed;inset:0;background:rgba(46,43,49,.4);z-index:25}
     .wrap{padding:20px 14px 64px}
@@ -254,6 +292,78 @@
     .measure-grid{grid-template-columns:1fr 1fr}
     .topbar h2{font-size:1.05rem}
   }
+
+  /* Assinatura do produto, centralizada no rodapé de toda tela (saiu do canto da sidebar). */
+  .assinatura{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;
+    margin-top:34px;color:var(--muted);font-size:.72rem;letter-spacing:.02em}
+  .assinatura img,.assinatura svg{height:13px;width:auto;opacity:.85;vertical-align:middle}
+
+  /* ===== §8.1 — identificação do usuário no canto superior direito ===== */
+  .topbar .user{display:flex;align-items:center;gap:10px;padding:3px 4px 3px 11px;border-radius:999px;
+    border:1px solid transparent;background:transparent;cursor:pointer;font-family:inherit;transition:.15s}
+  .topbar .user:hover{border-color:var(--border);background:rgba(255,255,255,.6)}
+  .topbar .user .txt{display:flex;flex-direction:column;line-height:1.2;text-align:right}
+  .topbar .user .txt b{font-size:.82rem;color:var(--fg);font-weight:600}
+  .topbar .user .txt span{font-size:.67rem;color:var(--muted)}
+  .av{width:38px;height:38px;border-radius:50%;flex:0 0 auto;overflow:hidden;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--plum),var(--violet));color:#fff;font-weight:700;font-size:.82rem;
+    letter-spacing:.02em;box-shadow:0 0 0 2px var(--card)}
+  .av img{width:100%;height:100%;object-fit:cover;display:block}
+  .av.lg{width:84px;height:84px;font-size:1.5rem}
+  .topbar .icob{width:34px;height:34px;border-radius:50%;border:1px solid transparent;background:transparent;
+    cursor:pointer;color:var(--muted);display:grid;place-items:center;flex:0 0 auto}
+  .topbar .icob:hover{border-color:var(--border);background:rgba(255,255,255,.6);color:var(--plum)}
+  .topbar .icob.on{color:var(--violet);border-color:var(--border);background:rgba(142,44,176,.1)}
+  .topbar .icob svg{width:17px;height:17px}
+  @media (max-width:720px){ .topbar .user .txt{display:none} .topbar .user{padding:3px} }
+  /* tela de bloqueio */
+  .lockscr{position:fixed;inset:0;z-index:99998;display:grid;place-items:center;padding:20px;
+    background:rgba(46,43,49,.5);backdrop-filter:blur(16px)}
+  .lockbox{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:26px;width:min(360px,94vw);text-align:center}
+  .lockbox .av{margin:0 auto 12px}
+
+  /* ===== Módulo AGENDA (padrão VIZIO §16) + arrastar (§15) ===== */
+  /* 6 colunas que CABEM na largura do conteúdo: minmax(0,1fr) deixa a coluna encolher.
+     Com minmax(178px,…) a semana somava ~1118px num espaço de ~1072px e nascia barra de rolagem. */
+  .ag-week{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+  .ag-day{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px;display:flex;flex-direction:column;gap:8px}
+  .ag-day.hoje{border-color:var(--violet);box-shadow:0 0 0 2px rgba(142,44,176,.16)}
+  .ag-day-h{display:flex;align-items:center;gap:6px}
+  .ag-day-h b{font-family:"Cormorant Garamond",serif;font-size:1.05rem;line-height:1}
+  .ag-day-h .dt{font-size:.72rem;color:var(--muted)}
+  .ag-day-h .add{margin-left:auto;border:1px solid var(--border);background:transparent;color:var(--plum);
+    width:24px;height:24px;border-radius:8px;cursor:pointer;font-size:1rem;line-height:1;display:grid;place-items:center}
+  .ag-day-h .add:hover{background:rgba(94,58,86,.08)}
+  /* zona de soltar: um período de um dia */
+  .ag-per{border:1px dashed transparent;border-radius:10px;padding:6px;transition:background .15s,border-color .15s}
+  .ag-per.cur{background:rgba(142,44,176,.05)}
+  .ag-per-h{display:flex;align-items:center;gap:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);cursor:pointer;user-select:none}
+  .ag-per-h .n{margin-left:auto;font-size:.7rem;letter-spacing:0;color:var(--muted)}
+  .ag-per-h .agora{background:var(--violet);color:#fff;border-radius:99px;padding:1px 7px;font-size:.58rem;letter-spacing:.06em}
+  .ag-per-body{display:flex;flex-direction:column;gap:6px;margin-top:6px;min-height:34px}
+  .ag-vazio{font-size:.72rem;color:var(--muted2,#a99fa6);padding:4px 2px}
+  /* §15: destino realçado com tracejado no acento do produto */
+  .ag-per.drop-ok{border-color:var(--violet);background:rgba(142,44,176,.09)}
+  /* cartão arrastável */
+  .ag-card{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--plum);border-radius:9px;
+    padding:7px 9px;cursor:grab;position:relative}
+  .ag-card:active{cursor:grabbing}
+  .ag-card.dragging{opacity:.45}
+  .ag-card .t{font-size:.82rem;line-height:1.3;word-break:break-word}
+  .ag-card .o{font-size:.7rem;color:var(--muted);margin-top:2px}
+  .ag-card.feito{border-left-color:var(--ok);opacity:.72}
+  .ag-card.feito .t{text-decoration:line-through;color:var(--muted)}
+  .ag-card .acts{display:flex;gap:4px;margin-top:6px}
+  .ag-card .acts button{border:1px solid var(--border);background:transparent;border-radius:7px;cursor:pointer;
+    font-size:.68rem;padding:2px 7px;color:var(--muted);font-family:inherit}
+  .ag-card .acts button:hover{color:var(--plum);border-color:var(--plum)}
+  .ag-foco{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:rgba(142,44,176,.07);
+    border:1px solid rgba(142,44,176,.18);border-radius:10px;padding:9px 12px;font-size:.85rem;margin-bottom:12px}
+  /* Só em tela estreita a semana rola na horizontal — no desktop ela cabe inteira. */
+  @media (max-width:900px){ .ag-week{grid-template-columns:repeat(6,minmax(150px,1fr));overflow-x:auto;padding-bottom:6px} }
+  @media (prefers-reduced-motion:reduce){ .ag-per{transition:none} }
 </style>
 </head>
 <body>
@@ -271,10 +381,70 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-const APP_VERSION = '1.19.4';
+window.APP_VERSION = '1.26.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+
+/* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
+   Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
+   nome e cores saem do tenant (título + tokens --plum/--violet), e start_url/scope
+   saem de location — agnóstico à origem. O service worker (web/sw.js) é network-first:
+   abrir o app sempre puxa a build nova; o cache é só fallback offline. */
+(function(){
+  try{
+    var base = location.href.replace(/[#?].*$/,'').replace(/[^/]*$/,'');
+    var nome = (document.title.split('—').pop()||'Ateliê Manager').trim() || 'Ateliê Manager';
+    var cs = getComputedStyle(document.documentElement);
+    var plum = (cs.getPropertyValue('--plum')||'#5e3a56').trim() || '#5e3a56';
+    var violet = (cs.getPropertyValue('--violet')||'#8e2cb0').trim() || '#8e2cb0';
+    var bg = (cs.getPropertyValue('--bg')||'#f4efe8').trim() || '#f4efe8';
+    var letra = (nome[0]||'A').toUpperCase();
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">'
+      +'<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+      +'<stop offset="0" stop-color="'+plum+'"/><stop offset="1" stop-color="'+violet+'"/></linearGradient></defs>'
+      +'<rect width="512" height="512" rx="104" fill="url(#g)"/>'
+      +'<text x="50%" y="53%" font-family="Georgia,serif" font-size="300" fill="#fff" '
+      +'text-anchor="middle" dominant-baseline="middle">'+letra+'</text></svg>';
+    var ico = 'data:image/svg+xml,'+encodeURIComponent(svg);
+    var manifest = { name:nome, short_name:(nome.split(' ')[0]||nome), start_url:base, scope:base,
+      display:'standalone', background_color:bg, theme_color:plum, lang:'pt-BR', dir:'ltr',
+      icons:[ {src:ico,sizes:'any',type:'image/svg+xml',purpose:'any'},
+              {src:ico,sizes:'512x512',type:'image/svg+xml',purpose:'maskable'},
+              {src:base+'costureira-logo.jpg',type:'image/jpeg',purpose:'any'} ] };
+    var murl = URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'}));
+    var l = document.createElement('link'); l.rel='manifest'; l.href=murl; document.head.appendChild(l);
+  }catch(_){}
+  if('serviceWorker' in navigator){
+    // reload automático quando um SW novo assume o controle. Guarda dupla: não recarrega
+    // na 1ª instalação (hadController=false) e nunca entra em loop (refreshing).
+    var hadController = !!navigator.serviceWorker.controller, refreshing=false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(refreshing || !hadController) return; refreshing=true; location.reload();
+    });
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js', {updateViaCache:'none'})
+        .then(function(reg){ reg.update(); if(reg.waiting) reg.waiting.postMessage('PULAR_ESPERA'); })
+        .catch(function(){});
+    });
+  }
+})();
 
 /* ---------- helpers ---------- */
-const BRL = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+/* ---------- Modo privacidade (oculta valores em R$ na TELA — padrão do campo de senha / apps de banco) ----------
+   Um único interruptor global esconde TODO valor monetário exibido na tela (KPIs, tabelas,
+   totais), para o cliente não ver os números enquanto a costureira gera a nota/OS na frente dele.
+   IMPORTANTE: só afeta a EXIBIÇÃO na tela. Documentos e mensagens que SAEM da tela — cupom
+   impresso, OS impressa, relatórios A4, fechamento de caixa e mensagens de WhatsApp — usam
+   BRLraw e NUNCA são mascarados (o cliente precisa dos valores reais no papel/mensagem).
+   Estado reativo (pub/sub, espelha o updateStore) + persistido em localStorage. Default: visível. */
+const LS_PRIV='atelie_privacidade_valores';
+const MASK_BRL='R$ ••••';
+const privacyStore=(()=>{ let on=false; try{ on=localStorage.getItem(LS_PRIV)==='1'; }catch(_){}
+  const subs=new Set();
+  const apply=v=>{ on=!!v; try{ localStorage.setItem(LS_PRIV, on?'1':'0'); }catch(_){} subs.forEach(f=>f()); };
+  return { get:()=>on, set:apply, toggle:()=>apply(!on), sub:f=>{ subs.add(f); return ()=>subs.delete(f); } }; })();
+function usePrivacidade(){ const [,f]=useState(0); useEffect(()=>privacyStore.sub(()=>f(x=>x+1)),[]); return privacyStore.get(); }
+/* BRLraw = valor real, sempre (documentos/mensagens). BRL = versão de TELA: mascara quando o modo privacidade está ligado. */
+const BRLraw = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const BRL = n => privacyStore.get() ? MASK_BRL : BRLraw(n);
 const onlyDigits = s => (s||'').replace(/\D/g,'');
 const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('pt-BR') : '—';
 const fmtDateTime = x => { if(!x) return '—'; const d=new Date(String(x).replace(' ','T').replace(/([+-]\d{2})$/,'$1:00')); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); };
@@ -283,6 +453,10 @@ const monthStart = () => { const d=new Date(); return new Date(d.getFullYear(),d
 const daysBetween = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
 const addDays = (iso,n) => { const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+Number(n||0)); return d.toISOString().slice(0,10); };
 const esc = s => String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+/* Compara versões "x.y.z" numericamente: -1 se a<b, 0 se igual, 1 se a>b. Usado pelo
+   VersionGate para confirmar que o reload realmente chegou na versão publicada (§14.2). */
+const cmpVer = (a,b) => { const pa=String(a||'').split('.').map(n=>parseInt(n,10)||0), pb=String(b||'').split('.').map(n=>parseInt(n,10)||0);
+  for(let i=0;i<Math.max(pa.length,pb.length);i++){ const d=(pa[i]||0)-(pb[i]||0); if(d) return d<0?-1:1; } return 0; };
 function printDoc(title, bodyHtml, tenantName){
   const w=window.open('','_blank','width=900,height=760');
   if(!w){ toast('Permita pop-ups para gerar a impressão.','err'); return; }
@@ -333,17 +507,33 @@ function printCupom(o, cli, tenantName, st, itens){
   if(!w){ toast('Permita pop-ups para gerar o cupom.','err'); return; }
   const base=location.href.replace(/[#?].*$/,'').replace(/[^/]*$/,'');
   const s=st||{};
+  /* Largura do cupom = configuração do TENANT (white-label, §4). Default 58mm — a impressora
+     térmica da cliente é 58mm (POS-5890U-L). Aceita coluna futura `largura_cupom` OU chave em
+     `features` (jsonb, adicionável sem migration) — já sai bom por padrão, sem depender de DB. */
+  const larguraCfg = String(s.largura_cupom || (s.features&&s.features.largura_cupom) || '58');
+  const oitenta = larguraCfg==='80';
+  /* Página declarada na largura do PAPEL → o navegador não "encolhe pra caber" (era a causa do
+     cupom fraco: @page 80mm numa térmica 58mm forçava escala ~72%). O corpo fica na área
+     IMPRIMÍVEL real (58mm→48mm de cabeça; 80mm→72mm), para não cortar preços na borda. */
+  const page = oitenta?'80mm':'58mm';
+  const bodyW = oitenta?'72mm':'48mm';
+  const baseFs = oitenta?12.5:13;                 // fonte maior p/ legibilidade térmica (1-bit)
+  const mostrarLogo = !(s.cupom_logo===false || s.cupom_logo==='off' || s.cupom_logo==='nao');
   const end=(typeof s.endereco==='string')?s.endereco:'';
   const info=[].concat(s.cnpj?['CNPJ '+esc(s.cnpj)]:[])
     .concat(end?[esc(end)]:[])
     .concat((s.telefone||s.whatsapp)?[esc(s.telefone||s.whatsapp)]:[]).join('<br>');
-  const linha='<div style="border-top:1px dashed #999;margin:7px 0"></div>';
-  const css='@page{size:80mm auto;margin:0}*{box-sizing:border-box}'
-    +'body{font-family:"Courier New",monospace;color:#111;margin:0;padding:9px 11px;width:80mm;font-size:12px;line-height:1.35}'
-    +'.c{text-align:center}.b{font-weight:700}.nm{font-size:15px;font-weight:700}.mut{color:#555;font-size:10.5px}'
-    +'.row{display:flex;justify-content:space-between;gap:8px}.tot{font-size:14px;font-weight:700}'
-    +'.tag{font-size:11px;font-weight:700;letter-spacing:.08em}.disc{font-size:10px;color:#333;text-align:center;margin-top:6px}';
-  const body='<div class="c"><img src="'+base+'costureira-logo.jpg" style="width:44px;height:44px;border-radius:50%;object-fit:cover" alt="">'
+  /* Preto puro em tudo (a térmica é 1-bit: cinza vira chuvisco). Separador dashed também #000. */
+  const linha='<div style="border-top:1px dashed #000;margin:7px 0"></div>';
+  const css='@page{size:'+page+' auto;margin:0}'
+    +'*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    +'body{font-family:"Courier New",monospace;color:#000;margin:0;padding:2mm 2mm;width:'+bodyW+';font-size:'+baseFs+'px;line-height:1.36;font-weight:600}'
+    +'.c{text-align:center}.b{font-weight:800}.nm{font-size:'+(oitenta?16:17)+'px;font-weight:800;letter-spacing:.02em}'
+    +'.mut{color:#000;font-size:'+(oitenta?10.5:11)+'px}'          // hierarquia por tamanho/peso, não por cinza
+    +'.row{display:flex;justify-content:space-between;gap:6px}.tot{font-size:'+(oitenta?14:15)+'px;font-weight:800}'
+    +'.tag{font-size:'+(oitenta?11:12)+'px;font-weight:800;letter-spacing:.08em}.disc{font-size:'+(oitenta?10:10.5)+'px;text-align:center;margin-top:6px}'
+    +'.lg{width:38px;height:38px;border-radius:50%;object-fit:cover;filter:grayscale(1) contrast(1.7);margin-bottom:2px}';
+  const body='<div class="c">'+(mostrarLogo?'<img class="lg" src="'+base+'costureira-logo.jpg" alt="">':'')
     +'<div class="nm">'+esc(tenantName||'Ateliê')+'</div><div class="mut">'+esc(s.subtitulo||'Ateliê de Costura')+'</div>'
     +(info?'<div class="mut" style="margin-top:3px">'+info+'</div>':'')+'</div>'+linha
     +'<div class="c tag">CUPOM NÃO FISCAL</div>'
@@ -351,17 +541,17 @@ function printCupom(o, cli, tenantName, st, itens){
     +'<div style="margin-top:4px">Cliente: <b>'+esc(cli&&cli.nome?cli.nome:'Consumidor')+'</b></div>'+linha
     +((itens&&itens.length>0)
         ? itens.map(function(it){ var q=Number(it.quantidade)||1; var stv=(it.subtotal!=null?Number(it.subtotal):q*(Number(it.valor_unit)||0));
-            return '<div class="row"><span>'+(q>1?q+'x ':'')+esc(it.descricao||'Serviço')+'</span><span class="b">'+BRL(stv)+'</span></div>'; }).join('')
-        : '<div class="row"><span>'+esc(o.descricao||'Serviço')+'</span><span class="b">'+BRL(o.valor)+'</span></div>')
+            return '<div class="row"><span>'+(q>1?q+'x ':'')+esc(it.descricao||'Serviço')+'</span><span class="b">'+BRLraw(stv)+'</span></div>'; }).join('')
+        : '<div class="row"><span>'+esc(o.descricao||'Serviço')+'</span><span class="b">'+BRLraw(o.valor)+'</span></div>')
     +linha
-    +(Number(o.desconto)>0?'<div class="row"><span>Desconto</span><span>− '+BRL(o.desconto)+'</span></div>':'')
-    +'<div class="row tot"><span>TOTAL</span><span>'+BRL(o.valor)+'</span></div>'
-    +(Number(o.valor_pago)>0?'<div class="row" style="margin-top:3px"><span>Pago</span><span>'+BRL(o.valor_pago)+'</span></div>':'')
-    +(pagInfo(o).saldo>0.009?'<div class="row b"><span>Saldo a receber</span><span>'+BRL(pagInfo(o).saldo)+'</span></div>':'')
+    +(Number(o.desconto)>0?'<div class="row"><span>Desconto</span><span>− '+BRLraw(o.desconto)+'</span></div>':'')
+    +'<div class="row tot"><span>TOTAL</span><span>'+BRLraw(o.valor)+'</span></div>'
+    +(Number(o.valor_pago)>0?'<div class="row" style="margin-top:3px"><span>Pago</span><span>'+BRLraw(o.valor_pago)+'</span></div>':'')
+    +(pagInfo(o).saldo>0.009?'<div class="row b"><span>Saldo a receber</span><span>'+BRLraw(pagInfo(o).saldo)+'</span></div>':'')
     +'<div class="mut" style="margin-top:5px">Forma de pagamento: ________________</div>'+linha
     +'<div class="disc">Obrigado pela preferência!</div>'
     +'<div class="disc b">ESTE DOCUMENTO NÃO POSSUI VALOR FISCAL</div>'
-    +'<div class="disc" style="margin-top:9px;color:#999">Ateliê Manager By Vizio</div>';
+    +'<div class="disc" style="margin-top:9px">Ateliê Manager By Vizio</div>';
   w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Cupom não fiscal — OS '+esc(String(o.numero))+'</title><style>'+css+'</style></head><body>'+body
     +'<'+'script>window.onload=function(){setTimeout(function(){window.print()},150)}<'+'/script></body></html>');
   w.document.close();
@@ -409,8 +599,18 @@ const I = {
   rocket:'M5 15c-1.6 1.6-2 5.5-2 5.5s3.9-.4 5.5-2M9 11a5 5 0 0 0 4 4l6-6a6 6 0 0 0 1.5-5.5A6 6 0 0 0 15 5l-6 6ZM15.5 8.5h.01',
   ruler:'M3 8l5-5 13 13-5 5zM7 7l2 2M11 5l2 2M9 11l2 2M13 9l2 2',
   spark:'M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3ZM19 14l.9 2.3L22 17l-2.1.7L19 20l-.9-2.3L16 17l2.1-.7L19 14Z',
+  lock:'M7 10V7a5 5 0 0 1 10 0v3M5 10h14v10H5zM12 14v2.5',
+  exit:'M15 17l5-5-5-5M20 12H9M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7',
+  camera:'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
+  key:'M14.5 9.5a4 4 0 1 1-5.66 5.66 4 4 0 0 1 5.66-5.66Zm0 0L21 3M18 6l2 2',
+  eye:'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
+  eyeOff:'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24M1 1l22 22',
 };
 const Ic = ({d,cls,style}) => html`<svg class=${cls} style=${style} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d=${d}/></svg>`;
+/* Ícone OFICIAL do WhatsApp (glifo de marca): balão + fone, PREENCHIDO (fill), não
+   traçado como os demais ícones. Herda a cor do botão (.btn.wa → branco sobre verde).
+   Usar sempre <${'IcWA'}/> nos botões wa.me — nunca o Ic genérico. */
+const IcWA = ({cls,style}) => html`<svg class=${cls} style=${style} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12.05 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.359.101 11.892c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652a11.97 11.97 0 005.71 1.448h.006c6.585 0 11.946-5.36 11.949-11.897a11.9 11.9 0 00-3.481-8.45"/></svg>`;
 
 const Mark = ({cls='mark breathe'}) => html`<svg class=${cls} viewBox="0 0 104 60" fill="none" aria-hidden="true">
   <circle cx="24" cy="27" r="10" stroke="currentColor" stroke-width="4"/>
@@ -425,14 +625,15 @@ const BrandLogo = ({size=40,cls=''}) => html`<img class=${'brandmark breathe-img
 const ByVizio = ({dark=true}) => html`<span class="byvizio">Ateliê Manager <b>By</b> <img class="vzfloat" src=${dark?'vizio-dark.svg':'vizio-light.svg'} alt="Vizio"/></span>`;
 const MiniChart = ({labels,data,fmt}) => {
   const ref=useRef(null), inst=useRef(null);
+  const priv=usePrivacidade(); // modo privacidade: mascara eixo/tooltip e redesenha ao alternar
   useEffect(()=>{ if(!window.Chart||!ref.current) return;
     if(inst.current) inst.current.destroy();
     inst.current=new window.Chart(ref.current,{type:'bar',
       data:{labels,datasets:[{data,backgroundColor:'#8e2cb0',hoverBackgroundColor:'#5e3a56',borderRadius:6,maxBarThickness:36}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(fmt?fmt(c.raw):c.raw)}}},
-      scales:{y:{beginAtZero:true,ticks:{maxTicksLimit:4,font:{size:10},callback:v=>'R$ '+v},grid:{color:'rgba(94,58,86,.08)'}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>priv?MASK_BRL:(fmt?fmt(c.raw):c.raw)}}},
+      scales:{y:{beginAtZero:true,ticks:{maxTicksLimit:4,font:{size:10},callback:v=>priv?'R$ •••':'R$ '+v},grid:{color:'rgba(94,58,86,.08)'}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
     return ()=>{ if(inst.current){inst.current.destroy();inst.current=null;} };
-  },[labels.join(),data.join()]);
+  },[labels.join(),data.join(),priv]);
   return html`<div class="chartbox"><canvas ref=${ref}></canvas></div>`;
 };
 
@@ -469,8 +670,70 @@ if(typeof window!=='undefined' && !window.__vzErrHook){
    A cliente deixa a aba aberta por horas: sem isto, ela continua rodando código antigo
    mesmo depois do deploy (foi a causa do erro de "subtotal" persistir após a correção).
    Compara o APP_VERSION publicado com o que está rodando e oferece atualizar. */
+/* §14.2 — VersionGate com GARANTIA de atualização (Req do Isaac, v1.24.0):
+   o botão "Atualizar agora" só some depois que o app CONFIRMA, após o reload, que está
+   rodando a versão publicada. Se continuar defasado (cache/SW travado), o próximo clique
+   ESCALA: limpa os caches do SW, desregistra o SW e força reload. Estado atravessa o
+   reload por localStorage (`atelie_update_*`). */
+const LS_PEND='atelie_update_click_pending', LS_ALVO='atelie_update_alvo', LS_TENT='atelie_update_tentativas', LS_VISTA='atelie_ultima_versao_vista';
+
+/* Estado ÚNICO de "atualização disponível", compartilhado pelo banner do VersionGate e pelo
+   sino de avisos da Home. Um só lugar decide se há update pendente, qual a versão-alvo e se
+   está em andamento; os dois consumidores só LEEM daqui e o clique de qualquer um chama a
+   MESMA função `dispararAtualizacao`. Sem lógica duplicada, um estado só. */
+const updateStore=(()=>{ let s={nova:null,trabalhando:false}; const subs=new Set();
+  return { get:()=>s, set:p=>{ s={...s,...p}; subs.forEach(f=>f()); }, sub:f=>{ subs.add(f); return ()=>subs.delete(f); } }; })();
+function useUpdate(){ const [,f]=useState(0); useEffect(()=>updateStore.sub(()=>f(x=>x+1)),[]); return updateStore.get(); }
+const updateEscalando=()=>{ try{ return (Number(localStorage.getItem(LS_TENT)||'0')||0)>=1; }catch(_){ return false; } };
+
+/* Fluxo verificado de atualização (Req do Isaac), acionável pelo botão do VersionGate E pelo
+   item do sino. 1º acionamento: skipWaiting + reload. Se voltar defasado, o 2º ESCALA: limpa
+   os caches do SW, `unregister()` e reload forçado. Persiste o alvo em localStorage para
+   conferir pós-reload — o aviso só some quando a versão realmente bater. */
+async function dispararAtualizacao(){
+  const st=updateStore.get(); const alvo=st.nova; if(!alvo || st.trabalhando) return;
+  updateStore.set({trabalhando:true});
+  let t=0; try{ t=Number(localStorage.getItem(LS_TENT)||'0')||0; }catch(_){}
+  const escalar=t>=1;
+  try{ localStorage.setItem(LS_PEND,'1'); localStorage.setItem(LS_ALVO,alvo); localStorage.setItem(LS_TENT,String(t+1)); }catch(_){}
+  try{ sessionStorage.clear(); }catch(_){}
+  try{
+    if(escalar && 'serviceWorker' in navigator){
+      // 2º acionamento: limpar TODOS os caches do SW + desregistrar + reload forçado.
+      if(window.caches){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
+      const regs=await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r=>r.unregister()));
+    } else if('serviceWorker' in navigator){
+      // 1º acionamento: pedir ao SW que assuma já (skipWaiting), sem esperar abas fecharem.
+      const reg=await navigator.serviceWorker.getRegistration();
+      if(reg){ try{ await reg.update(); }catch(_){}
+        const sw=reg.waiting||reg.installing||reg.active; if(sw) sw.postMessage('PULAR_ESPERA'); }
+    }
+  }catch(_){}
+  // Reload com cache-buster forte (fura HTTP cache do navegador; o SW já é network-first).
+  location.replace(location.pathname+'?v='+encodeURIComponent(alvo)+'&_r='+Date.now()+location.hash);
+}
+
 function VersionGate(){
-  const [nova,setNova]=useState(null);
+  const st=useUpdate(); // lê o estado único; o mesmo que o sino consome
+  // (1) Verificação pós-reload: o usuário clicou "Atualizar"? Então confirmar que pegou.
+  useEffect(()=>{
+    try{
+      const pend=localStorage.getItem(LS_PEND), alvo=localStorage.getItem(LS_ALVO);
+      if(pend && alvo){
+        if(cmpVer(APP_VERSION, alvo) >= 0){
+          // Chegou na versão-alvo (ou além): sucesso. Limpa o estado e o aviso some (banner + sino).
+          localStorage.removeItem(LS_PEND); localStorage.removeItem(LS_ALVO); localStorage.removeItem(LS_TENT);
+          try{ localStorage.setItem(LS_VISTA, APP_VERSION); }catch(_){}
+          updateStore.set({nova:null,trabalhando:false});
+          try{ toast('Tudo certo — você está na versão '+APP_VERSION+'.','ok'); }catch(_){}
+        } else {
+          // Ainda defasado após o reload: mantém o aviso; o próximo clique vai escalar.
+          updateStore.set({nova:alvo,trabalhando:false});
+        }
+      }
+    }catch(_){}
+  },[]);
+  // (2) Checagem contínua: compara a versão publicada com a carregada (network-first).
   useEffect(()=>{
     let vivo=true, checando=false;
     // Não bloquear por document.hidden: uma aba aberta em segundo plano é justamente
@@ -481,7 +744,7 @@ function VersionGate(){
         const base=location.href.replace(/[#?].*$/,'');
         const r=await fetch(base+'index.html?_v='+Date.now(),{cache:'no-store'});
         if(r.ok){ const t=await r.text(); const m=t.match(/APP_VERSION\s*=\s*'([^']+)'/);
-          if(vivo && m && m[1] && m[1]!==APP_VERSION) setNova(m[1]); }
+          if(vivo && m && m[1] && m[1]!==APP_VERSION) updateStore.set({nova:m[1]}); }
       }catch(_){ /* offline: silencioso, tenta de novo depois */ }
       checando=false;
     }
@@ -489,16 +752,19 @@ function VersionGate(){
     const iv=setInterval(checar, 10*60*1000);       // depois, a cada 10 min
     const onFoco=()=>{ if(!document.hidden) checar(); };
     document.addEventListener('visibilitychange', onFoco);
-    return ()=>{ vivo=false; clearTimeout(t); clearInterval(iv); document.removeEventListener('visibilitychange', onFoco); };
+    window.addEventListener('focus', onFoco);        // §14.2: focus além de visibilitychange
+    return ()=>{ vivo=false; clearTimeout(t); clearInterval(iv); document.removeEventListener('visibilitychange', onFoco); window.removeEventListener('focus', onFoco); };
   },[]);
-  if(!nova) return null;
-  const atualizar=()=>{ try{ sessionStorage.clear(); }catch(_){} location.replace(location.pathname+'?v='+nova+location.hash); };
+  if(!st.nova) return null;
+  const escalar = updateEscalando(); // já tentou 1x e voltou defasado → agora força
+  const msg = escalar ? '⏳ Vamos forçar a atualização — só um instante.' : '✨ Uma versão novinha do seu sistema está pronta.';
+  const rotulo = st.trabalhando ? 'Atualizando…' : (escalar ? 'Forçar atualização' : 'Atualizar agora');
   return html`<div style=${{position:'fixed',left:'50%',transform:'translateX(-50%)',bottom:'18px',zIndex:9999,
       display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',borderRadius:'14px',color:'#fff',
       background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 12px 30px -10px rgba(0,0,0,.5)',maxWidth:'92vw'}}>
-    <span style=${{fontSize:'.9rem'}}>✨ Uma versão novinha do seu sistema está pronta.</span>
-    <button onClick=${atualizar} style=${{background:'#fff',color:'var(--plum,#5e3a56)',border:'none',borderRadius:'9px',
-      padding:'8px 14px',fontWeight:700,cursor:'pointer',whiteSpace:'nowrap'}}>Atualizar agora</button>
+    <span style=${{fontSize:'.9rem'}}>${msg}</span>
+    <button onClick=${dispararAtualizacao} disabled=${st.trabalhando} style=${{background:'#fff',color:'var(--plum,#5e3a56)',border:'none',borderRadius:'9px',
+      padding:'8px 14px',fontWeight:700,cursor:st.trabalhando?'default':'pointer',opacity:st.trabalhando?.7:1,whiteSpace:'nowrap'}}>${rotulo}</button>
   </div>`;
 }
 
@@ -639,6 +905,7 @@ const NAV = [
   {p:'/ordens', l:'Ordens de serviço', i:I.scissors, d:'Do orçamento à entrega'},
   {p:'/servicos', l:'Serviços', i:I.tag, d:'Catálogo de serviços e preços'},
   {g:'Operação'},
+  {p:'/agenda', l:'Agenda', i:I.spark, d:'Suas atividades da semana — arraste para reorganizar'},
   {p:'/estoque', l:'Estoque', i:I.box, d:'Insumos, saldo e movimentações'},
   {p:'/financeiro', l:'Financeiro', i:I.money, roles:['owner','gestor','financeiro'], d:'Receitas, despesas e saldo'},
   {p:'/relatorios', l:'Relatórios', i:I.chart, d:'Faturamento e desempenho'},
@@ -654,6 +921,7 @@ const NAV = [
 function AlertsBell(){
   const [open,setOpen]=useState(false);
   const [al,setAl]=useState({late:[],low:[]});
+  const upd=useUpdate(); // mesmo estado único do VersionGate: aviso de atualização entra aqui também
   useEffect(()=>{ (async()=>{
     const [rOs,rPr]=await Promise.all([
       db.from('ordens').select('id,numero,descricao,status,prazo,data_entrada,dias_previstos'),
@@ -662,12 +930,16 @@ function AlertsBell(){
     const os=qd(rOs,'os alertas de prazo')||[], pr=qd(rPr,'os alertas de estoque')||[];
     setAl({ late:os.filter(isLate), low:pr.filter(p=>Number(p.quantidade)<=Number(p.quantidade_minima)) });
   })(); },[]);
-  const n=al.late.length+al.low.length;
+  const temUpdate=!!upd.nova, escalar=temUpdate&&updateEscalando();
+  const n=al.late.length+al.low.length+(temUpdate?1:0); // o aviso de atualização conta no badge
   return html`<div style=${{position:'relative'}}>
     <button class="btn ghost sm" style=${{position:'relative'}} title="Avisos" onClick=${()=>setOpen(o=>!o)}><${Ic} d=${I.bell}/>${n>0&&html`<span class="bell-badge">${n}</span>`}</button>
     ${open&&html`<div class="pop">
       <div class="pop-h">Avisos ${n>0?'('+n+')':''}</div>
       ${n===0&&html`<div class="pop-empty">Tudo em dia ✓</div>`}
+      ${temUpdate&&html`<button class="pop-it" key="upd" disabled=${upd.trabalhando} onClick=${()=>dispararAtualizacao()}>
+        <span class="pi-ic upd"><${Ic} d=${I.refresh}/></span><span><b>${escalar?'Vamos forçar a atualização':'Nova atualização disponível'}</b><br/><span class="muted">${upd.trabalhando?'Atualizando…':(escalar?'Toque para forçar — o aviso só some quando a versão atualizar.':'Toque em “'+('Atualizar agora')+'” para ir para a versão '+upd.nova+'.')}</span></span>
+        <span style=${{marginLeft:'auto',alignSelf:'center',flex:'0 0 auto',background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',color:'#fff',fontWeight:700,fontSize:'.72rem',borderRadius:'8px',padding:'6px 10px',whiteSpace:'nowrap',opacity:upd.trabalhando?.7:1}}>${upd.trabalhando?'…':(escalar?'Forçar':'Atualizar agora')}</span></button>`}
       ${al.late.map(o=>html`<button class="pop-it" key=${'l'+o.id} onClick=${()=>{setOpen(false);go('/ordens/'+o.id);}}>
         <span class="pi-ic warn"><${Ic} d=${I.alert}/></span><span><b>OS #${o.numero}</b> atrasada<br/><span class="muted">${o.descricao||'serviço'} · venc. ${fmtDate(dueDate(o))}</span></span></button>`)}
       ${al.low.map(p=>html`<button class="pop-it" key=${'e'+p.id} onClick=${()=>{setOpen(false);go('/estoque');}}>
@@ -675,6 +947,183 @@ function AlertsBell(){
     </div>`}
   </div>`;
 }
+/* ========== §8.1 — usuário no canto superior direito ========== */
+/* Tratamento por gênero: vem do perfil (profiles.genero), nunca fixo no código.
+   O sistema nasceu falando só no feminino — certo para a Aimée, errado para o Isaac. */
+const PAPEIS={
+  owner:      {f:'Administradora', m:'Administrador',  n:'Administração'},
+  gestor:     {f:'Gestora',        m:'Gestor',         n:'Gestão'},
+  financeiro: {f:'Financeiro',     m:'Financeiro',     n:'Financeiro'},
+  atendente:  {f:'Atendente',      m:'Atendente',      n:'Atendimento'},
+  costureira: {f:'Costureira',     m:'Costureiro',     n:'Costura'},
+  estoque:    {f:'Estoque',        m:'Estoque',        n:'Estoque'},
+};
+const gen = p => (p&&p.genero)==='masculino'?'m':((p&&p.genero)==='neutro'?'n':'f');
+const papelDe = (role,profile) => (PAPEIS[role]||{})[gen(profile)] || role;
+/* "Bem-vinda" / "Bem-vindo" / "Boas-vindas" */
+const bemVindo = profile => ({f:'Bem-vinda',m:'Bem-vindo',n:'Boas-vindas'})[gen(profile)];
+/* §8.1: iniciais = 2 primeiras letras do nome. NUNCA hardcodar (era 'IS' fixo no Motors). */
+const iniciais = nome => (String(nome||'?').trim().slice(0,2) || '?').toUpperCase();
+
+const Avatar = ({nome,url,cls=''}) => html`<span class=${'av '+cls}>
+  ${url? html`<img src=${url} alt=${nome||'Foto'}/>` : iniciais(nome)}</span>`;
+
+/* A tela de bloqueio vive acima de tudo (App), mas o botão está no topo (Shell).
+   Um evento simples liga os dois sem precisar carregar estado por toda a árvore. */
+const bloquearTela=()=>{ try{ sessionStorage.setItem('vz_lock','1'); }catch(_){ } window.dispatchEvent(new Event('vz-lock')); };
+
+function LockGate(){
+  const {profile,email}=useApp();
+  const [locked,setLocked]=useState(()=>{ try{ return sessionStorage.getItem('vz_lock')==='1'; }catch(_){ return false; } });
+  const [senha,setSenha]=useState(''); const [busy,setBusy]=useState(false); const [erro,setErro]=useState('');
+  useEffect(()=>{ const f=()=>setLocked(true); window.addEventListener('vz-lock',f); return ()=>window.removeEventListener('vz-lock',f); },[]);
+  if(!locked) return null;
+  async function desbloquear(e){
+    e&&e.preventDefault();
+    if(!senha) return;
+    setBusy(true); setErro('');
+    const {error}=await db.auth.signInWithPassword({email,password:senha});
+    setBusy(false);
+    if(error){ setErro('Senha incorreta. Tente de novo.'); return; }
+    setSenha(''); try{ sessionStorage.removeItem('vz_lock'); }catch(_){ }
+    setLocked(false);
+  }
+  return html`<div class="lockscr">
+    <form class="lockbox" onSubmit=${desbloquear}>
+      <${Avatar} nome=${profile?.nome} url=${profile?.avatar_url} cls="lg"/>
+      <h3 style=${{fontFamily:'"Cormorant Garamond",serif',fontSize:'1.4rem',margin:'0 0 2px'}}>Tela bloqueada</h3>
+      <div class="muted" style=${{fontSize:'.84rem',marginBottom:'14px'}}>
+        Digite sua senha para voltar, ${(profile?.nome||'').split(' ')[0]}.</div>
+      ${erro&&html`<div class="err">${erro}</div>`}
+      <input type="password" autoFocus value=${senha} onInput=${e=>setSenha(e.target.value)} placeholder="Sua senha"/>
+      <button class="btn pri" type="submit" disabled=${busy||!senha} style=${{width:'100%',marginTop:'10px',justifyContent:'center'}}>
+        ${busy?'Verificando…':'Desbloquear'}</button>
+      <button type="button" class="link" style=${{marginTop:'12px'}} onClick=${()=>db.auth.signOut()}>Sair da conta</button>
+    </form>
+  </div>`;
+}
+
+/* §8.1 — Modo privacidade: olho que oculta os valores em R$ da tela enquanto o cliente vê o
+   monitor (mesmo espírito do campo de senha e dos apps de banco). Olho aberto = valores visíveis;
+   olho cortado = valores ocultos. Só afeta a exibição na tela — cupom, relatórios e WhatsApp
+   seguem com os valores reais. Distinto do cadeado ("Bloquear a tela"), que continua intacto. */
+function PrivacyToggle(){
+  const on=usePrivacidade();
+  const lbl=on?'Mostrar valores':'Ocultar valores';
+  return html`<button class=${'icob'+(on?' on':'')} title=${lbl} aria-label=${lbl} aria-pressed=${on}
+    onClick=${()=>privacyStore.toggle()}><${Ic} d=${on?I.eyeOff:I.eye}/></button>`;
+}
+
+function UserChip(){
+  const {profile,role}=useApp();
+  const [ficha,setFicha]=useState(false);
+  return html`<${Fragment}>
+    <button class="user" title="Ver e editar meu perfil" onClick=${()=>setFicha(true)}>
+      <span class="txt"><b>${profile?.nome||'Você'}</b><span>${papelDe(role,profile)}</span></span>
+      <${Avatar} nome=${profile?.nome} url=${profile?.avatar_url}/>
+    </button>
+    <button class="icob" title="Bloquear a tela" onClick=${bloquearTela}><${Ic} d=${I.lock}/></button>
+    <button class="icob" title="Sair" onClick=${()=>db.auth.signOut()}><${Ic} d=${I.exit}/></button>
+    ${ficha&&html`<${PerfilModal} onClose=${()=>setFicha(false)}/>`}
+  </${Fragment}>`;
+}
+
+function PerfilModal({onClose}){
+  const {profile,role,tenantId,email,refreshProfile}=useApp();
+  const [nome,setNome]=useState(profile?.nome||'');
+  const [genero,setGenero]=useState(profile?.genero||'feminino');
+  const [arquivo,setArquivo]=useState(null);        // §8.1: só sobe ao salvar
+  const [previa,setPrevia]=useState(profile?.avatar_url||'');
+  const [s1,setS1]=useState(''),[s2,setS2]=useState('');
+  const [busy,setBusy]=useState(false);
+
+  function escolherFoto(e){
+    const f=e.target.files&&e.target.files[0]; if(e.target) e.target.value='';
+    if(!f) return;
+    if(!/^image\//.test(f.type)){ toast('Escolha uma imagem.','err'); return; }
+    if(f.size>3*1024*1024){ toast('A foto precisa ter no máximo 3 MB.','err'); return; }
+    setArquivo(f); setPrevia(URL.createObjectURL(f));   // prévia local, nada sobe ainda
+  }
+
+  async function salvar(){
+    if(!nome.trim()){ toast('Escreva seu nome.','err'); return; }
+    setBusy(true);
+    try{
+      let avatar_url=profile?.avatar_url||null;
+      if(arquivo){
+        const blob=await resizeImage(arquivo,512,.85);
+        const ext=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg');
+        /* §8.1: <tenant>/<user>-<timestamp>.<ext> — nome único, então nunca sobrescreve nada */
+        const caminho=(tenantId||'sem-tenant')+'/'+profile.id+'-'+Date.now()+'.'+ext;
+        const up=await db.storage.from('avatars').upload(caminho,blob,{contentType:blob.type,upsert:false});
+        if(up.error) throw up.error;
+        avatar_url=db.storage.from('avatars').getPublicUrl(caminho).data.publicUrl;
+      }
+      const {error}=await db.from('profiles').update({nome:nome.trim(),avatar_url,genero}).eq('id',profile.id);
+      if(error) throw error;
+
+      if(s1||s2){
+        if(s1.length<6) throw new Error('A senha nova precisa ter pelo menos 6 caracteres.');
+        if(s1!==s2) throw new Error('As duas senhas não são iguais.');
+        const r=await db.auth.updateUser({password:s1});
+        if(r.error) throw r.error;
+        toast('Perfil e senha atualizados.','ok');
+      } else toast('Perfil atualizado.','ok');
+
+      if(refreshProfile) await refreshProfile();
+      onClose();
+    }catch(err){ toast('Não consegui salvar: '+(err.message||err),'err'); }
+    setBusy(false);
+  }
+
+  return html`<${Modal} title="Meu perfil" onClose=${onClose} footer=${html`<${Fragment}>
+      <button class="btn" onClick=${onClose}>Cancelar</button>
+      <button class="btn pri" disabled=${busy} onClick=${salvar}>${busy?'Salvando…':'Salvar'}</button></${Fragment}>`}>
+
+    <div style=${{display:'flex',gap:'16px',alignItems:'center',marginBottom:'16px'}}>
+      <${Avatar} nome=${nome} url=${previa} cls="lg"/>
+      <div>
+        <label class="btn sm" style=${{cursor:'pointer',display:'inline-flex'}}>
+          <${Ic} d=${I.camera}/>${previa?'Trocar foto':'Colocar foto'}
+          <input type="file" accept="image/*" style=${{display:'none'}} onChange=${escolherFoto}/>
+        </label>
+        ${previa&&html`<button class="link" style=${{marginLeft:'10px'}}
+          onClick=${()=>{ setArquivo(null); setPrevia(''); }}>remover</button>`}
+        <div class="muted" style=${{fontSize:'.72rem',marginTop:'6px'}}>JPG ou PNG, até 3 MB.</div>
+      </div>
+    </div>
+
+    <div><label>Nome</label><input value=${nome} onInput=${e=>setNome(e.target.value)} placeholder="Seu nome"/></div>
+
+    <div class="f2" style=${{marginTop:'10px'}}>
+      <div><label>Como prefere ser tratado(a)</label>
+        <select value=${genero} onInput=${e=>setGenero(e.target.value)}>
+          <option value="feminino">Feminino — "Bem-vinda, Administradora"</option>
+          <option value="masculino">Masculino — "Bem-vindo, Administrador"</option>
+          <option value="neutro">Neutro — sem flexão</option>
+        </select></div>
+      <div><label>Perfil de acesso</label><input value=${papelDe(role,{genero})} disabled/></div>
+    </div>
+    <div class="f2" style=${{marginTop:'10px'}}>
+      <div><label>E-mail</label><input value=${email||'—'} disabled/></div>
+      <div></div>
+    </div>
+    <div class="muted" style=${{fontSize:'.72rem',marginTop:'6px'}}>
+      O e-mail e o perfil de acesso são definidos pela administração do sistema.</div>
+
+    <div style=${{marginTop:'18px',paddingTop:'14px',borderTop:'1px solid var(--border)'}}>
+      <div style=${{display:'flex',alignItems:'center',gap:'8px',marginBottom:'8px'}}>
+        <${Ic} d=${I.key} style=${{width:'16px',height:'16px',color:'var(--muted)'}}/>
+        <b style=${{fontSize:'.88rem'}}>Trocar minha senha</b></div>
+      <div class="f2">
+        <div><label>Nova senha</label><input type="password" value=${s1} onInput=${e=>setS1(e.target.value)} placeholder="Mínimo 6 caracteres"/></div>
+        <div><label>Repita a nova senha</label><input type="password" value=${s2} onInput=${e=>setS2(e.target.value)}/></div>
+      </div>
+      <div class="muted" style=${{fontSize:'.72rem',marginTop:'6px'}}>Deixe em branco para manter a senha atual.</div>
+    </div>
+  </${Modal}>`;
+}
+
 function Shell({title,children}){
   const {tenant,role,profile,isAdmin}=useApp();
   const hash=useHash(); const base='/'+((hash.split('?')[0]).split('/')[1]||'');
@@ -691,10 +1140,6 @@ function Shell({title,children}){
           ? html`<div class="sep" key=${'g'+k}>${it.g}</div>`
           : html`<a key=${it.p} class=${base===it.p?'on':''} onClick=${()=>go(it.p)}><${Ic} d=${it.i}/>${it.l}</a>`)}
       </nav>
-      <div class="who"><b>${profile?.nome||'Você'}</b><span>${({owner:'Administradora',gestor:'Gestora',financeiro:'Financeiro',atendente:'Atendente',costureira:'Costureira',estoque:'Estoque'})[role]||role}</span>
-        <div style=${{margin:'9px 0 4px'}}><${ByVizio} dark=${true}/></div>
-        <div class="muted" style=${{fontSize:'.66rem',marginBottom:'6px'}}>v${APP_VERSION}</div>
-        <button onClick=${()=>db.auth.signOut()}>Sair</button></div>
     </aside>
     <div class="main">
       <div class="topbar">
@@ -702,9 +1147,13 @@ function Shell({title,children}){
         <button class="btn ghost sm" title="Voltar" onClick=${()=>history.back()}><${Ic} d=${I.back}/></button>
         <h2>${title}</h2>
         <div class="spacer"></div>
+        <${PrivacyToggle}/>
         <${AlertsBell}/>
+        <${UserChip}/>
       </div>
-      <div class="wrap">${children}</div>
+      <div class="wrap">${children}
+        <div class="assinatura"><${ByVizio}/><span>v${APP_VERSION}</span></div>
+      </div>
     </div></div>`;
 }
 
@@ -741,7 +1190,7 @@ function SaudacaoDiaria(){
   const fechar=()=>{ try{ localStorage.setItem(chave,'1'); }catch(_){} setVisivel(false); };
   return html`<div style=${{position:'relative',marginBottom:'16px',padding:'16px 44px 16px 18px',borderRadius:'14px',color:'#fff',
       background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 10px 26px -14px rgba(0,0,0,.4)'}}>
-    <div class="serif" style=${{fontSize:'1.15rem',fontWeight:700}}>Bem-vinda a um novo dia${nome?', '+nome:''} ✨</div>
+    <div class="serif" style=${{fontSize:'1.15rem',fontWeight:700}}>${bemVindo(profile)} a um novo dia${nome?', '+nome:''} ✨</div>
     <div style=${{opacity:.93,marginTop:'4px',fontSize:'.92rem'}}>${frase}</div>
     <button onClick=${fechar} title="Dispensar por hoje" aria-label="Dispensar"
       style=${{position:'absolute',top:'10px',right:'12px',background:'rgba(255,255,255,.18)',color:'#fff',border:'none',
@@ -838,7 +1287,7 @@ function Dashboard(){
           <h3>Aniversariantes do mês</h3><p class="desc">Um carinho que fideliza.</p>
           <div class="stat-list">${k.aniversariantes.map(c=>html`<div class="it" key=${c.id}>
             <span>${isBdayToday(c)?'🎉 ':''}<b>${c.nome}</b> <span class="muted">· dia ${String(bdayDay(c)).padStart(2,'0')}</span></span>
-            ${c.whatsapp?html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+encodeURIComponent('Feliz aniversário, '+(c.nome||'').split(' ')[0]+'! Desejamos tudo de bom. Com carinho, '+(tenant?.nome||''))} title="Enviar felicitação"><${Ic} d=${I.wa}/></a>`:html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}
+            ${c.whatsapp?html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+encodeURIComponent('Feliz aniversário, '+(c.nome||'').split(' ')[0]+'! Desejamos tudo de bom. Com carinho, '+(tenant?.nome||''))} title="Enviar felicitação"><${IcWA}/></a>`:html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}
           </div>`)}</div>
         </div>`}
       </div>
@@ -912,7 +1361,7 @@ function Clientes(){
           <tbody>${filtered.map(c=>html`<tr key=${c.id} class="click" onClick=${()=>go('/clientes/'+c.id)}>
             <td class="b">${c.nome}</td><td>${c.telefone||'—'}</td><td>${c.cidade||'—'}</td>
             <td class="r" onClick=${e=>e.stopPropagation()}>
-              ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank" title="WhatsApp"><${Ic} d=${I.wa}/></a>`}
+              ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank" title="WhatsApp"><${IcWA}/></a>`}
               <button class="btn sm ghost" onClick=${()=>setEdit(c)} title="Editar"><${Ic} d=${I.edit}/></button>
               <button class="btn sm ghost" onClick=${()=>setDel(c)} title="Excluir"><${Ic} d=${I.trash}/></button>
             </td></tr>`)}</tbody></table></div>`}
@@ -942,7 +1391,7 @@ function ClienteDetail({id}){
           <div><h1 class="hi serif" style=${{fontSize:'1.7rem'}}>${c.nome}</h1>
             <div class="hint" style=${{margin:'2px 0 0'}}>${[c.bairro,c.cidade].filter(Boolean).join(', ')||'—'}</div></div>
           <div style=${{display:'flex',gap:'6px'}}>
-            ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank"><${Ic} d=${I.wa}/>WhatsApp</a>`}
+            ${c.whatsapp&&html`<a class="btn sm wa" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)} target="_blank"><${IcWA}/>WhatsApp</a>`}
             <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
           </div>
         </div>
@@ -1178,8 +1627,8 @@ function OrdemDetail({id}){
     const {error}=await db.from('ordem_fotos').delete().eq('id',f.id);
     if(error) toast('Erro: '+error.message,'err'); else { toast('Foto removida.','ok'); load(); } }
   const osText=()=>'*Ateliê '+(tenant?.nome||'')+'* — Ordem de Serviço #'+o.numero+'\n'
-    +'Cliente: '+(cli?.nome||'—')+'\n'+'Serviço: '+(o.descricao||'—')+'\n'+'Total: '+BRL(o.valor)+'\n'
-    +(pagInfo(o).saldo>0.009?'Saldo a receber: '+BRL(pagInfo(o).saldo)+'\n':'')
+    +'Cliente: '+(cli?.nome||'—')+'\n'+'Serviço: '+(o.descricao||'—')+'\n'+'Total: '+BRLraw(o.valor)+'\n'
+    +(pagInfo(o).saldo>0.009?'Saldo a receber: '+BRLraw(pagInfo(o).saldo)+'\n':'')
     +'Entrada: '+fmtDate(o.data_entrada)+(o.prazo?'  •  Prazo: '+fmtDate(o.prazo):'')+'\n'
     +'Status: '+(STATUS[o.status]?.l||o.status)+(o.observacoes?'\nObs.: '+o.observacoes:'');
   function printOS(){
@@ -1187,16 +1636,16 @@ function OrdemDetail({id}){
     const servicoLinha = temItens
       ? '<tr><td style="color:#8a7e86;vertical-align:top">Serviços</td><td><table style="width:100%;border-collapse:collapse">'
         +'<thead><tr><th style="text-align:left;border-bottom:1px solid #e7ddd0;padding:2px 0">Serviço</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Qtd</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Valor</th><th style="text-align:right;border-bottom:1px solid #e7ddd0;padding:2px 0">Subtotal</th></tr></thead><tbody>'
-        +itens.map(it=>'<tr><td style="padding:2px 0">'+esc(it.descricao||'—')+'</td><td style="text-align:right">'+(Number(it.quantidade)||1)+'</td><td style="text-align:right">'+BRL(it.valor_unit)+'</td><td style="text-align:right"><b>'+BRL(itSub(it))+'</b></td></tr>').join('')
+        +itens.map(it=>'<tr><td style="padding:2px 0">'+esc(it.descricao||'—')+'</td><td style="text-align:right">'+(Number(it.quantidade)||1)+'</td><td style="text-align:right">'+BRLraw(it.valor_unit)+'</td><td style="text-align:right"><b>'+BRLraw(itSub(it))+'</b></td></tr>').join('')
         +'</tbody></table></td></tr>'
       : '<tr><td style="color:#8a7e86">Serviço</td><td>'+esc(o.descricao||'—')+'</td></tr>';
     const body='<h3>Ordem de Serviço #'+o.numero+'</h3><table><tbody>'
       +'<tr><td style="width:36%;color:#8a7e86">Cliente</td><td>'+esc(cli?.nome||'—')+'</td></tr>'
       +servicoLinha
-      +(Number(o.desconto)>0?'<tr><td style="color:#8a7e86">Desconto</td><td>− '+BRL(o.desconto)+'</td></tr>':'')
-      +'<tr><td style="color:#8a7e86">Total a pagar</td><td><b>'+BRL(o.valor)+'</b></td></tr>'
-      +(Number(o.valor_pago)>0?'<tr><td style="color:#8a7e86">Pago</td><td>'+BRL(o.valor_pago)+'</td></tr>':'')
-      +(pagInfo(o).saldo>0.009?'<tr><td style="color:#8a7e86">Saldo a receber</td><td><b>'+BRL(pagInfo(o).saldo)+'</b></td></tr>':'')
+      +(Number(o.desconto)>0?'<tr><td style="color:#8a7e86">Desconto</td><td>− '+BRLraw(o.desconto)+'</td></tr>':'')
+      +'<tr><td style="color:#8a7e86">Total a pagar</td><td><b>'+BRLraw(o.valor)+'</b></td></tr>'
+      +(Number(o.valor_pago)>0?'<tr><td style="color:#8a7e86">Pago</td><td>'+BRLraw(o.valor_pago)+'</td></tr>':'')
+      +(pagInfo(o).saldo>0.009?'<tr><td style="color:#8a7e86">Saldo a receber</td><td><b>'+BRLraw(pagInfo(o).saldo)+'</b></td></tr>':'')
       +'<tr><td style="color:#8a7e86">Entrada</td><td>'+fmtDate(o.data_entrada)+'</td></tr>'
       +'<tr><td style="color:#8a7e86">Prazo</td><td>'+fmtDate(o.prazo)+'</td></tr>'
       +'<tr><td style="color:#8a7e86">Status</td><td>'+esc(STATUS[o.status]?.l||o.status)+'</td></tr>'
@@ -1212,10 +1661,10 @@ function OrdemDetail({id}){
       <div style=${{display:'flex',gap:'6px',flexWrap:'wrap'}}>
         ${cli?.whatsapp&&html`<a class="btn sm wa" target="_blank" title="Avisar cliente pelo WhatsApp"
           href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent('Olá '+(cli.nome||'').split(' ')[0]+'! Seu serviço'+(o.descricao?' ("'+o.descricao+'")':'')+' está pronto para retirada. 🧵 — '+(tenant?.nome||''))}>
-          <${Ic} d=${I.wa}/>Avisar pronto</a>`}
+          <${IcWA}/>Avisar pronto</a>`}
         <button class="btn sm" onClick=${printOS}><${Ic} d=${I.print}/>Imprimir OS</button>
         <button class="btn sm" title="Cupom não fiscal (recibo)" onClick=${()=>printCupom(o,cli,tenant?.nome,settings,itens)}><${Ic} d=${I.file}/>Cupom</button>
-        ${cli?.whatsapp&&html`<a class="btn sm wa" target="_blank" title="Enviar a OS ao cliente" href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent(osText())}><${Ic} d=${I.wa}/>Enviar OS</a>`}
+        ${cli?.whatsapp&&html`<a class="btn sm wa" target="_blank" title="Enviar a OS ao cliente" href=${'https://wa.me/55'+onlyDigits(cli.whatsapp)+'?text='+encodeURIComponent(osText())}><${IcWA}/>Enviar OS</a>`}
         <button class="btn sm" onClick=${()=>setEdit(true)}><${Ic} d=${I.edit}/>Editar</button>
         <button class="btn sm ghost" onClick=${()=>setDel(true)}><${Ic} d=${I.trash}/></button>
       </div>
@@ -1449,14 +1898,14 @@ function Financeiro(){
   function imprimirFechamento(){
     const linhas=caixa.itens.length
       ? caixa.itens.map(l=>'<tr><td>'+esc(l.descricao||(l.tipo==='receita'?'Receita':'Despesa'))+'</td>'
-          +'<td style="text-align:right;color:'+(l.tipo==='receita'?'#2f6b43':'#b3452f')+'">'+(l.tipo==='receita'?'+ ':'− ')+BRL(l.valor)+'</td></tr>').join('')
+          +'<td style="text-align:right;color:'+(l.tipo==='receita'?'#2f6b43':'#b3452f')+'">'+(l.tipo==='receita'?'+ ':'− ')+BRLraw(l.valor)+'</td></tr>').join('')
       : '<tr><td colspan="2" style="color:#8a7e86">Nenhum movimento hoje.</td></tr>';
     const body='<h3>Fechamento do dia — '+fmtDate(hoje)+'</h3>'
       +'<table><tbody>'+linhas+'</tbody></table>'
       +'<table style="margin-top:22px"><tbody>'
-      +'<tr><td style="width:60%;color:#8a7e86">Entradas</td><td style="text-align:right"><b>'+BRL(caixa.entrou)+'</b></td></tr>'
-      +'<tr><td style="color:#8a7e86">Saídas</td><td style="text-align:right"><b>'+BRL(caixa.saiu)+'</b></td></tr>'
-      +'<tr><td style="color:#8a7e86">Saldo do dia</td><td style="text-align:right"><b>'+BRL(caixa.saldo)+'</b></td></tr>'
+      +'<tr><td style="width:60%;color:#8a7e86">Entradas</td><td style="text-align:right"><b>'+BRLraw(caixa.entrou)+'</b></td></tr>'
+      +'<tr><td style="color:#8a7e86">Saídas</td><td style="text-align:right"><b>'+BRLraw(caixa.saiu)+'</b></td></tr>'
+      +'<tr><td style="color:#8a7e86">Saldo do dia</td><td style="text-align:right"><b>'+BRLraw(caixa.saldo)+'</b></td></tr>'
       +'</tbody></table>'
       +'<div class="kv" style="margin-top:30px"><span>Conferido por: __________________________</span><span>Data: ____/____/______</span></div>';
     printDoc('Fechamento do dia', body, tenant?.nome);
@@ -1543,15 +1992,15 @@ function Relatorios(){
     const tot=rows.reduce((s,o)=>s+Number(o.valor||0),0);
     const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span><span>Serviços: <b>'+rows.length+'</b></span></div>'
       +'<table><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrada</th><th class="r">Valor</th></tr></thead><tbody>'
-      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+fmtDate(o.data_entrada)+'</td><td class="r">'+BRL(o.valor)+'</td></tr>').join('')
-      +'</tbody><tfoot><tr><td colspan="4">Total de entradas</td><td class="r">'+BRL(tot)+'</td></tr></tfoot></table>';
+      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+fmtDate(o.data_entrada)+'</td><td class="r">'+BRLraw(o.valor)+'</td></tr>').join('')
+      +'</tbody><tfoot><tr><td colspan="4">Total de entradas</td><td class="r">'+BRLraw(tot)+'</td></tr></tfoot></table>';
     printDoc('Relatório de Entradas — '+periodo, body, tenant?.nome); };
   const printFinalizados=()=>{ const rows=data.per.filter(o=>o.status==='finalizado'||o.status==='entregue').sort((a,b)=>(a.entregue_em||'').localeCompare(b.entregue_em||''));
     const tot=rows.reduce((s,o)=>s+Number(o.valor||0),0);
     const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span><span>Finalizados: <b>'+rows.length+'</b></span><span>Tempo médio: <b>'+(data.tempoMedio??'—')+' dias</b></span></div>'
       +'<table><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrega</th><th class="r">Valor</th></tr></thead><tbody>'
-      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+(o.entregue_em?fmtDate(o.entregue_em.slice(0,10)):'—')+'</td><td class="r">'+BRL(o.valor)+'</td></tr>').join('')
-      +'</tbody><tfoot><tr><td colspan="4">Total finalizado</td><td class="r">'+BRL(tot)+'</td></tr></tfoot></table>';
+      +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+(o.entregue_em?fmtDate(o.entregue_em.slice(0,10)):'—')+'</td><td class="r">'+BRLraw(o.valor)+'</td></tr>').join('')
+      +'</tbody><tfoot><tr><td colspan="4">Total finalizado</td><td class="r">'+BRLraw(tot)+'</td></tr></tfoot></table>';
     printDoc('Relatório de Finalizados — '+periodo, body, tenant?.nome); };
   const printFaturamento=()=>{ const inR=l=>{ const d=l.pago_em||l.vencimento||''; return d>=data.ini&&d<=data.fim; };
     const rec=data.fin.filter(l=>l.tipo==='receita'&&l.pago&&inR(l)); const desp=data.fin.filter(l=>l.tipo==='despesa'&&l.pago&&inR(l));
@@ -1559,11 +2008,11 @@ function Relatorios(){
     const osTot=data.per.reduce((s,o)=>s+Number(o.valor||0),0);
     const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span></div>'
       +'<table><tbody>'
-      +'<tr><td>Serviços registrados no período</td><td class="r">'+BRL(osTot)+'</td></tr>'
-      +'<tr><td>Receitas recebidas</td><td class="r">'+BRL(tr)+'</td></tr>'
-      +'<tr><td>Despesas pagas</td><td class="r">− '+BRL(td)+'</td></tr>'
-      +'</tbody><tfoot><tr><td>Saldo do período</td><td class="r">'+BRL(tr-td)+'</td></tr></tfoot></table>'
-      +(rec.length?('<h3 style="margin-top:18px">Receitas recebidas</h3><table><thead><tr><th>Descrição</th><th>Data</th><th class="r">Valor</th></tr></thead><tbody>'+rec.map(l=>'<tr><td>'+esc(l.descricao||'—')+'</td><td>'+fmtDate(l.pago_em||l.vencimento)+'</td><td class="r">'+BRL(l.valor)+'</td></tr>').join('')+'</tbody></table>'):'');
+      +'<tr><td>Serviços registrados no período</td><td class="r">'+BRLraw(osTot)+'</td></tr>'
+      +'<tr><td>Receitas recebidas</td><td class="r">'+BRLraw(tr)+'</td></tr>'
+      +'<tr><td>Despesas pagas</td><td class="r">− '+BRLraw(td)+'</td></tr>'
+      +'</tbody><tfoot><tr><td>Saldo do período</td><td class="r">'+BRLraw(tr-td)+'</td></tr></tfoot></table>'
+      +(rec.length?('<h3 style="margin-top:18px">Receitas recebidas</h3><table><thead><tr><th>Descrição</th><th>Data</th><th class="r">Valor</th></tr></thead><tbody>'+rec.map(l=>'<tr><td>'+esc(l.descricao||'—')+'</td><td>'+fmtDate(l.pago_em||l.vencimento)+'</td><td class="r">'+BRLraw(l.valor)+'</td></tr>').join('')+'</tbody></table>'):'');
     printDoc('Relatório de Faturamento — '+periodo, body, tenant?.nome); };
   return html`<${Shell} title="Relatórios">
     <div class="bar">
@@ -1807,7 +2256,7 @@ function Recuperacao(){
         ${d.inativos.length===0? html`<${Empty} icon=${I.refresh} title="Ninguém parado">Seus clientes estão ativos.</${Empty}>`
           : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Sem voltar</th><th class="r">Serviços</th><th class="r">Total gasto</th><th class="r">Ação</th></tr></thead>
             <tbody>${d.inativos.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${c.dias} dias</td><td class="r">${c.n}</td><td class="r b">${BRL(c.total)}</td>
-              <td class="r">${c.whatsapp? html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Reconquistar</a>`: html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}</td></tr>`)}</tbody></table></div>`}
+              <td class="r">${c.whatsapp? html`<a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${IcWA}/>Reconquistar</a>`: html`<span class="muted" style=${{fontSize:'.72rem'}}>sem WhatsApp</span>`}</td></tr>`)}</tbody></table></div>`}
       </div>
     </${Fragment}>`}
   </${Shell}>`;
@@ -1829,7 +2278,7 @@ function Alavancagem(){
     if(seg==='novos') list=list.filter(c=>(counts[c.id]||0)<=1);
     return list; },[clientes,seg,counts]);
   const msg=c=>encodeURIComponent('Olá '+((c.nome||'').split(' ')[0])+'! Oferta especial pra você'
-    +(serv? ' em '+serv.nome+': de '+BRL(preco)+' por '+BRL(precoDesc)+' ('+desc+'% off)':' aqui no ateliê')+'. Vamos agendar? — '+(tenant?.nome||''));
+    +(serv? ' em '+serv.nome+': de '+BRLraw(preco)+' por '+BRLraw(precoDesc)+' ('+desc+'% off)':' aqui no ateliê')+'. Vamos agendar? — '+(tenant?.nome||''));
   return html`<${Shell} title="Alavancagem">
     <div class="hint">Gere mais receita da base atual: escolha um público, um serviço e um desconto, e dispare a oferta por WhatsApp.</div>
     <div class="glass panel">
@@ -1848,7 +2297,7 @@ function Alavancagem(){
       ${alvo.length===0? html`<${Empty} icon=${I.rocket} title="Nenhum cliente">Ajuste o público ou cadastre WhatsApp nos clientes.</${Empty}>`
         : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Serviços feitos</th><th class="r">Enviar oferta</th></tr></thead>
           <tbody>${alvo.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${counts[c.id]||0}</td>
-            <td class="r"><a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${Ic} d=${I.wa}/>Oferecer</a></td></tr>`)}</tbody></table></div>`}
+            <td class="r"><a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${IcWA}/>Oferecer</a></td></tr>`)}</tbody></table></div>`}
     </div>
   </${Shell}>`;
 }
@@ -1874,7 +2323,8 @@ function Novidades(){
         : html`<div class="stat-list">${lancados.map(r=>html`<div class="it" key=${r.id} style=${{alignItems:'flex-start',flexDirection:'column',gap:'3px',padding:'11px 4px'}}>
             <div style=${{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}>
               <span class="tag">${tipoMeta[r.tipo]||r.tipo}</span><b>${r.titulo}</b>
-              ${r.versao?html`<span class="muted" style=${{fontSize:'.72rem'}}>v${r.versao}</span>`:''}</div>
+              ${r.versao?html`<span class="muted" style=${{fontSize:'.72rem'}}>v${r.versao}</span>`:''}
+              ${r.lancado_em?html`<span class="muted" style=${{fontSize:'.72rem',marginLeft:'auto'}}>${fmtDate(String(r.lancado_em).slice(0,10))}</span>`:''}</div>
             ${r.descricao&&html`<span class="muted" style=${{fontSize:'.86rem'}}>${r.descricao}</span>`}
           </div>`)}</div>`}
     </div>
@@ -1889,14 +2339,182 @@ function Novidades(){
   </${Shell}>`;
 }
 
+/* ========== AGENDA (módulo padrão VIZIO §16 · arrastar §15) ==========
+   Referência viva: Inovar Formaturas (app-pauta.js). Duas diferenças deliberadas:
+   1) persistência em tabela com tenant_id + RLS (o Inovar usa localStorage, que prende
+      a pauta no aparelho e não acompanha a usuária);
+   2) Seg–Sáb, porque ateliê atende sábado.
+   Arrastar NUNCA é o único caminho: cada cartão tem os botões "Manhã/Tarde/Noite" e
+   "◀ ▶" de dia — no celular o drag nativo não é confiável. */
+const AG_PERIODOS=[['manha','Manhã','🌅'],['tarde','Tarde','☀️'],['noite','Noite','🌙']];
+const agPeriodoAtual=()=>{ const h=new Date().getHours(); return h<12?'manha':(h<18?'tarde':'noite'); };
+const agNomePer=p=>(AG_PERIODOS.find(x=>x[0]===p)||[,'—'])[1];
+const agYmd=d=>{ const x=new Date(d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+const agSegunda=d=>{ const x=new Date(d); const w=x.getDay(); x.setDate(x.getDate()+(w===0?-6:1-w)); x.setHours(0,0,0,0); return x; };
+const AG_DIAS=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+function Agenda(){
+  const {tenantId}=useApp();
+  const [semana,setSemana]=useState(0);
+  const [rows,setRows]=useState(null);
+  const [edit,setEdit]=useState(null);      // {id?,dia,periodo,titulo,observacoes}
+  const [del,setDel]=useState(null);
+  const [arrastando,setArrastando]=useState(null);
+  const [alvo,setAlvo]=useState(null);      // 'YYYY-MM-DD|periodo' realçado
+
+  const dias=useMemo(()=>{ const seg=agSegunda(new Date()); seg.setDate(seg.getDate()+semana*7);
+    return AG_DIAS.map((nome,i)=>{ const d=new Date(seg); d.setDate(seg.getDate()+i); return {nome,data:d,ymd:agYmd(d)}; }); },[semana]);
+  const hojeYmd=agYmd(new Date()), perAtual=agPeriodoAtual();
+
+  const carregar=useCallback(async()=>{
+    if(!tenantId) return;
+    const data=qd(await db.from('agenda_atividades').select('*')
+      .gte('dia',dias[0].ymd).lte('dia',dias[dias.length-1].ymd)
+      .order('ordem',{ascending:true}).order('created_at',{ascending:true}), 'a agenda');
+    setRows(data||[]);
+  },[tenantId,dias]);
+  useEffect(()=>{ carregar(); },[carregar]);
+
+  /* move = alterar dia e/ou período. Usado pelo arrasto E pelos botões (acessibilidade). */
+  async function mover(at,novoDia,novoPer){
+    if(at.dia===novoDia && at.periodo===novoPer) return;          // §15: soltar no mesmo lugar não faz nada
+    setRows(rs=>rs.map(r=>r.id===at.id?{...r,dia:novoDia,periodo:novoPer}:r));   // otimista
+    const {error}=await db.from('agenda_atividades').update({dia:novoDia,periodo:novoPer}).eq('id',at.id);
+    if(error){ toast('Não consegui mover a atividade. '+(error.message||''),'err'); carregar(); }
+  }
+  async function alternarFeito(at){
+    const novo=at.status==='concluida'?'pendente':'concluida';
+    setRows(rs=>rs.map(r=>r.id===at.id?{...r,status:novo}:r));
+    const {error}=await db.from('agenda_atividades').update({status:novo}).eq('id',at.id);
+    if(error){ toast('Não consegui atualizar. '+(error.message||''),'err'); carregar(); }
+  }
+  async function salvar(f){
+    const payload={titulo:(f.titulo||'').trim(),observacoes:f.observacoes||null,dia:f.dia,periodo:f.periodo};
+    if(!payload.titulo){ toast('Escreva o que precisa ser feito.','err'); return false; }
+    const r = f.id ? await db.from('agenda_atividades').update(payload).eq('id',f.id)
+                   : await db.from('agenda_atividades').insert({...payload,tenant_id:tenantId});
+    if(r.error){ toast('Erro ao salvar: '+r.error.message,'err'); return false; }
+    toast(f.id?'Atividade atualizada.':'Atividade criada.','ok'); carregar(); return true;
+  }
+  async function excluir(at){
+    const {error}=await db.from('agenda_atividades').delete().eq('id',at.id);
+    if(error) toast('Erro ao excluir: '+error.message,'err'); else { toast('Atividade removida.','ok'); carregar(); }
+  }
+
+  const rotulo=dias.length?`${dias[0].data.getDate()}/${String(dias[0].data.getMonth()+1).padStart(2,'0')} a ${dias[5].data.getDate()}/${String(dias[5].data.getMonth()+1).padStart(2,'0')}`:'';
+  const total=(rows||[]).length, feitas=(rows||[]).filter(r=>r.status==='concluida').length;
+
+  return html`<${Shell} title="Agenda">
+    <div class="hint">Organize seu dia: crie atividades e <b>arraste</b> para outro dia ou período. Clique para editar.</div>
+
+    <div class="ag-foco">
+      <span>⏰ Agora é <b>${agNomePer(perAtual)}</b> — foque nas atividades deste período.</span>
+      <span style=${{marginLeft:'auto',color:'var(--muted)',fontSize:'.8rem'}}>
+        ${total} atividade${total===1?'':'s'} na semana${total?` · ${feitas} concluída${feitas===1?'':'s'}`:''}</span>
+    </div>
+
+    <div class="bar" style=${{marginBottom:'12px'}}>
+      <button class="btn sm" onClick=${()=>setSemana(s=>s-1)} title="Semana anterior">‹</button>
+      <button class="btn sm" onClick=${()=>setSemana(0)}>Hoje</button>
+      <button class="btn sm" onClick=${()=>setSemana(s=>s+1)} title="Próxima semana">›</button>
+      <span class="muted" style=${{fontSize:'.82rem'}}>Semana de ${rotulo}</span>
+      <button class="btn pri sm" style=${{marginLeft:'auto'}}
+        onClick=${()=>setEdit({dia:hojeYmd,periodo:perAtual,titulo:'',observacoes:''})}>
+        <${Ic} d=${I.plus}/>Nova atividade</button>
+    </div>
+
+    ${rows===null? html`<div class="hint">Carregando…</div>` : html`
+    <div class="ag-week">
+      ${dias.map(d=>{
+        const ehHoje=d.ymd===hojeYmd;
+        return html`<div class=${'ag-day'+(ehHoje?' hoje':'')} key=${d.ymd}>
+          <div class="ag-day-h">
+            <b>${d.nome}</b><span class="dt">${String(d.data.getDate()).padStart(2,'0')}/${String(d.data.getMonth()+1).padStart(2,'0')}</span>
+            <button class="add" title=${'Nova atividade em '+d.nome}
+              onClick=${()=>setEdit({dia:d.ymd,periodo:perAtual,titulo:'',observacoes:''})}>+</button>
+          </div>
+          ${AG_PERIODOS.map(([pid,plabel,pic])=>{
+            const itens=(rows||[]).filter(r=>r.dia===d.ymd&&r.periodo===pid);
+            const chave=d.ymd+'|'+pid, ehAgora=ehHoje&&pid===perAtual;
+            return html`<div key=${pid}
+              class=${'ag-per'+(ehAgora?' cur':'')+(alvo===chave?' drop-ok':'')}
+              onDragOver=${e=>{ e.preventDefault(); if(alvo!==chave) setAlvo(chave); }}
+              onDragLeave=${e=>{ if(!e.currentTarget.contains(e.relatedTarget)&&alvo===chave) setAlvo(null); }}
+              onDrop=${e=>{ e.preventDefault(); setAlvo(null);
+                let id=arrastando; try{ const t=e.dataTransfer.getData('text/agenda-id')||e.dataTransfer.getData('text/plain')||''; if(/^ag:(.+)$/.test(t)) id=RegExp.$1; }catch(_){ }
+                if(!id) return;                                    /* §15: tipo que não entendo, ignoro */
+                const at=(rows||[]).find(r=>r.id===id); if(at) mover(at,d.ymd,pid); }}>
+              <div class="ag-per-h">
+                <span>${pic} ${plabel}</span>
+                ${ehAgora&&html`<span class="agora">agora</span>`}
+                <span class="n">${itens.length}</span>
+              </div>
+              <div class="ag-per-body">
+                ${itens.length===0? html`<div class="ag-vazio">—</div>`
+                : itens.map(at=>html`<div key=${at.id}
+                    class=${'ag-card'+(at.status==='concluida'?' feito':'')+(arrastando===at.id?' dragging':'')}
+                    draggable=${true}
+                    onDragStart=${e=>{ setArrastando(at.id);
+                      try{ e.dataTransfer.setData('text/agenda-id',at.id); e.dataTransfer.setData('text/plain','ag:'+at.id); e.dataTransfer.effectAllowed='move'; }catch(_){ } }}
+                    onDragEnd=${()=>{ setArrastando(null); setAlvo(null); }}>
+                    <div class="t" onClick=${()=>setEdit({id:at.id,dia:at.dia,periodo:at.periodo,titulo:at.titulo,observacoes:at.observacoes||''})}
+                      style=${{cursor:'pointer'}} title="Clique para editar">${at.titulo}</div>
+                    ${at.observacoes&&html`<div class="o">${at.observacoes}</div>`}
+                    <div class="acts">
+                      <button onClick=${()=>alternarFeito(at)} title=${at.status==='concluida'?'Reabrir':'Marcar como concluída'}>
+                        ${at.status==='concluida'?'↩ reabrir':'✓ concluir'}</button>
+                      ${AG_PERIODOS.filter(([q])=>q!==at.periodo).map(([q,ql])=>html`
+                        <button key=${q} title=${'Mover para '+ql} onClick=${()=>mover(at,at.dia,q)}>${ql.slice(0,1)}</button>`)}
+                      <button title="Excluir" onClick=${()=>setDel(at)}>🗑</button>
+                    </div>
+                  </div>`)}
+              </div>
+            </div>`;
+          })}
+        </div>`;
+      })}
+    </div>`}
+
+    ${edit&&html`<${AgendaForm} row=${edit} dias=${dias} onClose=${()=>setEdit(null)} onSave=${salvar}/>`}
+    ${del&&html`<${Confirm} danger text=${'Excluir "'+del.titulo+'"?'} onClose=${()=>setDel(null)} onYes=${()=>excluir(del)}/>`}
+  </${Shell}>`;
+}
+
+function AgendaForm({row,dias,onClose,onSave}){
+  const [f,setF]=useState({...row});
+  const [busy,setBusy]=useState(false);
+  const set=(k,v)=>setF(o=>({...o,[k]:v}));
+  return html`<${Modal} title=${f.id?'Editar atividade':'Nova atividade'} onClose=${onClose} footer=${html`<${Fragment}>
+      <button class="btn" onClick=${onClose}>Cancelar</button>
+      <button class="btn pri" disabled=${busy} onClick=${async()=>{ setBusy(true); const ok=await onSave(f); setBusy(false); if(ok) onClose(); }}>
+        ${busy?'Salvando…':'Salvar'}</button></${Fragment}>`}>
+    <div><label>O que precisa ser feito *</label>
+      <input value=${f.titulo} autoFocus onInput=${e=>set('titulo',e.target.value)} placeholder="Ex.: Cortar o vestido da Roberta"/></div>
+    <div class="f2" style=${{marginTop:'10px'}}>
+      <div><label>Dia</label>
+        <select value=${f.dia} onInput=${e=>set('dia',e.target.value)}>
+          ${dias.map(d=>html`<option key=${d.ymd} value=${d.ymd}>${d.nome} · ${String(d.data.getDate()).padStart(2,'0')}/${String(d.data.getMonth()+1).padStart(2,'0')}</option>`)}
+        </select></div>
+      <div><label>Período</label>
+        <select value=${f.periodo} onInput=${e=>set('periodo',e.target.value)}>
+          ${AG_PERIODOS.map(([p,l])=>html`<option key=${p} value=${p}>${l}</option>`)}
+        </select></div>
+    </div>
+    <div style=${{marginTop:'10px'}}><label>Observações</label>
+      <textarea rows="2" value=${f.observacoes||''} onInput=${e=>set('observacoes',e.target.value)} placeholder="Opcional"></textarea></div>
+  </${Modal}>`;
+}
+
 /* ========== ROUTER ========== */
 function Router(){
+  usePrivacidade(); // alternar o modo privacidade re-renderiza a página inteira (todos os R$ atualizam na hora)
   const h=useHash(); const [path]=h.split('?'); const seg=path.split('/').filter(Boolean);
   if(seg[0]==='clientes'&&seg[1]) return html`<${ClienteDetail} id=${seg[1]}/>`;
   if(seg[0]==='clientes') return html`<${Clientes}/>`;
   if(seg[0]==='ordens'&&seg[1]) return html`<${OrdemDetail} id=${seg[1]}/>`;
   if(seg[0]==='ordens') return html`<${Ordens}/>`;
   if(seg[0]==='servicos') return html`<${Servicos}/>`;
+  if(seg[0]==='agenda') return html`<${Agenda}/>`;
   if(seg[0]==='estoque') return html`<${Estoque}/>`;
   if(seg[0]==='financeiro') return html`<${Financeiro}/>`;
   if(seg[0]==='relatorios') return html`<${Relatorios}/>`;
@@ -1989,9 +2607,9 @@ function FirstAccessModal({onClose}){
       if(error){ setBusy(false); toast('Erro: '+error.message,'err'); return; }
     }
     try{ await db.from('profiles').update({trocar_senha:false}).eq('id',profile.id); }catch(_){}
-    setBusy(false); if(!clearOnly) toast('Senha atualizada. Bem-vinda!','ok'); onClose();
+    setBusy(false); if(!clearOnly) toast('Senha atualizada. '+bemVindo(profile)+'!','ok'); onClose();
   }
-  return html`<${Modal} title="Bem-vinda ao seu sistema!" onClose=${()=>done(true)} footer=${html`<${Fragment}>
+  return html`<${Modal} title=${bemVindo(profile)+' ao seu sistema!'} onClose=${()=>done(true)} footer=${html`<${Fragment}>
     <button class="btn" onClick=${()=>done(true)}>Fazer depois</button>
     <button class="btn pri" disabled=${busy} onClick=${()=>done(false)}>${busy?'Salvando…':'Salvar nova senha'}</button></${Fragment}>`}>
     <p style=${{marginTop:0,color:'#5a525c',fontSize:'.92rem'}}>Seu sistema está pronto e no seu nome. Para começar com segurança, crie uma <b>nova senha</b> — só sua.</p>
@@ -2076,7 +2694,7 @@ function Master(){
     <div style=${{marginBottom:'14px'}}><h1 class="h1">Ativação de cliente</h1>
       <p class="muted">Gere o link de primeiro acesso <b>depois</b> de confirmar o pagamento. O link cria a conta já ativa; a cliente define usuário e senha.</p></div>
     ${!isAdmin?html`<div class="glass card"><h3>Acesso restrito</h3><p class="muted">Esta área é exclusiva do administrador da plataforma.</p></div>`
-    :html`<div class="glass card" style=${{maxWidth:'560px'}}>
+    :html`<div class="glass card" style=${{maxWidth:'560px',margin:'0 auto'}}>
       <form onSubmit=${gerar}>
         ${err&&html`<div class="err">${err}</div>`}
         <label>E-mail da cliente (o mesmo do pagamento)</label>
@@ -2157,6 +2775,9 @@ function NovidadeModal({onClose}){
     }catch(_){ onClose(); }
   })(); },[]);
   async function fechar(ir){ try{ await db.from('profiles').update({novidades_vistas_em:new Date().toISOString()}).eq('id',profile.id); }catch(_){}
+    /* Marcador local complementar (o timestamp no banco é a fonte da verdade, cross-device):
+       registra que esta versão já foi vista, alinhado ao fluxo de verificação do VersionGate. */
+    try{ localStorage.setItem(LS_VISTA, APP_VERSION); }catch(_){}
     onClose(); if(ir) go('/novidades'); }
   if(!items||items.length===0) return null;
   const tag={novidade:'Novidade',melhoria:'Melhoria',correcao:'Correção'};
@@ -2222,6 +2843,16 @@ function App(){
       pubc.from('plataforma_acessos').insert({ sistema:'atelie', tenant_id:m?.tenant_id||null, user_agent:(navigator.userAgent||'').slice(0,300) }).then(()=>{},()=>{});
     } }catch(_){}
   })(); },[session]);
+  /* §8.1: a ficha do usuário edita nome/foto — o topo precisa refletir na hora, sem F5. */
+  const refreshProfile=useCallback(async()=>{
+    if(!session) return;
+    const {data:prof}=await db.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+    if(prof) setCtx(c=>c?{...c,profile:prof}:c);
+  },[session]);
+  /* Memoizado de propósito: sem isto o valor do contexto seria um objeto novo a cada render
+     do App, e TODO consumidor de useApp() re-renderizaria à toa. Os hooks ficam aqui em cima,
+     antes dos returns antecipados abaixo — chamar hook depois de um return é bug silencioso. */
+  const ctxValue=useMemo(()=> ctx?{...ctx, email:session?.user?.email||'', refreshProfile}:null,[ctx,session,refreshProfile]);
   const onAtivar=(location.hash||'').replace(/^#\/?/,'').split('?')[0].split('/')[0]==='ativar';
   if(onAtivar) return html`<${Fragment}><${Toaster}/><${Ativar}/></${Fragment}>`;
   if(recovery) return html`<${Fragment}><${Toaster}/><${ResetSenha} onDone=${()=>setRecovery(false)}/></${Fragment}>`;
@@ -2229,7 +2860,7 @@ function App(){
   if(!session) return html`<${Fragment}><${Toaster}/><${VersionGate}/><${Login}/></${Fragment}>`;
   if(!ctx) return html`<${Fragment}><${Toaster}/><div class="center"><div class="sub">Preparando seu ateliê…</div></div></${Fragment}>`;
   const showFirst=ctx.trocarSenha&&!firstDone;
-  return html`<${Ctx.Provider} value=${ctx}><${Toaster}/><${VersionGate}/><${BillingGate} user=${session.user}/>${showFirst?html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`:(!novidDone&&html`<${NovidadeModal} onClose=${()=>setNovidDone(true)}/>`)}<${Router}/></${Ctx.Provider}>`;
+  return html`<${Ctx.Provider} value=${ctxValue}><${Toaster}/><${VersionGate}/><${BillingGate} user=${session.user}/>${showFirst?html`<${FirstAccessModal} onClose=${()=>setFirstDone(true)}/>`:(!novidDone&&html`<${NovidadeModal} onClose=${()=>setNovidDone(true)}/>`)}<${Router}/><${LockGate}/></${Ctx.Provider}>`;
 }
 ReactDOM.createRoot(document.getElementById('root')).render(createElement(App));
 </script>
