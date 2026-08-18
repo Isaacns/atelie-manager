@@ -381,7 +381,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.26.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.27.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -1180,6 +1180,13 @@ function SaudacaoDiaria(){
   const [visivel,setVisivel]=useState(()=>{ try{ return ligada && !localStorage.getItem(chave); }catch(_){ return ligada; } });
   if(!visivel) return null;
   const nome=(profile?.nome||'').split(' ')[0];
+  /* Saudação por período (hora local do dispositivo) — convenção BR:
+     manhã 05:00–11:59 · tarde 12:00–17:59 · noite 18:00–04:59.
+     De manhã mantém o texto original (gênero via bemVindo); tarde/noite trocam só a frase. */
+  const h=new Date().getHours();
+  const saudacao = (h>=5 && h<12) ? bemVindo(profile)+' a um novo dia'
+                 : (h>=12 && h<18) ? 'Boa tarde'
+                 : 'Boa noite';
   const frases=[
     'Vamos à produção — que hoje renda bonito. Bom trabalho! 🧵',
     'Linha na agulha e mãos à obra. Que o dia seja leve! 🧵',
@@ -1190,7 +1197,7 @@ function SaudacaoDiaria(){
   const fechar=()=>{ try{ localStorage.setItem(chave,'1'); }catch(_){} setVisivel(false); };
   return html`<div style=${{position:'relative',marginBottom:'16px',padding:'16px 44px 16px 18px',borderRadius:'14px',color:'#fff',
       background:'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))',boxShadow:'0 10px 26px -14px rgba(0,0,0,.4)'}}>
-    <div class="serif" style=${{fontSize:'1.15rem',fontWeight:700}}>${bemVindo(profile)} a um novo dia${nome?', '+nome:''} ✨</div>
+    <div class="serif" style=${{fontSize:'1.15rem',fontWeight:700}}>${saudacao}${nome?', '+nome:''} ✨</div>
     <div style=${{opacity:.93,marginTop:'4px',fontSize:'.92rem'}}>${frase}</div>
     <button onClick=${fechar} title="Dispensar por hoje" aria-label="Dispensar"
       style=${{position:'absolute',top:'10px',right:'12px',background:'rgba(255,255,255,.18)',color:'#fff',border:'none',
