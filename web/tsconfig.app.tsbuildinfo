@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/auth/authcontext.tsx","./src/lib/supabase.ts","./src/screens/clientes.tsx","./src/screens/dashboard.tsx","./src/screens/estoque.tsx","./src/screens/financeiro.tsx","./src/screens/login.tsx","./src/screens/ordens.tsx","./src/screens/servicos.tsx","./src/ui/kit.tsx"],"version":"5.9.3"}
