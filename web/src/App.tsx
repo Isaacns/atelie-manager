@@ -14,8 +14,10 @@ import Agenda from './screens/Agenda'
 import Recuperacao from './screens/Recuperacao'
 import Alavancagem from './screens/Alavancagem'
 import Relatorios from './screens/Relatorios'
+import Fiscal from './screens/Fiscal'
+import Novidades from './screens/Novidades'
 
-const NAV: { to: string; label: string }[] = [{ to: '/', label: 'Início' }, { to: '/ordens', label: 'Ordens' }, { to: '/clientes', label: 'Clientes' }, { to: '/servicos', label: 'Serviços' }, { to: '/agenda', label: 'Agenda' }, { to: '/estoque', label: 'Estoque' }, { to: '/financeiro', label: 'Financeiro' }, { to: '/relatorios', label: 'Relatórios' }, { to: '/recuperacao', label: 'Recuperação' }, { to: '/alavancagem', label: 'Alavancagem' }]
+const NAV: { to: string; label: string }[] = [{ to: '/', label: 'Início' }, { to: '/ordens', label: 'Ordens' }, { to: '/clientes', label: 'Clientes' }, { to: '/servicos', label: 'Serviços' }, { to: '/agenda', label: 'Agenda' }, { to: '/estoque', label: 'Estoque' }, { to: '/financeiro', label: 'Financeiro' }, { to: '/relatorios', label: 'Relatórios' }, { to: '/fiscal', label: 'Fiscal' }, { to: '/recuperacao', label: 'Recuperação' }, { to: '/alavancagem', label: 'Alavancagem' }, { to: '/novidades', label: 'Novidades' }]
 
 function Gate() {
   const { session, tenant, loading, signOut } = useAuth()
@@ -126,8 +128,10 @@ export default function App() {
               <Route path="estoque" element={<Pagina titulo="Estoque"><Estoque /></Pagina>} />
               <Route path="financeiro" element={<Pagina titulo="Financeiro"><Financeiro /></Pagina>} />
               <Route path="relatorios" element={<Pagina titulo="Relatórios"><Relatorios /></Pagina>} />
+              <Route path="fiscal" element={<Pagina titulo="Fiscal (NFS-e)"><Fiscal /></Pagina>} />
               <Route path="recuperacao" element={<Pagina titulo="Recuperação de receita"><Recuperacao /></Pagina>} />
               <Route path="alavancagem" element={<Pagina titulo="Alavancagem"><Alavancagem /></Pagina>} />
+              <Route path="novidades" element={<Pagina titulo="Novidades"><Novidades /></Pagina>} />
               <Route path="perfil" element={<Pagina titulo="Meu perfil"><Perfil /></Pagina>} />
               <Route path="config" element={<Pagina titulo="Configurações"><Config /></Pagina>} />
             </Route>
