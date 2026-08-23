@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { HashRouter, Routes, Route, Outlet, Navigate, NavLink } from 'react-router-dom'
+import { useState, type CSSProperties, type ReactNode } from 'react'
+import { HashRouter, Routes, Route, Outlet, Navigate, NavLink, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import Login from './screens/Login'
 import Clientes from './screens/Clientes'
@@ -8,6 +8,8 @@ import Servicos from './screens/Servicos'
 import Financeiro from './screens/Financeiro'
 import Dashboard from './screens/Dashboard'
 import Estoque from './screens/Estoque'
+import Perfil from './screens/Perfil'
+import Config from './screens/Config'
 
 const NAV: { to: string; label: string }[] = [{ to: '/', label: 'Início' }, { to: '/ordens', label: 'Ordens' }, { to: '/clientes', label: 'Clientes' }, { to: '/servicos', label: 'Serviços' }, { to: '/estoque', label: 'Estoque' }, { to: '/financeiro', label: 'Financeiro' }]
 
@@ -33,8 +35,45 @@ function Gate() {
   return <Outlet />
 }
 
-function Shell() {
+// Menu do usuário no canto superior direito (padrão VIZIO).
+function UserMenu() {
   const { tenant, role, signOut } = useAuth()
+  const nav = useNavigate()
+  const [aberto, setAberto] = useState(false)
+  const gestao = role === 'owner' || role === 'gestor'
+  const ir = (to: string) => { setAberto(false); nav(to) }
+
+  const item: CSSProperties = { display: 'block', width: '100%', textAlign: 'left', border: 0, background: 'transparent', font: 'inherit', fontWeight: 600, fontSize: 14, color: 'var(--ink)', padding: '9px 14px', cursor: 'pointer' }
+
+  return (
+    <div style={{ position: 'relative', flex: '0 0 auto' }}>
+      <button onClick={() => setAberto((v) => !v)} aria-haspopup="menu" aria-expanded={aberto} aria-label="Menu do usuário"
+        style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--line)', background: '#fff', color: 'var(--tx2)', borderRadius: 999, padding: '5px 6px 5px 12px', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+        <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{role ?? 'Conta'}</span>
+        <span aria-hidden style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,var(--plum),var(--purple))', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 14 }}>👤</span>
+      </button>
+      {aberto && (
+        <>
+          <div onClick={() => setAberto(false)} style={{ position: 'fixed', inset: 0, zIndex: 20 }} />
+          <div role="menu" style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 21, minWidth: 210, background: '#fff', border: '1px solid var(--line)', borderRadius: 12, boxShadow: '0 12px 30px -12px rgba(68,42,62,.4)', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)' }}>
+              <div className="display" style={{ fontSize: 14, fontWeight: 600, color: 'var(--plum)', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tenant?.nome}</div>
+              <div style={{ fontSize: 12, color: 'var(--tx3)' }}>{role ?? '—'}</div>
+            </div>
+            <button role="menuitem" style={item} onClick={() => ir('/perfil')}>Meu perfil</button>
+            {gestao && <button role="menuitem" style={item} onClick={() => ir('/config')}>Configurações</button>}
+            <div style={{ borderTop: '1px solid var(--line)' }}>
+              <button role="menuitem" style={{ ...item, color: 'var(--danger)' }} onClick={() => { setAberto(false); void signOut() }}>Sair</button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function Shell() {
+  const { tenant, role } = useAuth()
 
   return (
     <div style={{ minHeight: '100%' }}>
@@ -49,7 +88,7 @@ function Shell() {
               <NavLink key={t.to} to={t.to} end={t.to === '/'} style={({ isActive }) => ({ textDecoration: 'none', border: 0, cursor: 'pointer', font: 'inherit', fontWeight: 600, fontSize: 13, padding: '6px 14px', borderRadius: 8, background: isActive ? '#fff' : 'transparent', color: isActive ? 'var(--plum)' : 'var(--tx2)', boxShadow: isActive ? '0 1px 4px rgba(68,42,62,.15)' : 'none' })}>{t.label}</NavLink>
             ))}
           </nav>
-          <button onClick={() => void signOut()} style={{ border: '1px solid var(--line)', background: '#fff', color: 'var(--tx2)', borderRadius: 9, padding: '7px 13px', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Sair</button>
+          <UserMenu />
         </div>
       </header>
       <main style={{ maxWidth: 1000, margin: '0 auto', padding: '18px' }}>
@@ -81,6 +120,8 @@ export default function App() {
               <Route path="servicos" element={<Pagina titulo="Serviços"><Servicos /></Pagina>} />
               <Route path="estoque" element={<Pagina titulo="Estoque"><Estoque /></Pagina>} />
               <Route path="financeiro" element={<Pagina titulo="Financeiro"><Financeiro /></Pagina>} />
+              <Route path="perfil" element={<Pagina titulo="Meu perfil"><Perfil /></Pagina>} />
+              <Route path="config" element={<Pagina titulo="Configurações"><Config /></Pagina>} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
