@@ -2,9 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwind from '@tailwindcss/vite'
 
-// App principal do Ateliê na RAIZ (costureira.viziostudio.com.br).
-// O vanilla ficou como fallback em /legacy/. (Antes: base '/app/' — strangler.)
+// Piloto React+TS do Ateliê. Deploy no subpath /app/ do site vanilla
+// (costureira.viziostudio.com.br/app/) — estratégia strangler.
 export default defineConfig({
-  base: '/',
+  base: '/app/',
   plugins: [react(), tailwind()],
 })

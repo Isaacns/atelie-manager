@@ -35,20 +35,20 @@ jobs:
           npm ci
           npm run build
 
-      - name: Publicar dist -> raiz
+      - name: Publicar dist -> app/
         run: |
-          cp web/dist/index.html ./index.html
-          rm -rf assets
-          cp -r web/dist/assets ./assets
+          rm -rf app
+          mkdir -p app
+          cp -r web/dist/. app/
 
-      - name: Commitar raiz (se mudou)
+      - name: Commitar app/ (se mudou)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html assets
+          git add app
           if git diff --cached --quiet; then
-            echo "Nada mudou na raiz — nada a commitar."
+            echo "Nada mudou em app/ — nada a commitar."
           else
-            git commit -m "build: publica React na raiz a partir de web/ [skip ci]"
+            git commit -m "build: atualiza /app a partir de web/ [skip ci]"
             git push
           fi
