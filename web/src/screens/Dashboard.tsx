@@ -13,7 +13,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10)
 const fmtDia = (s: string) => { const p = s.slice(0, 10).split('-'); return `${p[2]}/${p[1]}` }
 
 export default function Dashboard() {
-  const { tenant } = useAuth()
+  const { session, tenant } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState(false)
@@ -21,6 +21,29 @@ export default function Dashboard() {
   const [nClientes, setNClientes] = useState(0)
   const [nomeCli, setNomeCli] = useState<Map<string, string>>(new Map())
   const [receitas, setReceitas] = useState<Lancamento[]>([])
+  const [saud, setSaud] = useState<{ id: string; nome: string; genero: string | null; ligada: boolean } | null>(null)
+
+  // Perfil (nome/gênero) + preferência de saudação — espelha o que o vanilla lê
+  // do contexto (profiles + tenant_settings.features.saudacao_diaria).
+  useEffect(() => {
+    if (!session || !tenant) return
+    let vivo = true
+    void (async () => {
+      const [p, s] = await Promise.all([
+        sb.from('profiles').select('id, nome, genero').eq('id', session.user.id).maybeSingle(),
+        sb.from('tenant_settings').select('features').eq('tenant_id', tenant.id).maybeSingle(),
+      ])
+      if (!vivo) return
+      const feats = (s.data?.features ?? null) as { saudacao_diaria?: boolean } | null
+      setSaud({
+        id: (p.data?.id as string) ?? session.user.id,
+        nome: (p.data?.nome as string) ?? '',
+        genero: (p.data?.genero as string | null) ?? null,
+        ligada: !(feats && feats.saudacao_diaria === false),
+      })
+    })()
+    return () => { vivo = false }
+  }, [session, tenant])
 
   async function carregar() {
     if (!tenant) return
@@ -67,8 +90,13 @@ export default function Dashboard() {
   if (loading) return <Loading />
   if (erro) return <div className="at-card" style={{ padding: 0 }}><ErroCarregar onRetry={() => void carregar()} /></div>
 
+  const primeiroNome = (saud?.nome ?? '').split(' ')[0]
+
   return (
     <div>
+      {saud && saud.ligada && <Saudacao id={saud.id} nome={saud.nome} genero={saud.genero} />}
+      <h1 className="hi serif" style={{ margin: 0 }}>Olá{primeiroNome ? ', ' + primeiroNome : ''}</h1>
+      <div className="hint">Panorama do {tenant?.nome ?? 'ateliê'} — atualizado em tempo real.</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
         <Kpi label="Ordens em aberto" valor={String(k.nAbertas)} cor="var(--plum)" onClick={() => navigate('/ordens')} />
         <Kpi label="Atrasadas" valor={String(k.nAtrasadas)} cor="var(--danger)" onClick={() => navigate('/ordens')} />
@@ -140,6 +168,38 @@ function Kpi({ label, valor, cor, onClick }: { label: string; valor: string; cor
       <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--tx3)', fontWeight: 700 }}>{label}</div>
       <div style={{ fontSize: 26, fontWeight: 700, color: cor, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{valor}</div>
     </button>
+  )
+}
+
+// Saudação diária — espelha SaudacaoDiaria do vanilla: gênero via profile,
+// frase por período do dia (manhã/tarde/noite, hora local) e dispensa por dia
+// gravada em localStorage.
+const BEMVINDO: Record<string, string> = { f: 'Bem-vinda', m: 'Bem-vindo', n: 'Boas-vindas' }
+const genLetra = (g: string | null) => g === 'masculino' ? 'm' : g === 'neutro' ? 'n' : 'f'
+const FRASES = [
+  'Vamos à produção — que hoje renda bonito. Bom trabalho! 🧵',
+  'Linha na agulha e mãos à obra. Que o dia seja leve! 🧵',
+  'Seu ateliê está pronto. Capriche como sempre — bom trabalho! 💜',
+  'Hora de transformar tecido em sorriso. Ótimo dia de trabalho! ✨',
+]
+
+function Saudacao({ id, nome, genero }: { id: string; nome: string; genero: string | null }) {
+  const hoje = new Date().toISOString().slice(0, 10)
+  const chave = 'vz_saud_' + (id || 'u') + '_' + hoje
+  const [visivel, setVisivel] = useState(() => { try { return !localStorage.getItem(chave) } catch { return true } })
+  if (!visivel) return null
+  const primeiro = (nome || '').split(' ')[0]
+  const g = genLetra(genero)
+  const h = new Date().getHours()
+  const saudacao = (h >= 5 && h < 12) ? BEMVINDO[g] + ' a um novo dia' : (h >= 12 && h < 18) ? 'Boa tarde' : 'Boa noite'
+  const frase = FRASES[new Date().getDate() % FRASES.length]
+  const fechar = () => { try { localStorage.setItem(chave, '1') } catch { /* ignore */ } setVisivel(false) }
+  return (
+    <div style={{ position: 'relative', marginBottom: 16, padding: '16px 44px 16px 18px', borderRadius: 14, color: '#fff', background: 'linear-gradient(135deg,var(--plum,#5e3a56),var(--violet,#8e2cb0))', boxShadow: '0 10px 26px -14px rgba(0,0,0,.4)' }}>
+      <div className="serif" style={{ fontSize: '1.15rem', fontWeight: 700 }}>{saudacao}{primeiro ? ', ' + primeiro : ''} ✨</div>
+      <div style={{ opacity: 0.93, marginTop: 4, fontSize: '.92rem' }}>{frase}</div>
+      <button onClick={fechar} title="Dispensar por hoje" aria-label="Dispensar" style={{ position: 'absolute', top: 10, right: 12, background: 'rgba(255,255,255,.18)', color: '#fff', border: 'none', width: 26, height: 26, borderRadius: '50%', cursor: 'pointer', fontSize: '.95rem', lineHeight: 1 }}>×</button>
+    </div>
   )
 }
 
