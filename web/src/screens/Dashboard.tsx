@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { sb, OS_STATUS, type Ordem, type OSStatus, type Lancamento } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 import { ErroCarregar, Loading } from '../ui/kit'
@@ -11,8 +12,9 @@ const MES3 = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'ou
 const iso = (d: Date) => d.toISOString().slice(0, 10)
 const fmtDia = (s: string) => { const p = s.slice(0, 10).split('-'); return `${p[2]}/${p[1]}` }
 
-export default function Dashboard({ onGo }: { onGo?: (tab: 'ordens') => void }) {
+export default function Dashboard() {
   const { tenant } = useAuth()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState(false)
   const [ordens, setOrdens] = useState<Ordem[]>([])
@@ -68,8 +70,8 @@ export default function Dashboard({ onGo }: { onGo?: (tab: 'ordens') => void }) 
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
-        <Kpi label="Ordens em aberto" valor={String(k.nAbertas)} cor="var(--plum)" onClick={onGo ? () => onGo('ordens') : undefined} />
-        <Kpi label="Atrasadas" valor={String(k.nAtrasadas)} cor="var(--danger)" onClick={onGo ? () => onGo('ordens') : undefined} />
+        <Kpi label="Ordens em aberto" valor={String(k.nAbertas)} cor="var(--plum)" onClick={() => navigate('/ordens')} />
+        <Kpi label="Atrasadas" valor={String(k.nAtrasadas)} cor="var(--danger)" onClick={() => navigate('/ordens')} />
         <Kpi label="Clientes" valor={String(nClientes)} cor="var(--purple)" />
         <Kpi label="Recebido no mês" valor={BRLk(k.recMes)} cor="var(--ok)" />
       </div>
