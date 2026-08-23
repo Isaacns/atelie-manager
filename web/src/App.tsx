@@ -10,8 +10,11 @@ import Dashboard from './screens/Dashboard'
 import Estoque from './screens/Estoque'
 import Perfil from './screens/Perfil'
 import Config from './screens/Config'
+import Agenda from './screens/Agenda'
+import Recuperacao from './screens/Recuperacao'
+import Alavancagem from './screens/Alavancagem'
 
-const NAV: { to: string; label: string }[] = [{ to: '/', label: 'Início' }, { to: '/ordens', label: 'Ordens' }, { to: '/clientes', label: 'Clientes' }, { to: '/servicos', label: 'Serviços' }, { to: '/estoque', label: 'Estoque' }, { to: '/financeiro', label: 'Financeiro' }]
+const NAV: { to: string; label: string }[] = [{ to: '/', label: 'Início' }, { to: '/ordens', label: 'Ordens' }, { to: '/clientes', label: 'Clientes' }, { to: '/servicos', label: 'Serviços' }, { to: '/agenda', label: 'Agenda' }, { to: '/estoque', label: 'Estoque' }, { to: '/financeiro', label: 'Financeiro' }, { to: '/recuperacao', label: 'Recuperação' }, { to: '/alavancagem', label: 'Alavancagem' }]
 
 function Gate() {
   const { session, tenant, loading, signOut } = useAuth()
@@ -83,7 +86,7 @@ function Shell() {
             <div className="display" style={{ fontSize: 18, fontWeight: 600, color: 'var(--plum)', lineHeight: 1.1 }}>{tenant?.nome}</div>
             <div style={{ fontSize: 12, color: 'var(--tx3)' }}>Ateliê Manager · piloto React {role ? '· ' + role : ''}</div>
           </div>
-          <nav style={{ display: 'flex', gap: 4, background: '#f2ecf0', borderRadius: 10, padding: 3 }}>
+          <nav style={{ display: 'flex', flexWrap: 'wrap', gap: 4, background: '#f2ecf0', borderRadius: 10, padding: 3, justifyContent: 'flex-end' }}>
             {NAV.map((t) => (
               <NavLink key={t.to} to={t.to} end={t.to === '/'} style={({ isActive }) => ({ textDecoration: 'none', border: 0, cursor: 'pointer', font: 'inherit', fontWeight: 600, fontSize: 13, padding: '6px 14px', borderRadius: 8, background: isActive ? '#fff' : 'transparent', color: isActive ? 'var(--plum)' : 'var(--tx2)', boxShadow: isActive ? '0 1px 4px rgba(68,42,62,.15)' : 'none' })}>{t.label}</NavLink>
             ))}
@@ -118,8 +121,11 @@ export default function App() {
               <Route path="ordens" element={<Pagina titulo="Ordens de serviço"><Ordens /></Pagina>} />
               <Route path="clientes" element={<Pagina titulo="Clientes"><Clientes /></Pagina>} />
               <Route path="servicos" element={<Pagina titulo="Serviços"><Servicos /></Pagina>} />
+              <Route path="agenda" element={<Pagina titulo="Agenda"><Agenda /></Pagina>} />
               <Route path="estoque" element={<Pagina titulo="Estoque"><Estoque /></Pagina>} />
               <Route path="financeiro" element={<Pagina titulo="Financeiro"><Financeiro /></Pagina>} />
+              <Route path="recuperacao" element={<Pagina titulo="Recuperação de receita"><Recuperacao /></Pagina>} />
+              <Route path="alavancagem" element={<Pagina titulo="Alavancagem"><Alavancagem /></Pagina>} />
               <Route path="perfil" element={<Pagina titulo="Meu perfil"><Perfil /></Pagina>} />
               <Route path="config" element={<Pagina titulo="Configurações"><Config /></Pagina>} />
             </Route>
