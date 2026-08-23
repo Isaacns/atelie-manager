@@ -1,0 +1,4 @@
+
+# impeccable: cache de sessao e config por-maquina (nao versionar)
+.impeccable/hook.cache.json
+.impeccable/config.local.json
