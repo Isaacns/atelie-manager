@@ -394,7 +394,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.28.1'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.28.2'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -1249,11 +1249,6 @@ function Shell({title,children}){
         ${NAV.filter(can).map((it,k)=> it.g
           ? html`<div class="sep" key=${'g'+k}>${it.g}</div>`
           : html`<a key=${it.p} class=${base===it.p?'on':''} onClick=${()=>go(it.p)}><${Ic} d=${it.i}/>${it.l}</a>`)}
-        <div class="sep">Nova versão</div>
-        <a href="/app/" title="Piloto em React — tela de Clientes (beta)" style=${{display:'flex',alignItems:'center'}}>
-          <${Ic} d=${I.users||I.user||I.client||''}/>Clientes
-          <span style=${{marginLeft:'auto',fontSize:'.6rem',fontWeight:800,color:'#b98325',background:'rgba(185,131,37,.16)',borderRadius:'999px',padding:'2px 8px',letterSpacing:'.04em'}}>BETA</span>
-        </a>
       </nav>
     </aside>
     <div class="main">
