@@ -85,7 +85,7 @@ export default function Config() {
   return (
     <div style={{ maxWidth: 640 }}>
       <div className="at-card" style={{ padding: 20, marginBottom: 16 }}>
-        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 16, fontWeight: 600, marginBottom: 2 }}>Ateliê</div>
+        <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 16, fontWeight: 600, marginBottom: 2 }}>Ateliê</div>
         <p style={{ fontSize: 13, color: 'var(--tx2)', margin: '0 0 14px' }}>Informações do seu ateliê (aparecem no sistema e nas impressões).</p>
         <Field label="Nome do ateliê"><input style={fieldRO} value={nome} disabled={dis} onChange={(e) => setNome(e.target.value)} /></Field>
         <Field label="Subtítulo"><input style={fieldRO} value={st.subtitulo ?? ''} disabled={dis} onChange={(e) => set('subtitulo', e.target.value)} placeholder="Ex.: Ajustes, reformas e sob medida" /></Field>
@@ -107,7 +107,7 @@ export default function Config() {
       </div>
 
       <div className="at-card" style={{ padding: 20 }}>
-        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 16, fontWeight: 600, marginBottom: 2 }}>Preferências</div>
+        <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 16, fontWeight: 600, marginBottom: 2 }}>Preferências</div>
         <p style={{ fontSize: 13, color: 'var(--tx2)', margin: '0 0 6px' }}>Pequenos ajustes de experiência do sistema.</p>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '12px 0' }}>
           <div>

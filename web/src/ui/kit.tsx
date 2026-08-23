@@ -1,8 +1,8 @@
 import { useCallback, useState, type CSSProperties, type ReactNode } from 'react'
 
 export const inp: CSSProperties = {
-  width: '100%', padding: '10px 12px', border: '1px solid var(--line)',
-  borderRadius: 10, fontSize: 15, background: '#fff', color: 'var(--ink)',
+  width: '100%', border: '1px solid var(--border)',
+  borderRadius: '.6rem', fontSize: '.95rem', background: 'rgba(255,255,255,.75)', color: 'var(--fg)',
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -44,24 +44,26 @@ export function ErroCarregar({ onRetry }: { onRetry: () => void }) {
 
 export function Empty({ ico, titulo, texto, children }: { ico: string; titulo: string; texto: string; children?: ReactNode }) {
   return (
-    <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-      <div style={{ fontSize: 40, marginBottom: 8 }}>{ico}</div>
-      <div style={{ fontFamily: 'Fraunces, serif', fontSize: 19, fontWeight: 600, marginBottom: 6 }}>{titulo}</div>
-      <div style={{ fontSize: 14, color: 'var(--tx2)', maxWidth: 420, margin: '0 auto 14px', lineHeight: 1.5 }}>{texto}</div>
+    <div style={{ padding: '44px 20px', textAlign: 'center', color: 'var(--muted)' }}>
+      <div style={{ fontSize: 40, marginBottom: 10 }}>{ico}</div>
+      <h4 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 19, fontWeight: 600, marginBottom: 6, color: 'var(--fg)' }}>{titulo}</h4>
+      <div style={{ fontSize: 14, color: 'var(--muted)', maxWidth: 420, margin: '0 auto 14px', lineHeight: 1.5 }}>{texto}</div>
       {children}
     </div>
   )
 }
 
+// Modal no molde do vanilla: overlay .ov + cartão .modal com cabeçalho .mh
+// (serif) e miolo .mb rolável. Fecha ao clicar fora.
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   return (
-    <div onClick={(e) => { if (e.target === e.currentTarget) onClose() }} style={{ position: 'fixed', inset: 0, background: 'rgba(46,43,49,.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8vh 16px 16px', overflow: 'auto' }}>
-      <div className="at-card" style={{ maxWidth: 460, width: '100%', padding: 0, overflow: 'hidden' }}>
-        <div style={{ background: 'linear-gradient(135deg,var(--plum),var(--plum-deep))', color: '#fff', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <b style={{ flex: 1, fontFamily: 'Fraunces, serif', fontSize: 17 }}>{title}</b>
-          <button onClick={onClose} aria-label="Fechar" style={{ background: 'transparent', border: 0, color: '#fff', fontSize: 22, lineHeight: 1, cursor: 'pointer' }}>×</button>
+    <div className="ov" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="modal" style={{ maxWidth: 560 }}>
+        <div className="mh">
+          <h3>{title}</h3>
+          <button className="x" onClick={onClose} aria-label="Fechar">×</button>
         </div>
-        <div style={{ padding: 18 }}>{children}</div>
+        <div className="mb">{children}</div>
       </div>
     </div>
   )

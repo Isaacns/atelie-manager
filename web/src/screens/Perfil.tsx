@@ -84,7 +84,7 @@ export default function Perfil() {
       </div>
 
       <div className="at-card" style={{ padding: 20, marginBottom: 16 }}>
-        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Trocar minha senha</div>
+        <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Trocar minha senha</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <Field label="Nova senha"><input style={inp} type="password" value={s1} onChange={(e) => setS1(e.target.value)} placeholder="Mínimo 6 caracteres" /></Field>
           <Field label="Repita a nova senha"><input style={inp} type="password" value={s2} onChange={(e) => setS2(e.target.value)} /></Field>
