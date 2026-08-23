@@ -13,8 +13,9 @@ import Config from './screens/Config'
 import Agenda from './screens/Agenda'
 import Recuperacao from './screens/Recuperacao'
 import Alavancagem from './screens/Alavancagem'
+import Relatorios from './screens/Relatorios'
 
-const NAV: { to: string; label: string }[] = [{ to: '/', label: 'Início' }, { to: '/ordens', label: 'Ordens' }, { to: '/clientes', label: 'Clientes' }, { to: '/servicos', label: 'Serviços' }, { to: '/agenda', label: 'Agenda' }, { to: '/estoque', label: 'Estoque' }, { to: '/financeiro', label: 'Financeiro' }, { to: '/recuperacao', label: 'Recuperação' }, { to: '/alavancagem', label: 'Alavancagem' }]
+const NAV: { to: string; label: string }[] = [{ to: '/', label: 'Início' }, { to: '/ordens', label: 'Ordens' }, { to: '/clientes', label: 'Clientes' }, { to: '/servicos', label: 'Serviços' }, { to: '/agenda', label: 'Agenda' }, { to: '/estoque', label: 'Estoque' }, { to: '/financeiro', label: 'Financeiro' }, { to: '/relatorios', label: 'Relatórios' }, { to: '/recuperacao', label: 'Recuperação' }, { to: '/alavancagem', label: 'Alavancagem' }]
 
 function Gate() {
   const { session, tenant, loading, signOut } = useAuth()
@@ -124,6 +125,7 @@ export default function App() {
               <Route path="agenda" element={<Pagina titulo="Agenda"><Agenda /></Pagina>} />
               <Route path="estoque" element={<Pagina titulo="Estoque"><Estoque /></Pagina>} />
               <Route path="financeiro" element={<Pagina titulo="Financeiro"><Financeiro /></Pagina>} />
+              <Route path="relatorios" element={<Pagina titulo="Relatórios"><Relatorios /></Pagina>} />
               <Route path="recuperacao" element={<Pagina titulo="Recuperação de receita"><Recuperacao /></Pagina>} />
               <Route path="alavancagem" element={<Pagina titulo="Alavancagem"><Alavancagem /></Pagina>} />
               <Route path="perfil" element={<Pagina titulo="Meu perfil"><Perfil /></Pagina>} />
