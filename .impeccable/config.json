@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-08-23T21:48:56.466Z",
+        "reason": "Paridade visual exigida pelo Isaac: React identico ao vanilla, que usa Inter (corpo) + Cormorant Garamond (display). Validado pixel-igual em producao."
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "web/src/screens/Dashboard.tsx"
+        ],
+        "createdAt": "2026-08-23T21:48:57.360Z",
+        "reason": "Grafico Recebido 6 meses: 6 barras animando height uma vez no load (padrao sistemas-vivos VIZIO); espelha o vanilla que o Isaac validou pixel-igual."
+      }
+    ]
+  }
+}
