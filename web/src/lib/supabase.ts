@@ -78,6 +78,20 @@ export async function recomputeValorPago(ordemId: string): Promise<void> {
   await sb.from('ordens').update({ valor_pago: pago }).eq('id', ordemId)
 }
 
+export interface Produto {
+  id: string
+  tenant_id: string
+  nome: string
+  categoria: string | null
+  unidade: string
+  quantidade: number
+  quantidade_minima: number
+  preco: number
+  fornecedor: string | null
+  localizacao: string | null
+}
+export type MovTipo = 'entrada' | 'saida' | 'ajuste'
+
 export interface Servico {
   id: string
   tenant_id: string

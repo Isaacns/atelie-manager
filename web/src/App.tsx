@@ -6,9 +6,10 @@ import Ordens from './screens/Ordens'
 import Servicos from './screens/Servicos'
 import Financeiro from './screens/Financeiro'
 import Dashboard from './screens/Dashboard'
+import Estoque from './screens/Estoque'
 
-type Tab = 'inicio' | 'clientes' | 'ordens' | 'servicos' | 'financeiro'
-const TABS: { k: Tab; label: string }[] = [{ k: 'inicio', label: 'Início' }, { k: 'ordens', label: 'Ordens' }, { k: 'clientes', label: 'Clientes' }, { k: 'servicos', label: 'Serviços' }, { k: 'financeiro', label: 'Financeiro' }]
+type Tab = 'inicio' | 'clientes' | 'ordens' | 'servicos' | 'financeiro' | 'estoque'
+const TABS: { k: Tab; label: string }[] = [{ k: 'inicio', label: 'Início' }, { k: 'ordens', label: 'Ordens' }, { k: 'clientes', label: 'Clientes' }, { k: 'servicos', label: 'Serviços' }, { k: 'estoque', label: 'Estoque' }, { k: 'financeiro', label: 'Financeiro' }]
 
 function Shell() {
   const { session, tenant, role, loading, signOut } = useAuth()
@@ -47,8 +48,8 @@ function Shell() {
         </div>
       </header>
       <main style={{ maxWidth: 1000, margin: '0 auto', padding: '18px' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, margin: '2px 0 14px' }}>{tab === 'inicio' ? 'Visão geral' : tab === 'ordens' ? 'Ordens de serviço' : tab === 'servicos' ? 'Serviços' : tab === 'financeiro' ? 'Financeiro' : 'Clientes'}</h1>
-        {tab === 'inicio' ? <Dashboard onGo={setTab} /> : tab === 'ordens' ? <Ordens /> : tab === 'servicos' ? <Servicos /> : tab === 'financeiro' ? <Financeiro /> : <Clientes />}
+        <h1 style={{ fontSize: 22, fontWeight: 600, margin: '2px 0 14px' }}>{tab === 'inicio' ? 'Visão geral' : tab === 'ordens' ? 'Ordens de serviço' : tab === 'servicos' ? 'Serviços' : tab === 'estoque' ? 'Estoque' : tab === 'financeiro' ? 'Financeiro' : 'Clientes'}</h1>
+        {tab === 'inicio' ? <Dashboard onGo={setTab} /> : tab === 'ordens' ? <Ordens /> : tab === 'servicos' ? <Servicos /> : tab === 'estoque' ? <Estoque /> : tab === 'financeiro' ? <Financeiro /> : <Clientes />}
       </main>
     </div>
   )
