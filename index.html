@@ -213,6 +213,7 @@
   .tag{display:inline-block;font-size:.72rem;padding:3px 8px;border-radius:.4rem;background:rgba(94,58,86,.08);color:var(--plum);font-weight:600}
   .notice{background:rgba(142,44,176,.06);border:1px solid rgba(142,44,176,.18);border-radius:.7rem;padding:14px 16px;font-size:.85rem;color:#5a525c}
   .notice b{color:var(--plum)}
+  .msg-preview{background:var(--paper,#fbf8f3);border:1px dashed var(--line,#e7ddd0);border-radius:.7rem;padding:12px 14px;color:#5a525c}
   .chk{display:flex;gap:9px;align-items:flex-start;padding:7px 0;font-size:.88rem}
   .chk .m{width:18px;height:18px;flex:0 0 auto;color:var(--muted)}
   /* living background — padrão VIZIO (adaptado à paleta Costureira) */
@@ -302,6 +303,15 @@
     .glass.kpi .n[style]{font-size:1.25rem!important}
     .tbl{font-size:.82rem}
     .tbl th,.tbl td{padding:9px 7px}
+    /* Tabela → cards no celular (rótulo sempre visível, padrão do ecossistema). Só nas
+       tabelas marcadas .tbl-cards — não regride as demais. */
+    .tbl-cards{font-size:.86rem}
+    .tbl-cards thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+    .tbl-cards tr{display:block;background:var(--paper,#fbf8f3);border:1px solid var(--line,#e7ddd0);border-radius:12px;padding:4px 12px;margin-bottom:10px}
+    .tbl-cards td{display:flex;justify-content:space-between;align-items:baseline;gap:12px;text-align:right;border:0;padding:8px 0;border-bottom:1px solid rgba(231,221,208,.5)}
+    .tbl-cards tr td:last-child{border-bottom:0}
+    .tbl-cards td::before{content:attr(data-label);font-weight:600;color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;text-align:left;flex:0 0 auto}
+    .tbl-cards td .btn{margin-left:auto}
     .modal .mh,.modal .mf{padding-left:16px;padding-right:16px}
     .modal .mb{padding:16px}
     .bar{gap:8px}
@@ -402,7 +412,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.29.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.30.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -2402,42 +2412,97 @@ function Recuperacao(){
   </${Shell}>`;
 }
 
-/* ========== ALAVANCAGEM ========== */
+/* ========== ALAVANCAGEM ==========
+   Gera receita da base atual: escolhe público + serviço + desconto e dispara oferta por
+   wa.me. Duas colunas honestas por cliente — Serviços (status≠orcamento e ≠cancelado) e
+   Orçamentos (status=orcamento) — porque contar tudo junto mente (um monte de orçamento
+   não fechado inflava "frequentes"). Segmentos usam a coluna Serviços (real). Ao ofertar,
+   grava em atelie.ofertas para medir conversão e não repetir oferta às cegas — mas com
+   degradação segura: se a tabela ainda não existir, NÃO quebra o "Oferecer". LGPD (§7):
+   respeita clientes.optin_whatsapp (opt-out explícito sai da lista; base atual = consentida). */
 function Alavancagem(){
-  const {tenant}=useApp();
-  const [clientes]=useRows('clientes',{order:'nome',asc:true});
+  const {tenant,tenantId}=useApp();
   const [servicos]=useRows('servicos',{order:'nome',asc:true});
-  const [counts,setCounts]=useState({});
+  const [d,setD]=useState(null);
   const [seg,setSeg]=useState('todos'),[servId,setServId]=useState(''),[desc,setDesc]=useState(15);
-  useEffect(()=>{ (async()=>{ const os=qd(await db.from('ordens').select('cliente_id'), 'as ordens das clientes'); const m={}; (os||[]).forEach(o=>{ if(o.cliente_id) m[o.cliente_id]=(m[o.cliente_id]||0)+1; }); setCounts(m); })(); },[]);
+  useEffect(()=>{ (async()=>{
+    const [rCli,rOs,rOf]=await Promise.all([
+      db.from('clientes').select('*'),                                   /* '*' p/ não quebrar se optin_whatsapp ainda não existir no banco */
+      db.from('ordens').select('cliente_id,valor,status,data_entrada'),
+      db.from('ofertas').select('cliente_id,enviado_em'),               /* pode não existir ainda → tratado sem qd/toast */
+    ]);
+    const cli=qd(rCli,'as clientes')||[], os=qd(rOs,'as ordens')||[];
+    const by={}; (os||[]).forEach(o=>{ if(!o.cliente_id)return; const b=by[o.cliente_id]||(by[o.cliente_id]={serv:0,orc:0,last:null,total:0});
+      if(o.status==='orcamento'){ b.orc++; }
+      else if(o.status!=='cancelado'){ b.serv++; b.total+=Number(o.valor||0); if(!b.last||o.data_entrada>b.last)b.last=o.data_entrada; }
+    });
+    const of={};
+    if(rOf&&!rOf.error&&Array.isArray(rOf.data)){ rOf.data.forEach(o=>{ if(!o.cliente_id)return; const dd=String(o.enviado_em||'').slice(0,10); if(dd&&(!of[o.cliente_id]||dd>of[o.cliente_id])) of[o.cliente_id]=dd; }); }
+    else if(rOf&&rOf.error){ console.warn('[ofertas] leitura indisponível (migração ainda não aplicada?):', rOf.error.message); }
+    const enr=(cli||[]).map(c=>{ const b=by[c.id]||{serv:0,orc:0,last:null,total:0}; return {...c, serv:b.serv, orc:b.orc, last:b.last, total:b.total}; });
+    setD({ clientes:enr, ofertas:of,
+      semZap:enr.filter(c=>!c.whatsapp).length,
+      optout:enr.filter(c=>c.optin_whatsapp===false).length });
+  })(); },[]);
   const serv=(servicos||[]).find(s=>s.id===servId);
   const preco=serv?Number(serv.preco_base):0, precoDesc=preco*(1-Number(desc||0)/100);
-  const alvo=useMemo(()=>{ let list=(clientes||[]).filter(c=>c.whatsapp);
+  const alvo=useMemo(()=>{ if(!d) return [];
+    let list=d.clientes.filter(c=>c.whatsapp && c.optin_whatsapp!==false);
     if(seg==='aniversariantes') list=list.filter(bdayThisMonth);
-    if(seg==='frequentes') list=list.filter(c=>(counts[c.id]||0)>=3);
-    if(seg==='novos') list=list.filter(c=>(counts[c.id]||0)<=1);
-    return list; },[clientes,seg,counts]);
+    else if(seg==='frequentes') list=list.filter(c=>c.serv>=3);
+    else if(seg==='novos') list=list.filter(c=>c.serv<=1);
+    const arr=list.slice();
+    if(seg==='aniversariantes') arr.sort((a,b)=>bdayDay(a)-bdayDay(b));        /* dia do mês */
+    else if(seg==='novos') arr.sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))); /* mais recentes */
+    else arr.sort((a,b)=>b.total-a.total);                                     /* frequentes/todos → maior ticket */
+    return arr; },[d,seg]);
   const msg=c=>encodeURIComponent('Olá '+((c.nome||'').split(' ')[0])+'! Oferta especial pra você'
     +(serv? ' em '+serv.nome+': de '+BRLraw(preco)+' por '+BRLraw(precoDesc)+' ('+desc+'% off)':' aqui no ateliê')+'. Vamos agendar? — '+(tenant?.nome||''));
+  /* Grava a oferta (medição de conversão). Degrada com segurança: erro/tabela ausente NÃO
+     bloqueia o wa.me (a âncora abre o WhatsApp no gesto do clique; isto roda em paralelo). */
+  async function registrar(c){
+    if(!tenantId) return;
+    try{
+      const {error}=await db.from('ofertas').insert({ tenant_id:tenantId, cliente_id:c.id, servico_id:servId||null, desconto:Number(desc)||0, canal:'whatsapp' });
+      if(error){ console.warn('[ofertas] não registrou (migração ainda não aplicada?):', error.message); return; }
+      setD(prev=> prev? {...prev, ofertas:{...prev.ofertas, [c.id]:todayISO()}} : prev);
+    }catch(e){ console.warn('[ofertas] falha ao registrar:', e); }
+  }
+  const sample=alvo[0]||{nome:'Maria'};
   return html`<${Shell} title="Alavancagem">
     <div class="hint">Gere mais receita da base atual: escolha um público, um serviço e um desconto, e dispare a oferta por WhatsApp.</div>
     <div class="glass panel">
       <label>Público-alvo</label>
       <div class="seg" style=${{marginBottom:'10px'}}>
-        ${[['todos','Todos'],['aniversariantes','Aniversariantes do mês'],['frequentes','Frequentes (3+)'],['novos','Novos (1 visita)']].map(([k,l])=>html`<button key=${k} class=${'chip'+(seg===k?' on':'')} onClick=${()=>setSeg(k)}>${l}</button>`)}
+        ${[['todos','Todos'],['aniversariantes','Aniversariantes do mês'],['frequentes','Frequentes (3+)'],['novos','Novos (≤1)']].map(([k,l])=>html`<button key=${k} class=${'chip'+(seg===k?' on':'')} onClick=${()=>setSeg(k)}>${l}</button>`)}
       </div>
       <div class="f2">
         <div><label>Serviço em oferta</label><select value=${servId} onInput=${e=>setServId(e.target.value)}><option value="">— Oferta genérica —</option>${(servicos||[]).map(s=>html`<option key=${s.id} value=${s.id}>${s.nome} · ${BRL(s.preco_base)}</option>`)}</select></div>
         <div><label>Desconto (%)</label><input type="number" min="0" max="90" value=${desc} onInput=${e=>setDesc(e.target.value)}/></div>
       </div>
       ${serv&&html`<div class="notice" style=${{marginTop:'12px'}}>${serv.nome}: de <b>${BRL(preco)}</b> por <b>${BRL(precoDesc)}</b> (${desc}% off).</div>`}
+      <div class="msg-preview" style=${{marginTop:'12px'}}>
+        <div class="muted" style=${{fontSize:'.72rem',textTransform:'uppercase',letterSpacing:'.04em',marginBottom:'4px'}}>Prévia da mensagem</div>
+        <div style=${{fontSize:'.9rem',lineHeight:1.4}}>${decodeURIComponent(msg(sample))}</div>
+      </div>
     </div>
     <div class="glass panel" style=${{marginTop:'16px'}}>
-      <h3>Clientes no público (${alvo.length})</h3><p class="desc">Cada disparo abre o WhatsApp com a mensagem pronta.</p>
-      ${alvo.length===0? html`<${Empty} icon=${I.rocket} title="Nenhum cliente">Ajuste o público ou cadastre WhatsApp nos clientes.</${Empty}>`
-        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>Cliente</th><th class="r">Serviços feitos</th><th class="r">Enviar oferta</th></tr></thead>
-          <tbody>${alvo.map(c=>html`<tr key=${c.id}><td class="b">${c.nome}</td><td class="r">${counts[c.id]||0}</td>
-            <td class="r"><a class="btn sm wa" target="_blank" href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${IcWA}/>Oferecer</a></td></tr>`)}</tbody></table></div>`}
+      <h3>Clientes no público (${d?alvo.length:'…'})</h3><p class="desc">Cada disparo abre o WhatsApp com a mensagem pronta e registra a oferta.</p>
+      ${!d? html`<div class="hint">Carregando…</div>`
+        : alvo.length===0? html`<${Empty} icon=${I.rocket} title="Nenhum cliente">Ajuste o público ou cadastre o WhatsApp dos clientes.</${Empty}>`
+        : html`<div class="tblwrap"><table class="tbl tbl-cards"><thead><tr><th>Cliente</th><th class="r">Serviços</th><th class="r">Orçamentos</th><th class="r">Última visita</th><th class="r">Total gasto</th><th class="r">Enviar oferta</th></tr></thead>
+          <tbody>${alvo.map(c=>html`<tr key=${c.id}>
+            <td class="b" data-label="Cliente">${c.nome}${c.whatsapp?html`<span class="muted" style=${{display:'block',fontSize:'.72rem',fontWeight:400}}>${c.whatsapp}</span>`:''}</td>
+            <td class="r" data-label="Serviços">${c.serv}</td>
+            <td class="r" data-label="Orçamentos">${c.orc}</td>
+            <td class="r" data-label="Última visita">${c.last?fmtDate(c.last):'—'}</td>
+            <td class="r b" data-label="Total gasto">${BRL(c.total)}</td>
+            <td class="r" data-label="Enviar oferta"><a class="btn sm wa" target="_blank" rel="noopener" onClick=${()=>registrar(c)} href=${'https://wa.me/55'+onlyDigits(c.whatsapp)+'?text='+msg(c)}><${IcWA}/>Oferecer</a>${d.ofertas[c.id]?html`<span class="badge" style=${{display:'block',marginTop:'5px',color:'#3f7d52',background:'rgba(63,125,82,.14)'}}>Ofertado em ${fmtDate(d.ofertas[c.id])}</span>`:''}</td>
+          </tr>`)}</tbody></table></div>`}
+      ${d&&(d.semZap>0||d.optout>0)&&html`<div class="foot" style=${{marginTop:'12px',display:'flex',flexWrap:'wrap',gap:'6px 14px'}}>
+        ${d.semZap>0&&html`<span>${d.semZap} cliente${d.semZap>1?'s':''} sem WhatsApp — <a href="#/clientes" onClick=${e=>{e.preventDefault();go('/clientes');}} style=${{color:'var(--violet,#8e2cb0)',fontWeight:600}}>complete o cadastro</a>.</span>`}
+        ${d.optout>0&&html`<span>${d.optout} cliente${d.optout>1?'s':''} sem opt-in de WhatsApp — respeitando a preferência (LGPD).</span>`}
+      </div>`}
     </div>
   </${Shell}>`;
 }
