@@ -412,7 +412,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.30.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.31.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -536,15 +536,44 @@ function pagInfo(o){ const net=Number(o&&o.valor)||0; const pago=Number(o&&o.val
   const st = pago<=0 ? 'pendente' : (saldo>0.009 ? 'parcial' : 'pago');
   return {net,pago,saldo,st}; }
 const PAG={pendente:{l:'A receber',c:'#b3452f',bg:'rgba(179,69,47,.12)'},parcial:{l:'Sinal pago',c:'#b98325',bg:'rgba(185,131,37,.14)'},pago:{l:'Pago',c:'#2f6b43',bg:'rgba(47,107,67,.16)'}};
-/* Todo valor recebido numa OS vira automaticamente uma receita paga no Financeiro (vinculada à OS e à cliente). */
-async function lancarReceitaOS(tenantId, o, valorRecebido){
-  const v=+(Number(valorRecebido)||0).toFixed(2);
-  if(!(v>0) || !o || !o.id) return {error:null};
+/* "Recebido no mês" = definição ÚNICA (Dashboard e Financeiro usam este helper). Regime de
+   caixa: receita paga cujo dinheiro entrou no mês (data = pago_em; cai para vencimento só se
+   a linha não tiver pago_em). Estornos são receitas negativas → abatem o mês corretamente. */
+const recebidoMes = (rows, ms) => (rows||[])
+  .filter(l=>l.tipo==='receita' && l.pago && ((l.pago_em||l.vencimento||'')>=ms))
+  .reduce((a,l)=>a+Number(l.valor||0),0);
+/* Idempotência + estorno (BUGs A e B): mantém a invariante
+       Σ(receitas PAGAS vinculadas à OS) == ordens.valor_pago.
+   Em vez de "lançar o delta que EU acho que entrou" (que duplicava ao salvar/editar de novo),
+   reconcilia contra a soma REAL já lançada e insere UMA linha de ajuste = diferença:
+     delta > 0 → recebimento;  delta < 0 → ESTORNO (receita negativa, aceita: valor é
+     numeric(12,2) sem check>0). Chamar de novo com o mesmo valor_pago dá delta 0 → nada.
+   Regime de caixa: a linha é datada em hoje (mês do evento). Trilha preservada (nunca apaga). */
+async function sincronizarReceitaOS(tenantId, o, valorPagoAlvo){
+  if(!o || !o.id) return {error:null, delta:0};
+  const alvo=+(Math.max(Number(valorPagoAlvo)||0,0)).toFixed(2);
+  const sel=await db.from('financeiro_lancamentos').select('valor').eq('ordem_id',o.id).eq('tipo','receita').eq('pago',true);
+  if(sel.error) return {error:sel.error, delta:0};
+  const soma=+((sel.data||[]).reduce((a,l)=>a+Number(l.valor||0),0)).toFixed(2);
+  const delta=+(alvo-soma).toFixed(2);
+  if(Math.abs(delta)<0.005) return {error:null, delta:0};
   const hoje=todayISO();
-  const desc='OS #'+(o.numero??'')+(o.descricao?' — '+String(o.descricao).slice(0,60):'');
-  return await db.from('financeiro_lancamentos').insert({
-    tenant_id:tenantId, tipo:'receita', descricao:desc, valor:v,
+  const cab='OS #'+(o.numero??'')+(o.descricao?' — '+String(o.descricao).slice(0,60):'');
+  const desc=delta>0?cab:('Estorno '+cab);
+  const ins=await db.from('financeiro_lancamentos').insert({
+    tenant_id:tenantId, tipo:'receita', descricao:desc, valor:delta,
     vencimento:hoje, pago:true, pago_em:hoje, ordem_id:o.id, cliente_id:o.cliente_id||null });
+  return {error:ins.error, delta};
+}
+/* Sincroniza o OUTRO lado (BUG B): quando o Financeiro muda uma receita de OS (excluir / baixar
+   / reabrir), recalcula ordens.valor_pago = Σ(receitas PAGAS da OS). A OS segue o Financeiro.
+   Não insere nada no Financeiro → não há loop com a sincronizarReceitaOS. */
+async function recomputeValorPagoOS(ordemId){
+  if(!ordemId) return {error:null};
+  const sel=await db.from('financeiro_lancamentos').select('valor').eq('ordem_id',ordemId).eq('tipo','receita').eq('pago',true);
+  if(sel.error) return {error:sel.error};
+  const pago=Math.max(0, +((sel.data||[]).reduce((a,l)=>a+Number(l.valor||0),0)).toFixed(2));
+  return await db.from('ordens').update({valor_pago:pago}).eq('id',ordemId);
 }
 function printCupom(o, cli, tenantName, st, itens){
   const w=window.open('','_blank','width=380,height=700');
@@ -1353,7 +1382,7 @@ function Dashboard(){
   useEffect(()=>{ (async()=>{
     const [cli,ord,rec] = await Promise.all([
       db.from('clientes').select('id,nome,nascimento,whatsapp'),
-      db.from('ordens').select('id,status,valor,prazo,data_entrada,dias_previstos,entregue_em,descricao,cliente_id,numero,data_prova'),
+      db.from('ordens').select('id,status,valor,valor_pago,prazo,data_entrada,dias_previstos,entregue_em,descricao,cliente_id,numero,data_prova'),
       db.from('financeiro_lancamentos').select('valor,tipo,pago,pago_em'),
     ]);
     const clientesRows=qd(cli,'as clientes')||[];
@@ -1363,7 +1392,9 @@ function Dashboard(){
     const abertas=os.filter(o=>ACTIVE.includes(o.status));
     const atrasadas=os.filter(isLate);
     const ms=monthStart();
-    const recMes=(rec.data||[]).filter(l=>l.tipo==='receita'&&l.pago&&l.pago_em>=ms).reduce((a,l)=>a+Number(l.valor||0),0);
+    const recMes=recebidoMes(rec.data||[], ms); /* definição ÚNICA (mesma do Financeiro) */
+    const aExecutar=os.filter(o=>!o.entregue_em && o.status!=='cancelado' && (Number(o.valor_pago)||0)>0)
+      .reduce((a,o)=>a+Math.min(Number(o.valor)||0, Number(o.valor_pago)||0),0); /* adiantamentos ainda a executar */
     const doneM=os.filter(o=>o.entregue_em&&o.entregue_em.slice(0,10)>=ms);
     const durs=os.filter(o=>o.entregue_em&&o.data_entrada).map(o=>daysBetween(o.data_entrada,o.entregue_em.slice(0,10))).filter(d=>d>=0);
     const tempoMedio=durs.length?Math.round(durs.reduce((a,b)=>a+b,0)/durs.length):null;
@@ -1380,7 +1411,7 @@ function Dashboard(){
       if(o.prazo && o.prazo>=hoje && o.prazo<=limite) agenda.push({id:o.id,numero:o.numero,data:o.prazo,tipo:'Entrega',cliente:cnome[o.cliente_id]||'—',descricao:o.descricao});
     });
     agenda.sort((a,b)=> a.data<b.data?-1 : a.data>b.data?1 : 0);
-    setK({clientes:clientesRows.length, abertas:abertas.length, atrasadas:atrasadas.length, recMes, doneM:doneM.length, tempoMedio, topServ, aniversariantes, chart, agenda,
+    setK({clientes:clientesRows.length, abertas:abertas.length, atrasadas:atrasadas.length, recMes, aExecutar, doneM:doneM.length, tempoMedio, topServ, aniversariantes, chart, agenda,
       recent:[...os].sort((a,b)=>(b.numero||0)-(a.numero||0)).slice(0,6)});
   })(); },[]);
   if(!k) return html`<div class="hint">Carregando indicadores…</div>`;
@@ -1392,7 +1423,7 @@ function Dashboard(){
       <button class="kpi" onClick=${()=>go('/ordens?f=ativas')}><div class="n"><${Num} value=${k.abertas}/></div><div class="l">Ordens em aberto</div></button>
       <button class="kpi warn" onClick=${()=>go('/ordens?f=atrasadas')}><div class="n"><${Num} value=${k.atrasadas}/></div><div class="l">Atrasadas</div></button>
       <button class="kpi" onClick=${()=>go('/clientes')}><div class="n"><${Num} value=${k.clientes}/></div><div class="l">Clientes</div></button>
-      <button class="kpi ok" onClick=${()=>go('/financeiro')}><div class="n" style=${{fontSize:'1.5rem'}}><${Num} value=${k.recMes} money=${true}/></div><div class="l">Recebido no mês</div></button>
+      <button class="kpi ok" onClick=${()=>go('/financeiro')} title=${k.aExecutar>0?('Regime de caixa. Adiantamentos a executar: '+BRL(k.aExecutar)):'Regime de caixa.'}><div class="n" style=${{fontSize:'1.5rem'}}><${Num} value=${k.recMes} money=${true}/></div><div class="l">Recebido no mês${k.aExecutar>0?html`<span style=${{display:'block',fontSize:'.72rem',opacity:.85}}>inclui adiantamentos</span>`:''}</div></button>
     </div>
     ${k.agenda.length>0&&html`<div class="glass panel rise" style=${{marginTop:'18px',animationDelay:'.06s'}}>
       <h3>Agenda dos próximos 7 dias</h3><p class="desc">Provas marcadas e entregas previstas.</p>
@@ -1599,7 +1630,7 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
   const total=(itens||[]).reduce((a,it)=>a+sub(it),0);
   const descV=Math.min(Math.max(Number(f.desconto)||0,0), total||0);
   const netV=+((total||0)-descV).toFixed(2);
-  const pagoV=Math.max(Number(f.valor_pago)||0,0);
+  const pagoV=Math.min(netV, Math.max(Number(f.valor_pago)||0,0)); /* cap: nunca pagar mais que o total */
   const saldoV=+(netV-pagoV).toFixed(2);
   async function save(){
     const validos=(itens||[]).filter(it=>(it.descricao||'').trim() && it.valor_unit!=='' && !isNaN(Number(it.valor_unit)));
@@ -1610,7 +1641,7 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
     const resumo=validos.map(it=>it.descricao.trim()).join(' + ');
     const desc=Math.min(Math.max(Number(f.desconto)||0,0), total);
     const net=+(total-desc).toFixed(2);
-    const pago=Math.max(Number(f.valor_pago)||0,0);
+    const pago=Math.min(net, Math.max(Number(f.valor_pago)||0,0)); /* cap: valor_pago nunca excede o total (igual à trava de registrarPag) */
     const payload={ tenant_id:tenantId, cliente_id:f.cliente_id||null, descricao:resumo, valor:net, desconto:desc, valor_pago:pago,
       status:f.status, data_entrada:f.data_entrada||todayISO(), prazo:prazoCalc, dias_previstos:dias, data_prova:f.data_prova||null,
       responsavel_id:f.responsavel_id||null, observacoes:f.observacoes||null };
@@ -1625,14 +1656,14 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
       const itensPayload=validos.map((it,idx)=>({servico_id:it.servico_id||null,descricao:it.descricao.trim(),quantidade:Number(it.quantidade)||1,valor_unit:Number(it.valor_unit)||0,posicao:idx+1}));
       const {error:rpcErr}=await db.rpc('salvar_ordem_itens',{p_ordem:ordemId,p_itens:itensPayload});
       if(rpcErr){ setBusy(false); toast('Erro ao salvar itens: '+rpcErr.message,'err'); return; } }
-    // sinal/valor recebido informado no formulário vira receita no Financeiro (apenas o que aumentou)
-    const pagoAntes = row?.id ? (Number(row.valor_pago)||0) : 0;
-    const recebido = +(pago - pagoAntes).toFixed(2);
+    // Reconcilia o Financeiro com o valor_pago desta OS (idempotente: salvar/editar de novo
+    // NÃO duplica; se o valor_pago caiu, lança estorno). Ver sincronizarReceitaOS.
     let avisoFin='';
-    if(recebido>0 && ordemId){
-      const lr=await lancarReceitaOS(tenantId,{id:ordemId,numero:numeroOS,descricao:resumo,cliente_id:f.cliente_id||null},recebido);
+    if(ordemId){
+      const lr=await sincronizarReceitaOS(tenantId,{id:ordemId,numero:numeroOS,descricao:resumo,cliente_id:f.cliente_id||null},pago);
       if(lr&&lr.error) avisoFin=' (falhou o lançamento no Financeiro: '+lr.error.message+')';
-      else avisoFin=' Recebido '+BRL(recebido)+' lançado no Financeiro.';
+      else if(lr&&lr.delta>0.005) avisoFin=' Recebido '+BRL(lr.delta)+' lançado no Financeiro.';
+      else if(lr&&lr.delta<-0.005) avisoFin=' Estorno de '+BRL(-lr.delta)+' lançado no Financeiro.';
     }
     setBusy(false); toast((row?.id?'OS atualizada.':'OS criada.')+avisoFin, avisoFin.includes('falhou')?'err':'ok'); onSaved();
   }
@@ -1666,7 +1697,9 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
     ${err.itens&&html`<div class="ferr">${err.itens}</div>`}
     <div class="f3" style=${{marginTop:'10px'}}>
       <div><label>Desconto (R$)</label><input type="number" step="0.01" min="0" value=${f.desconto||''} onInput=${e=>set('desconto',e.target.value)} placeholder="0,00"/></div>
-      <div><label>Sinal / valor pago (R$)</label><input type="number" step="0.01" min="0" value=${f.valor_pago||''} onInput=${e=>set('valor_pago',e.target.value)} placeholder="0,00"/></div>
+      <div><label>Sinal / valor pago (R$)</label><input type="number" step="0.01" min="0" value=${f.valor_pago||''} onInput=${e=>set('valor_pago',e.target.value)} placeholder="0,00"/>
+        ${netV>0&&html`<button type="button" class="link" style=${{marginTop:'6px'}} onClick=${()=>set('valor_pago',String(netV))}>Pago à vista (${BRL(netV)})</button>`}
+      </div>
     </div>
     <div style=${{marginTop:'10px',background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'12px',padding:'12px 14px'}}>
       <div style=${{display:'flex',justifyContent:'space-between',fontSize:'.88rem'}}><span class="muted">Subtotal dos serviços</span><span>${BRL(total)}</span></div>
@@ -1759,7 +1792,7 @@ function OrdemDetail({id}){
     if(!(recebido>0)){ toast('Não há valor novo a registrar.','err'); return; }
     const {error}=await db.from('ordens').update({valor_pago:novo}).eq('id',id);
     if(error){ toast('Erro: '+error.message,'err'); return; }
-    const lr=await lancarReceitaOS(tenantId,o,recebido);
+    const lr=await sincronizarReceitaOS(tenantId,o,novo);
     setPagInput(''); load();
     if(lr&&lr.error) toast('Pagamento salvo, mas o lançamento no Financeiro falhou: '+lr.error.message,'err');
     else toast('Recebido '+BRL(recebido)+' — lançado no Financeiro.','ok'); }
@@ -1843,7 +1876,9 @@ function OrdemDetail({id}){
           return html`<div style=${{marginTop:'16px',background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'12px',padding:'12px 14px'}}>
           <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
             <div class="muted" style=${{fontSize:'.74rem'}}>Pagamento</div>
-            <span class="tag" style=${{color:PAG[p.st].c,background:PAG[p.st].bg,fontWeight:700}}>${PAG[p.st].l}</span></div>
+            <div style=${{display:'flex',gap:'6px',alignItems:'center',flexWrap:'wrap'}}>
+              ${(p.pago>0 && !o.entregue_em && o.status!=='cancelado')&&html`<span class="tag" style=${{color:'#2f8f8f',background:'rgba(47,143,143,.14)',fontWeight:700}}>Pago antecipado</span>`}
+              <span class="tag" style=${{color:PAG[p.st].c,background:PAG[p.st].bg,fontWeight:700}}>${PAG[p.st].l}</span></div></div>
           ${Number(o.desconto)>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontSize:'.86rem'}}><span class="muted">Subtotal</span><span>${BRL(bruto)}</span></div>`}
           ${Number(o.desconto)>0&&html`<div style=${{display:'flex',justifyContent:'space-between',fontSize:'.86rem',marginTop:'2px'}}><span class="muted">Desconto</span><span>− ${BRL(o.desconto)}</span></div>`}
           <div style=${{display:'flex',justifyContent:'space-between',fontWeight:700,marginTop:'3px'}}><span>Total a pagar</span><span>${BRL(p.net)}</span></div>
@@ -2027,11 +2062,17 @@ function Financeiro(){
   const {tenantId,tenant}=useApp();
   const [rows,reload]=useRows('financeiro_lancamentos',{order:'vencimento',asc:false});
   const [categorias]=useRows('financeiro_categorias',{order:'nome',asc:true});
+  const [ordAdiant]=useRows('ordens',{order:'numero',asc:false}); /* só p/ o rótulo de adiantamentos do KPI */
   const [filt,setFilt]=useState('todas'),[edit,setEdit]=useState(null),[del,setDel]=useState(null);
   const catName=useMemo(()=>Object.fromEntries((categorias||[]).map(c=>[c.id,c.nome])),[categorias]);
   const ms=monthStart();
+  /* Adiantamentos AINDA A EXECUTAR: OS pagas (valor_pago>0) não entregues e não canceladas.
+     É um estoque (contexto do KPI de caixa), não um subconjunto de "Recebido no mês". */
+  const aExecutar=useMemo(()=>(ordAdiant||[])
+    .filter(o=>!o.entregue_em && o.status!=='cancelado' && (Number(o.valor_pago)||0)>0)
+    .reduce((a,o)=>a+Math.min(Number(o.valor)||0, Number(o.valor_pago)||0),0),[ordAdiant]);
   const kpis=useMemo(()=>{ const r=rows||[]; const inMonth=x=>(x.pago_em||x.vencimento||'')>=ms;
-    const rec=r.filter(l=>l.tipo==='receita'&&l.pago&&inMonth(l)).reduce((a,l)=>a+Number(l.valor||0),0);
+    const rec=recebidoMes(r, ms); /* definição ÚNICA (mesma do Dashboard) */
     const desp=r.filter(l=>l.tipo==='despesa'&&l.pago&&inMonth(l)).reduce((a,l)=>a+Number(l.valor||0),0);
     const aReceber=r.filter(l=>l.tipo==='receita'&&!l.pago).reduce((a,l)=>a+Number(l.valor||0),0);
     const aPagar=r.filter(l=>l.tipo==='despesa'&&!l.pago).reduce((a,l)=>a+Number(l.valor||0),0);
@@ -2039,7 +2080,7 @@ function Financeiro(){
   const filtered=useMemo(()=>{ if(!rows) return null;
     return rows.filter(l=> filt==='todas'||(filt==='receita'&&l.tipo==='receita')||(filt==='despesa'&&l.tipo==='despesa')||(filt==='aberto'&&!l.pago)); },[rows,filt]);
   async function togglePago(l){ const{error}=await db.from('financeiro_lancamentos').update({pago:!l.pago,pago_em:!l.pago?todayISO():null}).eq('id',l.id);
-    if(error)toast('Erro: '+error.message,'err'); else reload(); }
+    if(error)toast('Erro: '+error.message,'err'); else { if(l.ordem_id){ try{ await recomputeValorPagoOS(l.ordem_id); }catch(_){} } reload(); } }
   const hoje=todayISO();
   const caixa=useMemo(()=>{ const r=(rows||[]).filter(l=>l.pago&&l.pago_em===hoje);
     const entrou=r.filter(l=>l.tipo==='receita').reduce((a,l)=>a+Number(l.valor||0),0);
@@ -2062,7 +2103,7 @@ function Financeiro(){
   }
   return html`<${Shell} title="Financeiro">
     <div class="grid">
-      <div class="glass kpi ok" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.rec)}</div><div class="l">Recebido no mês</div></div>
+      <div class="glass kpi ok" style=${{cursor:'default'}} title=${aExecutar>0?('Regime de caixa. Adiantamentos a executar: '+BRL(aExecutar)):'Regime de caixa.'}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.rec)}</div><div class="l">Recebido no mês${aExecutar>0?html`<span style=${{display:'block',fontSize:'.72rem',opacity:.85}}>inclui adiantamentos</span>`:''}</div></div>
       <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:'var(--danger)'}}>${BRL(kpis.desp)}</div><div class="l">Pago no mês</div></div>
       <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:kpis.saldo>=0?'var(--ok)':'var(--danger)'}}>${BRL(kpis.saldo)}</div><div class="l">Saldo do mês</div></div>
       <div class="glass kpi warn" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.aReceber)}</div><div class="l">A receber (aberto)</div></div>
@@ -2108,7 +2149,7 @@ function Financeiro(){
     </div>
     ${edit&&html`<${LancForm} row=${edit.id?edit:null} tenantId=${tenantId} categorias=${categorias||[]} onClose=${()=>setEdit(null)} onSaved=${()=>{setEdit(null);reload();}}/>`}
     ${del&&html`<${Confirm} danger text="Excluir este lançamento?" onClose=${()=>setDel(null)}
-      onYes=${async()=>{const{error}=await db.from('financeiro_lancamentos').delete().eq('id',del.id);if(error)toast('Erro: '+error.message,'err');else{toast('Excluído.','ok');reload();}}}/>`}
+      onYes=${async()=>{const{error}=await db.from('financeiro_lancamentos').delete().eq('id',del.id);if(error)toast('Erro: '+error.message,'err');else{ if(del.ordem_id){ try{ await recomputeValorPagoOS(del.ordem_id); }catch(_){} } toast('Excluído.','ok');reload();}}}/>`}
   </${Shell}>`;
 }
 
@@ -2127,25 +2168,26 @@ function Relatorios(){
     const os=qd(rOs,'as ordens')||[], cli=qd(rCli,'as clientes')||[], fin=qd(rFin,'o financeiro')||[];
     const cn=Object.fromEntries((cli||[]).map(c=>[c.id,c.nome]));
     const inRange=o=>o.data_entrada>=ini&&o.data_entrada<=fim;
-    const per=(os||[]).filter(inRange);
+    const perAll=(os||[]).filter(inRange);                                            /* tudo que entrou no período (distribuição + prints de ledger) */
+    const per=perAll.filter(o=>o.status!=='orcamento'&&o.status!=='cancelado');       /* serviços de verdade → alimenta Valor/Serviços/Ticket/Tempo médio */
     const receita=per.reduce((a,o)=>a+Number(o.valor||0),0);
-    const porStatus=STATUS_ORDER.map(s=>[s,per.filter(o=>o.status===s).length]).filter(([,c])=>c>0);
+    const porStatus=STATUS_ORDER.map(s=>[s,perAll.filter(o=>o.status===s).length]).filter(([,c])=>c>0);
     const topServ=Object.entries(per.reduce((m,o)=>{const k=(o.descricao||'Sem descrição').trim();m[k]=m[k]||{c:0,v:0};m[k].c++;m[k].v+=Number(o.valor||0);return m;},{})).sort((a,b)=>b[1].c-a[1].c).slice(0,8);
     const topCli=Object.entries((os||[]).reduce((m,o)=>{if(!o.cliente_id)return m;m[o.cliente_id]=(m[o.cliente_id]||0)+1;return m;},{})).map(([id,c])=>[cn[id]||'—',c]).sort((a,b)=>b[1]-a[1]).slice(0,8);
     const durs=per.filter(o=>o.entregue_em&&o.data_entrada).map(o=>daysBetween(o.data_entrada,o.entregue_em.slice(0,10))).filter(d=>d>=0);
     const tempoMedio=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1):null;
-    setData({qtd:per.length,receita,porStatus,topServ,topCli,tempoMedio,per,cn,fin:fin||[],ini,fim});
+    setData({qtd:per.length,receita,porStatus,topServ,topCli,tempoMedio,per,perAll,cn,fin:fin||[],ini,fim});
   },[ini,fim]);
   useEffect(()=>{load();},[]);
   const periodo = data? fmtDate(data.ini)+' a '+fmtDate(data.fim) : '';
-  const printEntradas=()=>{ const rows=data.per.slice().sort((a,b)=>a.data_entrada.localeCompare(b.data_entrada));
+  const printEntradas=()=>{ const rows=data.perAll.slice().sort((a,b)=>a.data_entrada.localeCompare(b.data_entrada));
     const tot=rows.reduce((s,o)=>s+Number(o.valor||0),0);
     const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span><span>Serviços: <b>'+rows.length+'</b></span></div>'
       +'<table><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrada</th><th class="r">Valor</th></tr></thead><tbody>'
       +rows.map(o=>'<tr><td>'+o.numero+'</td><td>'+esc(data.cn[o.cliente_id]||'—')+'</td><td>'+esc(o.descricao||'—')+'</td><td>'+fmtDate(o.data_entrada)+'</td><td class="r">'+BRLraw(o.valor)+'</td></tr>').join('')
       +'</tbody><tfoot><tr><td colspan="4">Total de entradas</td><td class="r">'+BRLraw(tot)+'</td></tr></tfoot></table>';
     printDoc('Relatório de Entradas — '+periodo, body, tenant?.nome); };
-  const printFinalizados=()=>{ const rows=data.per.filter(o=>o.status==='finalizado'||o.status==='entregue').sort((a,b)=>(a.entregue_em||'').localeCompare(b.entregue_em||''));
+  const printFinalizados=()=>{ const rows=data.perAll.filter(o=>o.status==='finalizado'||o.status==='entregue').sort((a,b)=>(a.entregue_em||'').localeCompare(b.entregue_em||''));
     const tot=rows.reduce((s,o)=>s+Number(o.valor||0),0);
     const body='<div class="kv"><span>Período: <b>'+periodo+'</b></span><span>Finalizados: <b>'+rows.length+'</b></span><span>Tempo médio: <b>'+(data.tempoMedio??'—')+' dias</b></span></div>'
       +'<table><thead><tr><th>#</th><th>Cliente</th><th>Serviço</th><th>Entrega</th><th class="r">Valor</th></tr></thead><tbody>'
@@ -2385,7 +2427,9 @@ function Recuperacao(){
       db.from('ordens').select('cliente_id,valor,status,data_entrada'),
     ]);
     const cli=qd(rCli,'as clientes')||[], os=qd(rOs,'as ordens')||[];
-    const by={}; (os||[]).forEach(o=>{ if(!o.cliente_id)return; const b=by[o.cliente_id]||(by[o.cliente_id]={last:null,total:0,n:0}); b.n++; b.total+=Number(o.valor||0); if(!b.last||o.data_entrada>b.last)b.last=o.data_entrada; });
+    /* Serviços de verdade (status≠orcamento e ≠cancelado) — mesma régua da Alavancagem: um monte
+       de orçamento não fechado não pode virar "gasto" nem "última visita" de recuperação. */
+    const by={}; (os||[]).forEach(o=>{ if(!o.cliente_id||o.status==='orcamento'||o.status==='cancelado')return; const b=by[o.cliente_id]||(by[o.cliente_id]={last:null,total:0,n:0}); b.n++; b.total+=Number(o.valor||0); if(!b.last||o.data_entrada>b.last)b.last=o.data_entrada; });
     const hoje=todayISO();
     const inativos=(cli||[]).map(c=>{ const b=by[c.id]; return {...c, dias:b&&b.last?daysBetween(b.last,hoje):null, total:b?b.total:0, n:b?b.n:0}; })
       .filter(c=>c.n>0 && c.dias!=null && c.dias>=60).sort((a,b)=>b.dias-a.dias);

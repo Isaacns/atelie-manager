@@ -13,7 +13,7 @@
    ⚠️ Ao publicar uma versão nova do produto, bumpar CACHE abaixo (ex.: atelie-v1.24.0)
    junto com window.APP_VERSION no index.html. O byte-diff faz o navegador trocar o SW. */
 
-var CACHE = 'atelie-v1.30.0';
+var CACHE = 'atelie-v1.31.0';
 var CORE = ['./', './index.html'];
 
 self.addEventListener('install', function(e){
