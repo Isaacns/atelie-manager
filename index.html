@@ -447,6 +447,22 @@
     border:1px solid rgba(142,44,176,.18);border-radius:10px;padding:9px 12px;font-size:.85rem;margin-bottom:12px}
   /* Só em tela estreita a semana rola na horizontal — no desktop ela cabe inteira. */
   @media (max-width:900px){ .ag-week{grid-template-columns:repeat(6,minmax(150px,1fr));overflow-x:auto;padding-bottom:6px} }
+  /* ≤560px (celular): a semana EMPILHA por DIA na vertical — cada dia é um cartão de
+     largura cheia, com Manhã/Tarde/Noite um sob o outro. Fim da rolagem horizontal.
+     Esta regra vem depois da de 900px e vence no ≤560px (grid 1 coluna, overflow visível).
+     O arrastar-e-soltar do desktop segue intacto; no toque, mover usa os botões de
+     período do cartão (mesmo dia) e o seletor Dia/Período do formulário de edição. */
+  @media (max-width:560px){
+    .ag-week{grid-template-columns:1fr;overflow-x:visible;padding-bottom:0;gap:12px}
+    .ag-day{padding:12px}
+    .ag-day-h b{font-size:1.15rem}
+    .ag-day-h .add{width:40px;height:40px;font-size:1.2rem}
+    .ag-per-body{min-height:0}
+    .ag-card{padding:10px 12px}
+    .ag-card .t{font-size:.9rem}
+    .ag-card .acts{flex-wrap:wrap;gap:6px;margin-top:8px}
+    .ag-card .acts button{min-height:44px;min-width:44px;padding:6px 12px;font-size:.78rem}
+  }
   @media (prefers-reduced-motion:reduce){ .ag-per{transition:none} }
 </style>
 </head>
@@ -465,7 +481,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.36.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.37.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -1798,9 +1814,9 @@ function ClienteDetail({id}){
       <h3>Histórico de serviços</h3><p class="desc">Todas as vezes que esta cliente veio ao ateliê.</p>
       ${!os? html`<div class="hint">Carregando…</div>`
         : os.length===0? html`<${Empty} icon=${I.scissors} title="Sem serviços">Nenhuma OS vinculada.</${Empty}>`
-        : html`<div class="tblwrap"><table class="tbl"><thead><tr><th>#</th><th>Serviço</th><th>Entrada</th><th>Status</th><th class="r">Valor</th></tr></thead>
+        : html`<div class="tblwrap"><table class="tbl tbl-cards"><thead><tr><th>#</th><th>Serviço</th><th>Entrada</th><th>Status</th><th class="r">Valor</th></tr></thead>
           <tbody>${os.map(o=>html`<tr key=${o.id} class="click" onClick=${()=>go('/ordens/'+o.id)}>
-            <td class="b">${o.numero}</td><td>${o.descricao||'—'}</td><td>${fmtDate(o.data_entrada)}</td><td><${Badge} status=${o.status}/></td><td class="r b">${BRL(o.valor)}</td></tr>`)}</tbody></table></div>`}
+            <td class="b" data-label="OS">${o.numero}</td><td data-label="Serviço">${o.descricao||'—'}</td><td data-label="Entrada">${fmtDate(o.data_entrada)}</td><td data-label="Status"><${Badge} status=${o.status}/></td><td class="r b" data-label="Valor">${BRL(o.valor)}</td></tr>`)}</tbody></table></div>`}
     </div>
     ${edit&&html`<${ClienteForm} row=${c} tenantId=${tenantId} onClose=${()=>setEdit(false)} onSaved=${()=>{setEdit(false);load();}}/>`}
   </${Shell}>`;
