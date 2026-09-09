@@ -481,7 +481,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.39.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.40.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -2293,7 +2293,7 @@ function Financeiro(){
   const {tenantId,tenant}=useApp();
   const [rows,reload]=useRows('financeiro_lancamentos',{order:'vencimento',asc:false});
   const [categorias]=useRows('financeiro_categorias',{order:'nome',asc:true});
-  const [ordAdiant]=useRows('ordens',{order:'numero',asc:false}); /* só p/ o rótulo de adiantamentos do KPI */
+  const [ordAdiant]=useRows('ordens',{order:'numero',asc:false}); /* p/ adiantamentos e p/ o "A receber" (saldo das ordens) */
   const [filt,setFilt]=useState('todas'),[edit,setEdit]=useState(null),[del,setDel]=useState(null);
   const catName=useMemo(()=>Object.fromEntries((categorias||[]).map(c=>[c.id,c.nome])),[categorias]);
   const ms=monthStart();
@@ -2302,12 +2302,17 @@ function Financeiro(){
   const aExecutar=useMemo(()=>(ordAdiant||[])
     .filter(o=>!o.entregue_em && o.status!=='cancelado' && (Number(o.valor_pago)||0)>0)
     .reduce((a,o)=>a+Math.min(Number(o.valor)||0, Number(o.valor_pago)||0),0),[ordAdiant]);
+  /* "A receber" = saldo em aberto das ORDENS — mesma conta e recorte da tela Ordens
+     (Σ max(0, valor − valor_pago) das não canceladas). Antes o KPI somava receitas pendentes
+     lançadas à mão (≈ nunca usadas aqui), então vivia zerado. Clica → Ordens filtradas por saldo. */
+  const aReceberOrdens=useMemo(()=>(ordAdiant||[])
+    .filter(o=>o.status!=='cancelado')
+    .reduce((a,o)=>a+Math.max(0,pagInfo(o).saldo),0),[ordAdiant]);
   const kpis=useMemo(()=>{ const r=rows||[]; const inMonth=x=>(x.pago_em||x.vencimento||'')>=ms;
     const rec=recebidoMes(r, ms); /* definição ÚNICA (mesma do Dashboard) */
     const desp=r.filter(l=>l.tipo==='despesa'&&l.pago&&inMonth(l)).reduce((a,l)=>a+Number(l.valor||0),0);
-    const aReceber=r.filter(l=>l.tipo==='receita'&&!l.pago).reduce((a,l)=>a+Number(l.valor||0),0);
     const aPagar=r.filter(l=>l.tipo==='despesa'&&!l.pago).reduce((a,l)=>a+Number(l.valor||0),0);
-    return {rec,desp,saldo:rec-desp,aReceber,aPagar}; },[rows]);
+    return {rec,desp,saldo:rec-desp,aPagar}; },[rows]);
   const filtered=useMemo(()=>{ if(!rows) return null;
     return rows.filter(l=> filt==='todas'||(filt==='receita'&&l.tipo==='receita')||(filt==='despesa'&&l.tipo==='despesa')||(filt==='aberto'&&!l.pago)); },[rows,filt]);
   async function togglePago(l){ const{error}=await db.from('financeiro_lancamentos').update({pago:!l.pago,pago_em:!l.pago?todayISO():null}).eq('id',l.id);
@@ -2337,7 +2342,7 @@ function Financeiro(){
       <div class="glass kpi ok" style=${{cursor:'default'}} title=${aExecutar>0?('Regime de caixa. Adiantamentos a executar: '+BRL(aExecutar)):'Regime de caixa.'}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.rec)}</div><div class="l">Recebido no mês${aExecutar>0?html`<span style=${{display:'block',fontSize:'.72rem',opacity:.85}}>inclui adiantamentos</span>`:''}</div></div>
       <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:'var(--danger)'}}>${BRL(kpis.desp)}</div><div class="l">Pago no mês</div></div>
       <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:kpis.saldo>=0?'var(--ok)':'var(--danger)'}}>${BRL(kpis.saldo)}</div><div class="l">Saldo do mês</div></div>
-      <div class="glass kpi warn" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.aReceber)}</div><div class="l">A receber (aberto)</div></div>
+      <button class="glass kpi warn" onClick=${()=>go('/ordens?f=saldo')} title="Ver as ordens com saldo a receber"><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(aReceberOrdens)}</div><div class="l">A receber (ordens)</div></button>
     </div>
     <div class="glass panel" style=${{marginTop:'18px'}}>
       <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
