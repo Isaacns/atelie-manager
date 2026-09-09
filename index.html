@@ -295,7 +295,7 @@
     aside.side.open{transform:none}
     .backdrop{position:fixed;inset:0;background:rgba(46,43,49,.4);z-index:25}
     .wrap{padding:20px 14px 92px}   /* folga extra no rodapé para a barra de abas não cobrir conteúdo */
-    .topbar{padding:0 12px;gap:8px}
+    .topbar{padding:0 14px;gap:8px;margin:10px 10px 0;border-radius:16px}
     .topbar h2{font-size:1.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
     .row.side,.row.two{grid-template-columns:1fr}
     /* Onda 1 mobile — barra de abas inferior. Substitui o hambúrguer: a aba "Mais" abre a
@@ -481,7 +481,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.38.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.39.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
