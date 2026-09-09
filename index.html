@@ -412,7 +412,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.31.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.32.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -477,6 +477,14 @@ function usePrivacidade(){ const [,f]=useState(0); useEffect(()=>privacyStore.su
 const BRLraw = n => (Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const BRL = n => privacyStore.get() ? MASK_BRL : BRLraw(n);
 const onlyDigits = s => (s||'').replace(/\D/g,'');
+/* Entrada de dinheiro no padrão BR (mesmo parser do Inovar — padrão VIZIO). Aceita "1.499,43",
+   "1.499", "50", "1234,5" e valores colados com "R$": ponto = milhar, vírgula = decimal.
+   Resolve o bug do teclado numérico do iOS, que lia "1.499" como 1,499 → salvava R$ 1,50. */
+const moedaParse = s => { const t=String(s==null?'':s).replace(/[^\d,-]/g,'').replace(/\./g,'').replace(',','.'); const n=parseFloat(t); return isNaN(n)?0:n; };
+/* Número → "1.499,43" para exibir no input (vazio/null/ilegível → ""). */
+const moedaFmt = n => (n===''||n==null||isNaN(Number(n))) ? '' : Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* Reformata o campo ao sair (onBlur): mostra "1.499,43"; deixa vazio quando vazio. */
+const moedaBlur = v => String(v).trim()==='' ? '' : moedaFmt(moedaParse(v));
 const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('pt-BR') : '—';
 const fmtDateTime = x => { if(!x) return '—'; const d=new Date(String(x).replace(' ','T').replace(/([+-]\d{2})$/,'$1:00')); return isNaN(d)?'—':d.toLocaleDateString('pt-BR'); };
 const todayISO = () => new Date().toISOString().slice(0,10);
@@ -1610,7 +1618,8 @@ function ClienteDetail({id}){
 /* ========== ORDENS ========== */
 function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]}){
   const blank=()=>({servico_id:'',descricao:'',quantidade:1,valor_unit:''});
-  const [f,setF]=useState(()=>({cliente_id:'',status:'aberto',data_entrada:todayISO(),prazo:'',dias_previstos:'',responsavel_id:'',observacoes:'',...(row||{})}));
+  const [f,setF]=useState(()=>({cliente_id:'',status:'aberto',data_entrada:todayISO(),prazo:'',dias_previstos:'',responsavel_id:'',observacoes:'',...(row||{}),
+    desconto: row&&Number(row.desconto)>0?moedaFmt(row.desconto):'', valor_pago: row&&Number(row.valor_pago)>0?moedaFmt(row.valor_pago):''}));
   const [itens,setItens]=useState(null);
   const [err,setErr]=useState({}),[busy,setBusy]=useState(false);
   const set=(k,v)=>setF(x=>({...x,[k]:v}));
@@ -1618,30 +1627,30 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
     if(row?.id){
       const data=qd(await db.from('ordem_itens').select('*').eq('ordem_id',row.id).order('posicao',{ascending:true}), 'os serviços desta OS');
       if(data===null) return; // erro: mantém itens=null, bloqueia salvar e evita apagar os itens reais
-      if(data&&data.length) setItens(data.map(i=>({servico_id:i.servico_id||'',descricao:i.descricao||'',quantidade:Number(i.quantidade)||1,valor_unit:i.valor_unit!=null?String(i.valor_unit):''})));
-      else setItens([{servico_id:'',descricao:row.descricao||'',quantidade:1,valor_unit:row.valor!=null?String(row.valor):''}]);
+      if(data&&data.length) setItens(data.map(i=>({servico_id:i.servico_id||'',descricao:i.descricao||'',quantidade:Number(i.quantidade)||1,valor_unit:moedaFmt(i.valor_unit)})));
+      else setItens([{servico_id:'',descricao:row.descricao||'',quantidade:1,valor_unit:moedaFmt(row.valor)}]);
     } else setItens([blank()]);
   })(); },[]);
   const upItem=(i,k,v)=>setItens(arr=>arr.map((it,idx)=>idx===i?{...it,[k]:v}:it));
-  const pickServ=(i,sid)=>{ const s=servicos.find(x=>x.id===sid); setItens(arr=>arr.map((it,idx)=>idx===i?{...it,servico_id:sid,descricao:it.descricao||(s?s.nome:''),valor_unit:(it.valor_unit!==''&&it.valor_unit!=null)?it.valor_unit:(s?String(s.preco_base):'')}:it)); };
+  const pickServ=(i,sid)=>{ const s=servicos.find(x=>x.id===sid); setItens(arr=>arr.map((it,idx)=>idx===i?{...it,servico_id:sid,descricao:it.descricao||(s?s.nome:''),valor_unit:(it.valor_unit!==''&&it.valor_unit!=null)?it.valor_unit:(s?moedaFmt(s.preco_base):'')}:it)); };
   const addItem=()=>setItens(arr=>[...(arr||[]),blank()]);
   const rmItem=(i)=>setItens(arr=>arr.length>1?arr.filter((_,idx)=>idx!==i):arr);
-  const sub=(it)=>(Number(it.quantidade)||0)*(Number(it.valor_unit)||0);
+  const sub=(it)=>(Number(it.quantidade)||0)*moedaParse(it.valor_unit);
   const total=(itens||[]).reduce((a,it)=>a+sub(it),0);
-  const descV=Math.min(Math.max(Number(f.desconto)||0,0), total||0);
+  const descV=Math.min(Math.max(moedaParse(f.desconto),0), total||0);
   const netV=+((total||0)-descV).toFixed(2);
-  const pagoV=Math.min(netV, Math.max(Number(f.valor_pago)||0,0)); /* cap: nunca pagar mais que o total */
+  const pagoV=Math.min(netV, Math.max(moedaParse(f.valor_pago),0)); /* cap: nunca pagar mais que o total */
   const saldoV=+(netV-pagoV).toFixed(2);
   async function save(){
-    const validos=(itens||[]).filter(it=>(it.descricao||'').trim() && it.valor_unit!=='' && !isNaN(Number(it.valor_unit)));
+    const validos=(itens||[]).filter(it=>(it.descricao||'').trim() && String(it.valor_unit).trim()!=='');
     if(validos.length===0){ setErr({itens:'Adicione ao menos um serviço com descrição e valor.'}); toast('Adicione ao menos um serviço com descrição e valor.','err'); return; }
     setErr({}); setBusy(true);
     const dias=f.dias_previstos?Number(f.dias_previstos):null;
     const prazoCalc=f.prazo || (dias?addDays(f.data_entrada||todayISO(),dias):null);
     const resumo=validos.map(it=>it.descricao.trim()).join(' + ');
-    const desc=Math.min(Math.max(Number(f.desconto)||0,0), total);
+    const desc=Math.min(Math.max(moedaParse(f.desconto),0), total);
     const net=+(total-desc).toFixed(2);
-    const pago=Math.min(net, Math.max(Number(f.valor_pago)||0,0)); /* cap: valor_pago nunca excede o total (igual à trava de registrarPag) */
+    const pago=Math.min(net, Math.max(moedaParse(f.valor_pago),0)); /* cap: valor_pago nunca excede o total (igual à trava de registrarPag) */
     const payload={ tenant_id:tenantId, cliente_id:f.cliente_id||null, descricao:resumo, valor:net, desconto:desc, valor_pago:pago,
       status:f.status, data_entrada:f.data_entrada||todayISO(), prazo:prazoCalc, dias_previstos:dias, data_prova:f.data_prova||null,
       responsavel_id:f.responsavel_id||null, observacoes:f.observacoes||null };
@@ -1653,7 +1662,7 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
     if(res.error){ setBusy(false); toast('Erro: '+res.error.message,'err'); return; }
     const numeroOS = row?.id ? row.numero : (res.data&&res.data.numero);
     if(ordemId){
-      const itensPayload=validos.map((it,idx)=>({servico_id:it.servico_id||null,descricao:it.descricao.trim(),quantidade:Number(it.quantidade)||1,valor_unit:Number(it.valor_unit)||0,posicao:idx+1}));
+      const itensPayload=validos.map((it,idx)=>({servico_id:it.servico_id||null,descricao:it.descricao.trim(),quantidade:Number(it.quantidade)||1,valor_unit:moedaParse(it.valor_unit),posicao:idx+1}));
       const {error:rpcErr}=await db.rpc('salvar_ordem_itens',{p_ordem:ordemId,p_itens:itensPayload});
       if(rpcErr){ setBusy(false); toast('Erro ao salvar itens: '+rpcErr.message,'err'); return; } }
     // Reconcilia o Financeiro com o valor_pago desta OS (idempotente: salvar/editar de novo
@@ -1688,7 +1697,7 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
             <option value="">— avulso —</option>${servicos.map(s=>html`<option key=${s.id} value=${s.id}>${s.nome} · ${BRL(s.preco_base)}</option>`)}</select>
           <input style=${{flex:'2 1 160px'}} placeholder="Descrição" value=${it.descricao} onInput=${e=>upItem(i,'descricao',e.target.value)}/>
           <input type="number" min="1" step="1" title="Qtd" style=${{width:'56px'}} value=${it.quantidade} onInput=${e=>upItem(i,'quantidade',e.target.value)}/>
-          <input type="number" step="0.01" placeholder="Valor" title="Valor unitário" style=${{width:'92px'}} value=${it.valor_unit} onInput=${e=>upItem(i,'valor_unit',e.target.value)}/>
+          <input type="text" inputmode="decimal" placeholder="0,00" title="Valor unitário" style=${{width:'92px'}} value=${it.valor_unit} onInput=${e=>upItem(i,'valor_unit',e.target.value)} onBlur=${e=>upItem(i,'valor_unit',moedaBlur(e.target.value))}/>
           <span class="b" style=${{minWidth:'74px',textAlign:'right'}}>${BRL(sub(it))}</span>
           <button class="btn sm ghost" type="button" title="Remover" onClick=${()=>rmItem(i)}>×</button>
         </div>`)}
@@ -1696,9 +1705,9 @@ function OrdemForm({row,onClose,onSaved,tenantId,clientes,servicos,usuarios=[]})
     <button class="btn sm" type="button" style=${{marginTop:'8px'}} onClick=${addItem}>+ Adicionar serviço</button>
     ${err.itens&&html`<div class="ferr">${err.itens}</div>`}
     <div class="f3" style=${{marginTop:'10px'}}>
-      <div><label>Desconto (R$)</label><input type="number" step="0.01" min="0" value=${f.desconto||''} onInput=${e=>set('desconto',e.target.value)} placeholder="0,00"/></div>
-      <div><label>Sinal / valor pago (R$)</label><input type="number" step="0.01" min="0" value=${f.valor_pago||''} onInput=${e=>set('valor_pago',e.target.value)} placeholder="0,00"/>
-        ${netV>0&&html`<button type="button" class="link" style=${{marginTop:'6px'}} onClick=${()=>set('valor_pago',String(netV))}>Pago à vista (${BRL(netV)})</button>`}
+      <div><label>Desconto (R$)</label><input type="text" inputmode="decimal" value=${f.desconto||''} onInput=${e=>set('desconto',e.target.value)} onBlur=${e=>set('desconto',moedaBlur(e.target.value))} placeholder="0,00"/></div>
+      <div><label>Sinal / valor pago (R$)</label><input type="text" inputmode="decimal" value=${f.valor_pago||''} onInput=${e=>set('valor_pago',e.target.value)} onBlur=${e=>set('valor_pago',moedaBlur(e.target.value))} placeholder="0,00"/>
+        ${netV>0&&html`<button type="button" class="link" style=${{marginTop:'6px'}} onClick=${()=>set('valor_pago',moedaFmt(netV))}>Pago à vista (${BRL(netV)})</button>`}
       </div>
     </div>
     <div style=${{marginTop:'10px',background:'var(--paper,#fbf8f3)',border:'1px solid var(--line,#e7ddd0)',borderRadius:'12px',padding:'12px 14px'}}>
@@ -1786,8 +1795,8 @@ function OrdemDetail({id}){
   async function setStatus(s){ const patch={status:s}; if(s==='entregue') patch.entregue_em=new Date().toISOString();
     const {error}=await db.from('ordens').update(patch).eq('id',id); if(error)toast('Erro: '+error.message,'err'); else {toast('Status atualizado.','ok');load();} }
   async function registrarPag(modo){ const info=pagInfo(o);
-    const novo = modo==='quitar' ? info.net : Math.min(info.net, info.pago + (Number(pagInput)||0));
-    if(modo!=='quitar' && !(Number(pagInput)>0)){ toast('Informe um valor.','err'); return; }
+    const novo = modo==='quitar' ? info.net : Math.min(info.net, info.pago + moedaParse(pagInput));
+    if(modo!=='quitar' && !(moedaParse(pagInput)>0)){ toast('Informe um valor.','err'); return; }
     const recebido=+(novo-info.pago).toFixed(2);
     if(!(recebido>0)){ toast('Não há valor novo a registrar.','err'); return; }
     const {error}=await db.from('ordens').update({valor_pago:novo}).eq('id',id);
@@ -1885,7 +1894,7 @@ function OrdemDetail({id}){
           <div style=${{display:'flex',justifyContent:'space-between',fontSize:'.86rem',marginTop:'3px'}}><span class="muted">Pago</span><span>${BRL(p.pago)}</span></div>
           <div style=${{display:'flex',justifyContent:'space-between',fontWeight:700,marginTop:'2px',color:p.saldo>0.009?'#b3452f':'#2f6b43'}}><span>${p.saldo>0.009?'Saldo a receber':'Quitado'}</span><span>${p.saldo>0.009?BRL(p.saldo):'✓'}</span></div>
           ${p.saldo>0.009&&html`<div style=${{display:'flex',gap:'6px',marginTop:'10px',flexWrap:'wrap',alignItems:'center'}}>
-            <input type="number" step="0.01" min="0" placeholder="Valor recebido" value=${pagInput} onInput=${e=>setPagInput(e.target.value)} style=${{flex:'1 1 120px',maxWidth:'160px'}}/>
+            <input type="text" inputmode="decimal" placeholder="Valor recebido" value=${pagInput} onInput=${e=>setPagInput(e.target.value)} onBlur=${e=>setPagInput(moedaBlur(e.target.value))} style=${{flex:'1 1 120px',maxWidth:'160px'}}/>
             <button class="btn sm" onClick=${()=>registrarPag('add')}>Registrar</button>
             <button class="btn sm pri" onClick=${()=>registrarPag('quitar')}>Quitar tudo</button>
           </div>`}
@@ -1930,16 +1939,16 @@ function OrdemDetail({id}){
 
 /* ========== SERVIÇOS ========== */
 function ServicoForm({row,onClose,onSaved,tenantId}){
-  const [f,setF]=useState(()=>({nome:'',descricao:'',preco_base:'',ativo:true,...(row||{})}));
+  const [f,setF]=useState(()=>({nome:'',descricao:'',preco_base:'',ativo:true,...(row||{}), preco_base: row&&row.preco_base!=null?moedaFmt(row.preco_base):''}));
   const [busy,setBusy]=useState(false); const set=(k,v)=>setF(x=>({...x,[k]:v}));
   async function save(){ if(!f.nome||!f.nome.trim()){toast('Informe o nome do serviço.','err');return;} setBusy(true);
-    const payload={tenant_id:tenantId,nome:f.nome.trim(),descricao:f.descricao||null,preco_base:Number(f.preco_base)||0,ativo:f.ativo!==false};
+    const payload={tenant_id:tenantId,nome:f.nome.trim(),descricao:f.descricao||null,preco_base:moedaParse(f.preco_base),ativo:f.ativo!==false};
     const res=row?.id?await db.from('servicos').update(payload).eq('id',row.id):await db.from('servicos').insert(payload);
     setBusy(false); if(res.error){toast('Erro: '+res.error.message,'err');return;} toast('Serviço salvo.','ok'); onSaved(); }
   return html`<${Modal} title=${row?.id?'Editar serviço':'Novo serviço'} onClose=${onClose} footer=${html`<${Fragment}>
     <button class="btn" onClick=${onClose}>Cancelar</button><button class="btn pri" disabled=${busy} onClick=${save}>${busy?'…':'Salvar'}</button></${Fragment}>`}>
     <label>Nome</label><input value=${f.nome} onInput=${e=>set('nome',e.target.value)} placeholder="Ex.: Bainha de calça"/>
-    <div class="f2"><div><label>Preço base (R$)</label><input type="number" step="0.01" value=${f.preco_base} onInput=${e=>set('preco_base',e.target.value)}/></div>
+    <div class="f2"><div><label>Preço base (R$)</label><input type="text" inputmode="decimal" placeholder="0,00" value=${f.preco_base} onInput=${e=>set('preco_base',e.target.value)} onBlur=${e=>set('preco_base',moedaBlur(e.target.value))}/></div>
       <div><label>Ativo</label><select value=${f.ativo?'1':'0'} onInput=${e=>set('ativo',e.target.value==='1')}><option value="1">Sim</option><option value="0">Não</option></select></div></div>
     <label>Descrição</label><textarea value=${f.descricao||''} onInput=${e=>set('descricao',e.target.value)}/>
   </${Modal}>`;
@@ -1969,11 +1978,11 @@ function Servicos(){
 
 /* ========== ESTOQUE ========== */
 function ProdutoForm({row,onClose,onSaved,tenantId}){
-  const [f,setF]=useState(()=>({nome:'',categoria:'',unidade:'un',quantidade:0,quantidade_minima:0,preco:0,fornecedor:'',localizacao:'',...(row||{})}));
+  const [f,setF]=useState(()=>({nome:'',categoria:'',unidade:'un',quantidade:0,quantidade_minima:0,preco:'',fornecedor:'',localizacao:'',...(row||{}), preco: row&&row.preco!=null?moedaFmt(row.preco):''}));
   const [busy,setBusy]=useState(false); const set=(k,v)=>setF(x=>({...x,[k]:v}));
   async function save(){ if(!f.nome||!f.nome.trim()){toast('Informe o nome.','err');return;} setBusy(true);
     const payload={tenant_id:tenantId,nome:f.nome.trim(),categoria:f.categoria||null,unidade:f.unidade||'un',
-      quantidade:Number(f.quantidade)||0,quantidade_minima:Number(f.quantidade_minima)||0,preco:Number(f.preco)||0,
+      quantidade:Number(f.quantidade)||0,quantidade_minima:Number(f.quantidade_minima)||0,preco:moedaParse(f.preco),
       fornecedor:f.fornecedor||null,localizacao:f.localizacao||null};
     const res=row?.id?await db.from('estoque_produtos').update(payload).eq('id',row.id):await db.from('estoque_produtos').insert(payload);
     setBusy(false); if(res.error){toast('Erro: '+res.error.message,'err');return;} toast('Produto salvo.','ok'); onSaved(); }
@@ -1984,7 +1993,7 @@ function ProdutoForm({row,onClose,onSaved,tenantId}){
       <div><label>Unidade</label><input value=${f.unidade} onInput=${e=>set('unidade',e.target.value)} placeholder="un, m, cx"/></div></div>
     <div class="f3"><div><label>Quantidade</label><input type="number" step="0.01" value=${f.quantidade} onInput=${e=>set('quantidade',e.target.value)}/></div>
       <div><label>Mínimo</label><input type="number" step="0.01" value=${f.quantidade_minima} onInput=${e=>set('quantidade_minima',e.target.value)}/></div>
-      <div><label>Preço unit. (R$)</label><input type="number" step="0.01" value=${f.preco} onInput=${e=>set('preco',e.target.value)}/></div></div>
+      <div><label>Preço unit. (R$)</label><input type="text" inputmode="decimal" placeholder="0,00" value=${f.preco} onInput=${e=>set('preco',e.target.value)} onBlur=${e=>set('preco',moedaBlur(e.target.value))}/></div></div>
     <div class="f2"><div><label>Fornecedor</label><input value=${f.fornecedor||''} onInput=${e=>set('fornecedor',e.target.value)}/></div>
       <div><label>Localização</label><input value=${f.localizacao||''} onInput=${e=>set('localizacao',e.target.value)} placeholder="Gaveta 2"/></div></div>
     ${row?.id&&html`<div class="notice" style=${{marginTop:'12px'}}>Para dar entrada/saída de quantidade, use <b>Movimentar</b> na lista — mantém o histórico correto.</div>`}
@@ -2038,10 +2047,10 @@ function Estoque(){
 
 /* ========== FINANCEIRO ========== */
 function LancForm({row,onClose,onSaved,tenantId,categorias}){
-  const [f,setF]=useState(()=>({tipo:'receita',categoria_id:'',descricao:'',valor:'',vencimento:todayISO(),pago:true,...(row||{})}));
+  const [f,setF]=useState(()=>({tipo:'receita',categoria_id:'',descricao:'',valor:'',vencimento:todayISO(),pago:true,...(row||{}), valor: row&&row.valor!=null?moedaFmt(row.valor):''}));
   const [busy,setBusy]=useState(false); const set=(k,v)=>setF(x=>({...x,[k]:v}));
-  async function save(){ if(f.valor===''||isNaN(Number(f.valor))){toast('Informe o valor.','err');return;} setBusy(true);
-    const payload={tenant_id:tenantId,tipo:f.tipo,categoria_id:f.categoria_id||null,descricao:f.descricao||null,valor:Number(f.valor)||0,
+  async function save(){ const valorNum=moedaParse(f.valor); if(String(f.valor).trim()===''||!(valorNum>0)){toast('Informe um valor válido.','err');return;} setBusy(true);
+    const payload={tenant_id:tenantId,tipo:f.tipo,categoria_id:f.categoria_id||null,descricao:f.descricao||null,valor:valorNum,
       vencimento:f.vencimento||null,pago:!!f.pago,pago_em:f.pago?(f.pago_em||todayISO()):null};
     const res=row?.id?await db.from('financeiro_lancamentos').update(payload).eq('id',row.id):await db.from('financeiro_lancamentos').insert(payload);
     setBusy(false); if(res.error){toast('Erro: '+res.error.message,'err');return;} toast('Lançamento salvo.','ok'); onSaved(); }
@@ -2053,7 +2062,7 @@ function LancForm({row,onClose,onSaved,tenantId,categorias}){
       <div><label>Categoria</label><select value=${f.categoria_id||''} onInput=${e=>set('categoria_id',e.target.value)}>
         <option value="">— Sem categoria —</option>${cats.map(c=>html`<option key=${c.id} value=${c.id}>${c.nome}</option>`)}</select></div></div>
     <label>Descrição</label><input value=${f.descricao||''} onInput=${e=>set('descricao',e.target.value)} placeholder="Ex.: Compra de linhas"/>
-    <div class="f3"><div><label>Valor (R$)</label><input type="number" step="0.01" value=${f.valor} onInput=${e=>set('valor',e.target.value)}/></div>
+    <div class="f3"><div><label>Valor (R$)</label><input type="text" inputmode="decimal" placeholder="0,00" value=${f.valor} onInput=${e=>set('valor',e.target.value)} onBlur=${e=>set('valor',moedaBlur(e.target.value))}/></div>
       <div><label>Vencimento</label><input type="date" value=${f.vencimento||''} onInput=${e=>set('vencimento',e.target.value)}/></div>
       <div><label>Pago/Recebido</label><select value=${f.pago?'1':'0'} onInput=${e=>set('pago',e.target.value==='1')}><option value="1">Sim</option><option value="0">Não</option></select></div></div>
   </${Modal}>`;
