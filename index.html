@@ -465,7 +465,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.35.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.36.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -540,7 +540,83 @@ window.APP_VERSION = '1.35.0'; /* §14.2: nunca const — precisa ser lida como 
     document.body.appendChild(b);
   }
   window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); _pwaPrompt=e; pwaMostrarBotao(); });
-  window.addEventListener('appinstalled',function(){ var b=document.getElementById('pwaInstall'); if(b) b.remove(); _pwaPrompt=null; });
+  window.addEventListener('appinstalled',function(){ var b=document.getElementById('pwaInstall'); if(b) b.remove(); _pwaPrompt=null;
+    var i=document.getElementById('iosInstall'); if(i) i.remove(); });
+
+  /* ---------- iOS: afordância "Instalar no iPhone" (v1.36) ----------
+     No iPhone/iPad o beforeinstallprompt NUNCA dispara → o botão "Baixar app" acima não aparece.
+     Aqui mostramos uma AFORDÂNCIA equivalente (mesma marca --plum→--violet) que, ao tocar, abre
+     uma folha com o passo a passo do "Adicionar à Tela de Início" (Compartilhar do Safari). A folha
+     usa as classes reais do DS (.ov/.modal/.mh/.mb/.mf) — visual idêntico ao Modal do app.
+     Só no iOS FORA do modo standalone (reusa jaInstalado()); nunca no desktop/Android. A folha só
+     abre no toque (não intrusiva); "Não mostrar de novo" persiste em localStorage e some o botão. */
+  var LS_IOS='atelie_ios_install_visto';
+  function ehIOS(){
+    try{
+      var ua=navigator.userAgent||'';
+      var iphone=/iphone|ipad|ipod/i.test(ua);
+      var ipadOS=(navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); /* iPadOS 13+ finge ser Mac */
+      return iphone||ipadOS;
+    }catch(_){ return false; }
+  }
+  function iosDispensado(){ try{ return localStorage.getItem(LS_IOS)==='1'; }catch(_){ return false; } }
+  function iosFecharFolha(){
+    var ov=document.getElementById('iosSheet'); if(ov) ov.remove();
+    document.removeEventListener('keydown', iosEsc);
+  }
+  function iosEsc(e){ if(e.key==='Escape') iosFecharFolha(); }
+  function iosAbrirFolha(){
+    if(document.getElementById('iosSheet')) return;
+    var cs=getComputedStyle(document.documentElement);
+    var plum=(cs.getPropertyValue('--plum')||'#5e3a56').trim()||'#5e3a56';
+    var num='display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:24px;height:24px;'
+      +'border-radius:999px;background:'+plum+';color:#fff;font-weight:700;font-size:.78rem;line-height:1';
+    var share='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="'+plum+'" stroke-width="1.7" '
+      +'stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin:0 2px"><path d="M12 3v12"/>'
+      +'<path d="M8 7l4-4 4 4"/><path d="M6 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></svg>';
+    var li='display:flex;gap:12px;align-items:flex-start';
+    var tx='line-height:1.5;padding-top:2px';
+    var ov=document.createElement('div'); ov.className='ov'; ov.id='iosSheet'; ov.style.zIndex='600';
+    ov.innerHTML='<div class="modal" role="dialog" aria-modal="true" aria-label="Instalar no iPhone">'
+      +'<div class="mh"><h3>Instalar no iPhone</h3><button class="x" type="button" id="iosX" aria-label="Fechar">×</button></div>'
+      +'<div class="mb">'
+        +'<p style="margin:0 0 16px;line-height:1.5">Para deixar o app com ícone próprio na tela inicial do iPhone, use o Safari:</p>'
+        +'<ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px">'
+          +'<li style="'+li+'"><span style="'+num+'">1</span><span style="'+tx+'">Toque em '+share+' <b>Compartilhar</b>, na barra de baixo do Safari.</span></li>'
+          +'<li style="'+li+'"><span style="'+num+'">2</span><span style="'+tx+'">Role a lista e escolha <b>Adicionar à Tela de Início</b>.</span></li>'
+          +'<li style="'+li+'"><span style="'+num+'">3</span><span style="'+tx+'">Confirme em <b>Adicionar</b>. Pronto — o Ateliê abre como um app.</span></li>'
+        +'</ol>'
+      +'</div>'
+      +'<div class="mf"><button class="btn ghost" type="button" id="iosNunca">Não mostrar de novo</button>'
+      +'<button class="btn pri" type="button" id="iosOk">Entendi</button></div>'
+      +'</div>';
+    ov.addEventListener('click', function(e){ if(e.target===ov) iosFecharFolha(); });
+    document.body.appendChild(ov);
+    document.addEventListener('keydown', iosEsc);
+    var qx=document.getElementById('iosX'), qok=document.getElementById('iosOk'), qn=document.getElementById('iosNunca');
+    if(qx) qx.onclick=iosFecharFolha;
+    if(qok) qok.onclick=iosFecharFolha;
+    if(qn) qn.onclick=function(){ try{ localStorage.setItem(LS_IOS,'1'); }catch(_){}
+      var b=document.getElementById('iosInstall'); if(b) b.remove(); iosFecharFolha(); };
+  }
+  function iosMostrarBotao(){
+    if(!ehIOS() || jaInstalado() || iosDispensado()) return;
+    if(document.getElementById('iosInstall')) return;
+    var cs=getComputedStyle(document.documentElement);
+    var plum=(cs.getPropertyValue('--plum')||'#5e3a56').trim()||'#5e3a56';
+    var violet=(cs.getPropertyValue('--violet')||'#8e2cb0').trim()||'#8e2cb0';
+    var b=document.createElement('button'); b.id='iosInstall'; b.type='button';
+    b.setAttribute('aria-label','Instalar no iPhone');
+    b.innerHTML='📲 Instalar no iPhone';
+    /* acima da barra de abas (v1.34, 56px + safe-area) para não colidir */
+    b.style.cssText='position:fixed;right:18px;bottom:calc(56px + env(safe-area-inset-bottom) + 14px);z-index:550;'
+      +'background:linear-gradient(135deg,'+plum+','+violet+');color:#fff;border:0;padding:12px 20px;border-radius:999px;'
+      +'font-weight:700;font-size:.86rem;font-family:inherit;box-shadow:0 10px 26px -8px rgba(94,58,86,.55);cursor:pointer';
+    b.onclick=iosAbrirFolha;
+    document.body.appendChild(b);
+  }
+  if(document.readyState==='loading') window.addEventListener('DOMContentLoaded', iosMostrarBotao);
+  else iosMostrarBotao();
 })();
 
 /* ---------- helpers ---------- */
