@@ -412,7 +412,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.32.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.33.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -456,6 +456,38 @@ window.APP_VERSION = '1.32.0'; /* §14.2: nunca const — precisa ser lida como 
         .catch(function(){});
     });
   }
+})();
+
+/* ---------- PWA: botão flutuante "Baixar app" (instalar) — padrão VIZIO (espelha o Inovar) ----------
+   Referência: repos/vizio/inovar-painel/index.html:1753-1763 — FAB no canto inferior direito
+   injetado em document.body por JS vanilla. Captura o beforeinstallprompt, guarda o evento e
+   mostra o botão; o clique chama prompt() e o botão some ao concluir a escolha ou no appinstalled.
+   Some também quando o app já está instalado (display-mode: standalone / navigator.standalone).
+   iOS Safari não dispara beforeinstallprompt → o botão simplesmente não aparece (igual ao Inovar).
+   Cor: gradiente da marca --plum→--violet (DS do Ateliê), no lugar do laranja do Inovar. */
+(function(){
+  var _pwaPrompt=null;
+  function jaInstalado(){
+    try{ return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true; }
+    catch(_){ return false; }
+  }
+  function pwaMostrarBotao(){
+    if(jaInstalado()) return;
+    if(document.getElementById('pwaInstall')) return;
+    var cs=getComputedStyle(document.documentElement);
+    var plum=(cs.getPropertyValue('--plum')||'#5e3a56').trim()||'#5e3a56';
+    var violet=(cs.getPropertyValue('--violet')||'#8e2cb0').trim()||'#8e2cb0';
+    var b=document.createElement('button'); b.id='pwaInstall'; b.type='button';
+    b.setAttribute('aria-label','Baixar app');
+    b.innerHTML='📲 Baixar app';
+    b.style.cssText='position:fixed;bottom:18px;right:18px;z-index:550;background:linear-gradient(135deg,'
+      +plum+','+violet+');color:#fff;border:0;padding:12px 20px;border-radius:999px;font-weight:700;'
+      +'font-size:.86rem;font-family:inherit;box-shadow:0 10px 26px -8px rgba(94,58,86,.55);cursor:pointer';
+    b.onclick=function(){ if(!_pwaPrompt) return; _pwaPrompt.prompt(); _pwaPrompt.userChoice.then(function(){ _pwaPrompt=null; b.remove(); }); };
+    document.body.appendChild(b);
+  }
+  window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); _pwaPrompt=e; pwaMostrarBotao(); });
+  window.addEventListener('appinstalled',function(){ var b=document.getElementById('pwaInstall'); if(b) b.remove(); _pwaPrompt=null; });
 })();
 
 /* ---------- helpers ---------- */
