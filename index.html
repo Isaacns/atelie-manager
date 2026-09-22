@@ -481,7 +481,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.40.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.41.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -831,6 +831,11 @@ const STATUS = {
 const STATUS_ORDER = Object.keys(STATUS);
 const ACTIVE = ['orcamento','aberto','em_andamento','costurando','aguardando_prova','aguardando_retirada'];
 const isClosed = s => s==='entregue'||s==='cancelado';
+/* "A receber de verdade": ordem em aberto (ativa) OU com sinal já registrado (valor_pago>0), com saldo.
+   Exclui finalizadas/entregues SEM pagamento lançado — no ateliê, recebidas em dinheiro na retirada e
+   não registradas; contá-las inflava o total com dinheiro já recebido. O que tem sinal registrado segue
+   como recebível (saldo comprovado). Usado no total das Ordens e no KPI "A receber" do Financeiro. */
+const aReceberConta = o => !!o && o.status!=='cancelado' && pagInfo(o).saldo>0.009 && (ACTIVE.includes(o.status) || (Number(o.valor_pago)||0)>0);
 const dueDate = o => o.prazo || (o.dias_previstos&&o.data_entrada ? addDays(o.data_entrada,o.dias_previstos) : null);
 const isLate = o => ACTIVE.includes(o.status) && (()=>{ const d=dueDate(o); return !!d && d<todayISO(); })();
 const bdayThisMonth = c => !!c.nascimento && Number(c.nascimento.slice(5,7))===(new Date().getMonth()+1);
@@ -1951,28 +1956,29 @@ function Ordens(){
   useEffect(()=>{setFilt(initF);},[initF]);
   const cliName=useMemo(()=>Object.fromEntries((clientes||[]).map(c=>[c.id,c.nome])),[clientes]);
   const filtered=useMemo(()=>{ if(!rows) return null; const s=q.toLowerCase();
-    const especiais=['todas','ativas','atrasadas','saldo'];
+    const especiais=['todas','ativas','atrasadas','saldo','receber'];
     return rows.filter(o=>{
       if(filt==='ativas'&&!ACTIVE.includes(o.status)) return false;
       if(filt==='atrasadas'&&!(ACTIVE.includes(o.status)&&o.prazo&&o.prazo<todayISO())) return false;
       if(filt==='saldo'&&!(o.status!=='cancelado'&&pagInfo(o).saldo>0.009)) return false;
+      if(filt==='receber'&&!aReceberConta(o)) return false;
       if(!especiais.includes(filt)&&o.status!==filt) return false;
       if(s){ const nm=(cliName[o.cliente_id]||'').toLowerCase(); return (o.descricao||'').toLowerCase().includes(s)||nm.includes(s)||String(o.numero).includes(s); }
       return true; }); },[rows,q,filt,cliName]);
-  const totalSaldo=useMemo(()=>(rows||[]).filter(o=>o.status!=='cancelado').reduce((a,o)=>a+Math.max(0,pagInfo(o).saldo),0),[rows]);
+  const totalSaldo=useMemo(()=>(rows||[]).filter(aReceberConta).reduce((a,o)=>a+pagInfo(o).saldo,0),[rows]);
   return html`<${Shell} title="Ordens de serviço">
     <div class="bar">
       <div class="search"><input placeholder="Buscar por #, cliente ou serviço…" value=${q} onInput=${e=>setQ(e.target.value)}/></div>
       <select value=${filt} onInput=${e=>setFilt(e.target.value)} style=${{maxWidth:'210px'}}>
         <option value="todas">Todas</option><option value="ativas">Em aberto</option><option value="atrasadas">Atrasadas</option>
-        <option value="saldo">Com saldo a receber</option>
+        <option value="receber">A receber (em aberto + sinal)</option><option value="saldo">Com saldo a receber (tudo)</option>
         <option disabled>──────</option>${STATUS_ORDER.map(s=>html`<option key=${s} value=${s}>${STATUS[s].l}</option>`)}
       </select>
       <button class="btn pri" onClick=${()=>setEdit({})}><${Ic} d=${I.plus}/>Nova OS</button>
     </div>
-    ${totalSaldo>0.009&&html`<button class="glass panel" onClick=${()=>setFilt('saldo')}
+    ${totalSaldo>0.009&&html`<button class="glass panel" onClick=${()=>{setQ('');setFilt('receber');}}
       style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'10px',width:'100%',textAlign:'left',cursor:'pointer',border:'none',padding:'12px 16px',marginBottom:'12px'}}>
-      <span class="muted" style=${{fontSize:'.86rem'}}>Total a receber das ordens em aberto</span>
+      <span class="muted" style=${{fontSize:'.86rem'}}>Total a receber <span style=${{opacity:.7}}>— ordens em aberto e com sinal</span></span>
       <span class="b" style=${{color:'#b3452f',fontSize:'1.1rem'}}>${BRL(totalSaldo)}</span>
     </button>`}
     <div class="glass panel">
@@ -2302,12 +2308,13 @@ function Financeiro(){
   const aExecutar=useMemo(()=>(ordAdiant||[])
     .filter(o=>!o.entregue_em && o.status!=='cancelado' && (Number(o.valor_pago)||0)>0)
     .reduce((a,o)=>a+Math.min(Number(o.valor)||0, Number(o.valor_pago)||0),0),[ordAdiant]);
-  /* "A receber" = saldo em aberto das ORDENS — mesma conta e recorte da tela Ordens
-     (Σ max(0, valor − valor_pago) das não canceladas). Antes o KPI somava receitas pendentes
-     lançadas à mão (≈ nunca usadas aqui), então vivia zerado. Clica → Ordens filtradas por saldo. */
+  /* "A receber" = saldo das ORDENS pela conta HONESTA (`aReceberConta`, mesma da tela Ordens):
+     ordens em aberto (ativas) OU com sinal registrado. v1.41: finalizadas/entregues sem pagamento
+     lançado (recebidas em dinheiro na retirada, não registradas) NÃO entram — antes inflavam o total.
+     Clica → Ordens filtradas por "A receber" (mesmo conjunto → número bate com a lista). */
   const aReceberOrdens=useMemo(()=>(ordAdiant||[])
-    .filter(o=>o.status!=='cancelado')
-    .reduce((a,o)=>a+Math.max(0,pagInfo(o).saldo),0),[ordAdiant]);
+    .filter(aReceberConta)
+    .reduce((a,o)=>a+pagInfo(o).saldo,0),[ordAdiant]);
   const kpis=useMemo(()=>{ const r=rows||[]; const inMonth=x=>(x.pago_em||x.vencimento||'')>=ms;
     const rec=recebidoMes(r, ms); /* definição ÚNICA (mesma do Dashboard) */
     const desp=r.filter(l=>l.tipo==='despesa'&&l.pago&&inMonth(l)).reduce((a,l)=>a+Number(l.valor||0),0);
@@ -2342,7 +2349,7 @@ function Financeiro(){
       <div class="glass kpi ok" style=${{cursor:'default'}} title=${aExecutar>0?('Regime de caixa. Adiantamentos a executar: '+BRL(aExecutar)):'Regime de caixa.'}><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(kpis.rec)}</div><div class="l">Recebido no mês${aExecutar>0?html`<span style=${{display:'block',fontSize:'.72rem',opacity:.85}}>inclui adiantamentos</span>`:''}</div></div>
       <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:'var(--danger)'}}>${BRL(kpis.desp)}</div><div class="l">Pago no mês</div></div>
       <div class="glass kpi" style=${{cursor:'default'}}><div class="n" style=${{fontSize:'1.5rem',color:kpis.saldo>=0?'var(--ok)':'var(--danger)'}}>${BRL(kpis.saldo)}</div><div class="l">Saldo do mês</div></div>
-      <button class="glass kpi warn" onClick=${()=>go('/ordens?f=saldo')} title="Ver as ordens com saldo a receber"><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(aReceberOrdens)}</div><div class="l">A receber (ordens)</div></button>
+      <button class="glass kpi warn" onClick=${()=>go('/ordens?f=receber')} title="Ordens em aberto e com sinal — clique para ver a lista"><div class="n" style=${{fontSize:'1.5rem'}}>${BRL(aReceberOrdens)}</div><div class="l">A receber (ordens)</div></button>
     </div>
     <div class="glass panel" style=${{marginTop:'18px'}}>
       <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
