@@ -481,7 +481,7 @@ const html = htm.bind(createElement);
 const SUPABASE_URL = 'https://emyjzjadmxgbtmxnzazu.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVteWp6amFkbXhnYnRteG56YXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTc4MzAsImV4cCI6MjA5NzczMzgzMH0.czJkQRNmGeWCt2fGiIxxssG0b9a7HEx2sDVLycaHVkI';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { db:{ schema:'atelie' } });
-window.APP_VERSION = '1.41.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
+window.APP_VERSION = '1.42.0'; /* §14.2: nunca const — precisa ser lida como window.APP_VERSION mesmo de outro escopo. Ao bumpar, bumpar TAMBÉM o CACHE do web/sw.js. */
 
 /* ---------- PWA: instalável no desktop + auto-atualização ao abrir (§14.2) ----------
    Manifest gerado em runtime (Blob) para não criar 3º arquivo e manter white-label:
@@ -834,8 +834,9 @@ const isClosed = s => s==='entregue'||s==='cancelado';
 /* "A receber de verdade": ordem em aberto (ativa) OU com sinal já registrado (valor_pago>0), com saldo.
    Exclui finalizadas/entregues SEM pagamento lançado — no ateliê, recebidas em dinheiro na retirada e
    não registradas; contá-las inflava o total com dinheiro já recebido. O que tem sinal registrado segue
-   como recebível (saldo comprovado). Usado no total das Ordens e no KPI "A receber" do Financeiro. */
-const aReceberConta = o => !!o && o.status!=='cancelado' && pagInfo(o).saldo>0.009 && (ACTIVE.includes(o.status) || (Number(o.valor_pago)||0)>0);
+   como recebível (saldo comprovado), assim como o que foi marcado "fiado" na entrega (`a_receber=true`, v1.42).
+   Usado no total das Ordens e no KPI "A receber" do Financeiro. */
+const aReceberConta = o => !!o && o.status!=='cancelado' && pagInfo(o).saldo>0.009 && (ACTIVE.includes(o.status) || (Number(o.valor_pago)||0)>0 || o.a_receber===true);
 const dueDate = o => o.prazo || (o.dias_previstos&&o.data_entrada ? addDays(o.data_entrada,o.dias_previstos) : null);
 const isLate = o => ACTIVE.includes(o.status) && (()=>{ const d=dueDate(o); return !!d && d<todayISO(); })();
 const bdayThisMonth = c => !!c.nascimento && Number(c.nascimento.slice(5,7))===(new Date().getMonth()+1);
@@ -1996,7 +1997,7 @@ function Ordens(){
 }
 function OrdemDetail({id}){
   const {tenantId,tenant,settings}=useApp();
-  const [o,setO]=useState(null),[cli,setCli]=useState(null),[hist,setHist]=useState([]),[itens,setItens]=useState([]),[clientes]=useRows('clientes',{order:'nome',asc:true}),[servicos]=useRows('servicos',{order:'nome',asc:true}),[usuarios]=useRows('profiles',{order:'nome',asc:true}),[edit,setEdit]=useState(false),[del,setDel]=useState(false),[pagInput,setPagInput]=useState(''),[fotos,setFotos]=useState([]),[upBusy,setUpBusy]=useState(false),[more,setMore]=useState(false);
+  const [o,setO]=useState(null),[cli,setCli]=useState(null),[hist,setHist]=useState([]),[itens,setItens]=useState([]),[clientes]=useRows('clientes',{order:'nome',asc:true}),[servicos]=useRows('servicos',{order:'nome',asc:true}),[usuarios]=useRows('profiles',{order:'nome',asc:true}),[edit,setEdit]=useState(false),[del,setDel]=useState(false),[pagInput,setPagInput]=useState(''),[fotos,setFotos]=useState([]),[upBusy,setUpBusy]=useState(false),[more,setMore]=useState(false),[entrega,setEntrega]=useState(false),[parcial,setParcial]=useState(false);
   const load=useCallback(async()=>{
     const data=qd(await db.from('ordens').select('*').eq('id',id).maybeSingle(), 'a ordem de serviço'); setO(data);
     if(data?.cliente_id){ setCli(qd(await db.from('clientes').select('*').eq('id',data.cliente_id).maybeSingle(), 'a cliente')); } else setCli(null);
@@ -2009,8 +2010,30 @@ function OrdemDetail({id}){
   },[id]);
   const itSub=it=>it.subtotal!=null?Number(it.subtotal):(Number(it.quantidade)||0)*(Number(it.valor_unit)||0);
   useEffect(()=>{load();},[id]);
-  async function setStatus(s){ const patch={status:s}; if(s==='entregue') patch.entregue_em=new Date().toISOString();
+  async function setStatus(s){
+    if(s==='entregue' && pagInfo(o).saldo>0.009){ setParcial(false); setEntrega(true); return; } /* v1.42: entrega com saldo → folha de recebimento */
+    const patch={status:s}; if(s==='entregue'){ patch.entregue_em=new Date().toISOString(); patch.a_receber=false; }
     const {error}=await db.from('ordens').update(patch).eq('id',id); if(error)toast('Erro: '+error.message,'err'); else {toast('Status atualizado.','ok');load();} }
+  /* v1.42 — recebimento na entrega (3 saídas). Reusa a sincronização idempotente da v1.31; sem lógica financeira nova. */
+  async function entregarRecebido(){ const info=pagInfo(o); const novo=info.net;
+    const {error}=await db.from('ordens').update({status:'entregue',entregue_em:new Date().toISOString(),valor_pago:novo,a_receber:false}).eq('id',id);
+    if(error){ toast('Erro: '+error.message,'err'); return; }
+    const lr=await sincronizarReceitaOS(tenantId,o,novo); setEntrega(false); load();
+    if(lr&&lr.error) toast('Entregue. Pagamento salvo, mas o lançamento no Financeiro falhou: '+lr.error.message,'err');
+    else toast('Entregue e recebido '+BRL(+(novo-info.pago).toFixed(2))+' — no Financeiro.','ok'); }
+  async function entregarFiado(){
+    const {error}=await db.from('ordens').update({status:'entregue',entregue_em:new Date().toISOString(),a_receber:true}).eq('id',id);
+    if(error){ toast('Erro: '+error.message,'err'); return; }
+    setEntrega(false); load(); toast('Entregue (fiado) — segue em "A receber".','ok'); }
+  async function entregarParcial(){ const info=pagInfo(o); const add=moedaParse(pagInput);
+    if(!(add>0)){ toast('Informe o valor recebido.','err'); return; }
+    const novo=Math.min(info.net, info.pago+add); const recebido=+(novo-info.pago).toFixed(2);
+    if(!(recebido>0)){ toast('Não há valor novo a registrar.','err'); return; }
+    const {error}=await db.from('ordens').update({status:'entregue',entregue_em:new Date().toISOString(),valor_pago:novo,a_receber:true}).eq('id',id); /* resto é fiado → fica em "A receber" mesmo se a receita for editada depois */
+    if(error){ toast('Erro: '+error.message,'err'); return; }
+    const lr=await sincronizarReceitaOS(tenantId,o,novo); setPagInput(''); setParcial(false); setEntrega(false); load();
+    if(lr&&lr.error) toast('Entregue. Pagamento salvo, mas o lançamento falhou: '+lr.error.message,'err');
+    else toast('Entregue · recebido '+BRL(recebido)+' — no Financeiro. Resta '+BRL(+(info.net-novo).toFixed(2)),'ok'); }
   async function registrarPag(modo){ const info=pagInfo(o);
     const novo = modo==='quitar' ? info.net : Math.min(info.net, info.pago + moedaParse(pagInput));
     if(modo!=='quitar' && !(moedaParse(pagInput)>0)){ toast('Informe um valor.','err'); return; }
@@ -2162,6 +2185,27 @@ function OrdemDetail({id}){
     ${edit&&html`<${OrdemForm} row=${o} tenantId=${tenantId} clientes=${clientes||[]} servicos=${servicos||[]} usuarios=${usuarios||[]} onClose=${()=>setEdit(false)} onSaved=${()=>{setEdit(false);load();}}/>`}
     ${del&&html`<${Confirm} danger text=${'Excluir a OS #'+o.numero+'?'} onClose=${()=>setDel(false)}
       onYes=${async()=>{ const{error}=await db.from('ordens').delete().eq('id',id); if(error)toast('Erro: '+error.message,'err'); else{toast('OS excluída.','ok');go('/ordens');} }}/>`}
+    ${entrega&&o&&html`<${Modal} title=${'Entregar a OS #'+o.numero} onClose=${()=>{setEntrega(false);setParcial(false);}}>
+      <p class="desc" style=${{marginTop:'-4px'}}>${cli?.nome||''}${o.descricao?' · '+o.descricao:''}</p>
+      <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(179,69,47,.08)',border:'1px solid rgba(179,69,47,.18)',borderRadius:'12px',padding:'11px 13px',margin:'10px 0 14px'}}>
+        <span style=${{fontSize:'.82rem',color:'#7a3a2c',fontWeight:600}}>Falta receber</span>
+        <span style=${{fontSize:'1.2rem',color:'var(--danger)',fontWeight:700}}>${BRL(pagInfo(o).saldo)}</span>
+      </div>
+      ${!parcial ? html`<${Fragment}>
+        <p style=${{fontSize:'.85rem',fontWeight:600,margin:'0 0 8px'}}>Como foi o pagamento?</p>
+        <button class="btn pri" style=${{width:'100%',minHeight:'46px',marginBottom:'8px'}} onClick=${entregarRecebido}>✓ Recebi tudo — ${BRL(pagInfo(o).saldo)}</button>
+        <button class="btn" style=${{width:'100%',minHeight:'46px',marginBottom:'8px'}} onClick=${entregarFiado}>Fiado — vou receber depois</button>
+        <button class="btn ghost" style=${{width:'100%',minHeight:'44px'}} onClick=${()=>setParcial(true)}>Recebi só uma parte…</button>
+        <p class="desc" style=${{textAlign:'center',margin:'10px 0 0'}}>Se recebeu, já entra no Fechamento do dia.</p>
+      </${Fragment}>` : html`<${Fragment}>
+        <label>Quanto recebeu agora?</label>
+        <input type="text" inputmode="decimal" placeholder="Valor recebido (R$)" value=${pagInput} onInput=${e=>setPagInput(e.target.value)} onBlur=${e=>setPagInput(moedaBlur(e.target.value))}/>
+        <div style=${{display:'flex',gap:'8px',marginTop:'12px'}}>
+          <button class="btn" style=${{flex:'1',minHeight:'46px'}} onClick=${()=>setParcial(false)}>Voltar</button>
+          <button class="btn pri" style=${{flex:'1',minHeight:'46px'}} onClick=${entregarParcial}>Confirmar e entregar</button>
+        </div>
+      </${Fragment}>`}
+    </${Modal}>`}
   </${Shell}>`;
 }
 
